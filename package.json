@@ -1,0 +1,36 @@
+{
+  "scripts": {
+    "dev:start": "ts-node-dev src/index.ts",
+    "dev:watch": "ts-node-dev --watch -- src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "format": "prettier --write ."
+  },
+  "license": "MIT",
+  "author": "Redstone Team <dev@redstone.finance>",
+  "dependencies": {
+    "@koa/router": "10.1.1",
+    "arweave": "1.10.18",
+    "axios": "0.24.0",
+    "dotenv": "10.0.0",
+    "knex": "0.95.14",
+    "koa": "2.13.4",
+    "koa-bodyparser": "4.3.0",
+    "node-fetch": "3.1.0",
+    "redstone-smartweave": "0.4.2",
+    "sqlite3": "5.0.2"
+  },
+  "devDependencies": {
+    "@types/koa-bodyparser": "^4.3.4",
+    "@types/koa__router": "8.0.11",
+    "@types/node-fetch": "3.0.3",
+    "@types/object-hash": "2.2.1",
+    "@typescript-eslint/eslint-plugin": "4.33.0",
+    "@typescript-eslint/parser": "4.33.0",
+    "cross-env": "7.0.3",
+    "eslint": "8.3.0",
+    "prettier": "2.5.0",
+    "ts-node-dev": "1.1.8",
+    "typescript": "4.5.2"
+  }
+}

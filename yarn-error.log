@@ -1,0 +1,64 @@
+Arguments: 
+  /Users/ppe/.nvm/versions/node/v14.18.0/bin/node /Users/ppe/.nvm/versions/node/v14.18.0/bin/yarn install
+
+PATH: 
+  /Users/ppe/.nvm/versions/node/v14.18.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/opt/X11/bin:/Users/ppe/go:/Users/ppe/go/bin:/usr/local/go/bin
+
+Yarn version: 
+  1.22.15
+
+Node version: 
+  14.18.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  SyntaxError: /Users/ppe/Projects/redstone-sw-node/package.json: Unexpected token } in JSON at position 211
+      at JSON.parse (<anonymous>)
+      at /Users/ppe/.nvm/versions/node/v14.18.0/lib/node_modules/yarn/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/Users/ppe/.nvm/versions/node/v14.18.0/lib/node_modules/yarn/lib/cli.js:310:30)
+      at /Users/ppe/.nvm/versions/node/v14.18.0/lib/node_modules/yarn/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "scripts": {
+      "dev:start": "ts-node-dev src/index.ts",
+      "dev:watch": "ts-node-dev --watch -- src/index.ts",
+      "build": "tsc",
+      "start": "node dist/index.js",
+      "format": "prettier --write .",
+    },
+    "dependencies": {
+      "@koa/router": "10.1.1",
+      "arweave": "1.10.18",
+      "axios": "0.24.0",
+      "dotenv": "10.0.0",
+      "knex": "0.95.14",
+      "koa": "2.13.4",
+      "koa-bodyparser": "4.3.0",
+      "node-fetch": "3.1.0",
+      "redstone-smartweave": "file:.yalc/redstone-smartweave",
+      "sqlite3": "5.0.2"
+    },
+    "devDependencies": {
+      "@types/koa-bodyparser": "^4.3.4",
+      "@types/koa__router": "8.0.11",
+      "@types/node-fetch": "3.0.3",
+      "@types/object-hash": "2.2.1",
+      "@typescript-eslint/eslint-plugin": "4.33.0",
+      "@typescript-eslint/parser": "4.33.0",
+      "cross-env": "7.0.3",
+      "eslint": "8.3.0",
+      "prettier": "2.5.0",
+      "ts-node-dev": "1.1.8",
+      "typescript": "4.5.2"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
