@@ -4,5 +4,6 @@
     "outDir": "dist",
     "esModuleInterop": true
   },
-  "files": ["src/index.ts", "src/TsLogFactory.d.ts"]
+  "files": [
+    "src/node/init.ts", "src/TsLogFactory.d.ts", "src/network/init.ts"]
 }

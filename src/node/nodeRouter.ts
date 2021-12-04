@@ -3,11 +3,11 @@ import { gossipRoute } from "./routes/gossip";
 import { infoRoute } from "./routes/info";
 import { currentState } from "./routes/currentState";
 
-const router = new Router();
+const nodeRouter = new Router();
 
-router.get("/info", infoRoute);
-router.post("/current-state", currentState);
-router.post("/gossip", gossipRoute);
+nodeRouter.get("/info", infoRoute);
+nodeRouter.post("/current-state", currentState);
+nodeRouter.post("/gossip", gossipRoute);
 // TODO: /graphql
 
-export default router;
+export default nodeRouter;

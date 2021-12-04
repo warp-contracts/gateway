@@ -30,23 +30,11 @@ export const snowball = async (
 
   const internalCounts: { [item: string]: number } = {};
 
-  // const peers = (await connection.queryBuilder().select("*").from("peers")) as {
-  //   ip: string;
-  // }[];
+  const peers: { id: string; address: string }[] = (
+    await axios.get(`${ctx.network}/other-peers?askingNode=${ctx.nodeId}`)
+  ).data;
 
-  // TODO....
-  const peers = [
-    // { ip: "http://localhost:3000" },
-    { ip: "http://localhost:3001" },
-    { ip: "http://localhost:3002" },
-    { ip: "http://localhost:3003" },
-    { ip: "http://localhost:3004" },
-    { ip: "http://localhost:3005" },
-    { ip: "http://localhost:3006" },
-    { ip: "http://localhost:3007" },
-    { ip: "http://localhost:3008" },
-    { ip: "http://localhost:3009" },
-  ];
+  ctx.logger.debug("All active peers", peers);
 
   // https://docs.avax.network/learn/platform-overview/avalanche-consensus/#algorithm
   // https://ipfs.io/ipfs/QmUy4jh5mGNZvLkjies1RWM4YuvJh5o2FYopNPVYwrRVGV page 4., Figure 3.
@@ -55,21 +43,22 @@ export const snowball = async (
   let lastPreference = preference;
   let consecutiveSuccesses = 0;
   const votes: { ip: string; hash: string }[] = [];
+
   while (!decided) {
     const randomPeers = peers
       .sort(() => 0.5 - Math.random())
       .slice(0, SAMPLE_SIZE);
 
     for (const peer of randomPeers) {
-      ctx.logger.info(`Querying ${peer.ip}`);
+      ctx.logger.info(`Querying ${peer.address}`);
       // TODO: Promise.allSettled.
-      const { data: peerHash } = await axios.post(`${peer.ip}/gossip`, {
+      const { data: peerHash } = await axios.post(`${peer.address}/gossip`, {
         type: "query",
         contractId,
         height,
       });
 
-      votes.push({ ip: peer.ip, hash: peerHash });
+      votes.push({ ip: peer.address, hash: peerHash });
       ctx.logger.info(`Hash returned: ${peerHash}`);
     }
 

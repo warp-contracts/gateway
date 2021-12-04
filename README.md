@@ -4,8 +4,11 @@
 
 `yarn build`
 
-### Running nodes
+### Running
 
+1. Run network `yarn start:network`
+
+2. Run nodes
 `sh test.sh`
 
 ### Querying for state

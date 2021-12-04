@@ -1,9 +1,10 @@
 {
   "scripts": {
-    "dev:start": "ts-node-dev src/index.ts",
-    "dev:watch": "ts-node-dev --watch -- src/index.ts",
+    "dev:start": "ts-node-dev src/node/init.ts",
+    "dev:watch": "ts-node-dev --watch -- src/node/init.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start:node": "node dist/node/init.js",
+    "start:network": "node dist/network/init.js",
     "format": "prettier --write ."
   },
   "license": "MIT",

@@ -1,0 +1,24 @@
+### load peers
+GET http://localhost:5666/peers
+
+### load other peers
+GET http://localhost:5666/other-peers?askingNode=testNode_2
+
+
+### register node
+POST http://localhost:5666/register
+Content-Type: application/json
+
+{
+  "nodeId": "testNode_3",
+  "address": "http://fake3.address"
+}
+
+
+### unregister node
+POST http://localhost:5666/unregister
+Content-Type: application/json
+
+{
+"nodeId": "testNode_3"
+}

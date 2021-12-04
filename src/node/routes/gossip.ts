@@ -2,7 +2,7 @@ import Router from "@koa/router";
 
 export const gossipRoute = async (ctx: Router.RouterContext) => {
   const { type, contractId, height } = ctx.request.body as {
-    type: "query";
+    type: string;
     contractId: string;
     height: number;
   };
@@ -22,4 +22,5 @@ export const gossipRoute = async (ctx: Router.RouterContext) => {
     )[0];
     ctx.body = result.hash;
   }
+
 };
