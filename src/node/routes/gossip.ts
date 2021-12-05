@@ -1,4 +1,10 @@
 import Router from "@koa/router";
+import { NodeData } from "../init";
+
+export type GossipQueryResult = {
+  peer: NodeData;
+  hash: string;
+};
 
 export const gossipRoute = async (ctx: Router.RouterContext) => {
   const { type, contractId, height } = ctx.request.body as {
@@ -8,19 +14,25 @@ export const gossipRoute = async (ctx: Router.RouterContext) => {
   };
 
   if (type === "query") {
-    // evaluate contract
-    await ctx.sdk.contract(contractId).readState(height);
+    try {
+      // evaluate contract
+      await ctx.sdk.contract(contractId).readState(height);
 
-    // load evaluated hash from node's db
-    const result = (
-      await ctx.db
-        .select("hash")
-        .from("states")
-        .where("contract_id", contractId)
-        .andWhere("height", height)
-        .limit(1)
-    )[0];
-    ctx.body = result.hash;
+      // load evaluated hash from node's db
+      const result = (
+        await ctx.db
+          .select("hash")
+          .from("states")
+          .where("contract_id", contractId)
+          .andWhere("height", height)
+          .limit(1)
+      )[0];
+
+      ctx.body = { hash: result.hash, peer: ctx.whoami };
+      ctx.status = 200;
+    } catch (error: unknown) {
+      ctx.body = { peer: ctx.whoami, error };
+      ctx.status = 500;
+    }
   }
-
 };

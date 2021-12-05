@@ -16,10 +16,26 @@ declare module "koa" {
     db: Knex;
     sdk: SmartWeave;
     logger: RedStoneLogger;
-    whoami: string;
+    whoami: NodeData;
     network: string;
   }
 }
+
+export type NodeData = {
+  id: string;
+  address: string;
+}
+
+export const register = async (
+  nodeId: string,
+  address: string,
+  networkAddress: string
+) => {
+  await axios.post(`${networkAddress}/register`, {
+    nodeId,
+    address,
+  });
+};
 
 export const unregister = async (nodeId: string, networkAddress: string) => {
   await axios.post(`${networkAddress}/unregister`, {
@@ -52,7 +68,7 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
   app.context.db = db;
   app.context.sdk = await sdk(db);
   app.context.logger = logger;
-  app.context.whoami = nodeId;
+  app.context.whoami = { id: nodeId, address };
   app.context.network = networkAddress;
 
   app.use(bodyParser());
@@ -60,10 +76,7 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
 
   app.listen(port);
 
-  await axios.post(`${networkAddress}/register`, {
-    nodeId,
-    address,
-  });
+  await register(nodeId, address, networkAddress);
 
   logger.info("Registered");
 

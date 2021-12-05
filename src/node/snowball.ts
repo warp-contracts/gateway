@@ -1,5 +1,6 @@
-import axios from "axios";
+import axios, {AxiosResponse} from "axios";
 import Router from "@koa/router";
+import {GossipQueryResult} from "./routes/gossip";
 
 const QUORUM_SIZE = 0.5;
 const SAMPLE_SIZE = 2;
@@ -30,11 +31,11 @@ export const snowball = async (
 
   const internalCounts: { [item: string]: number } = {};
 
-  const peers: { id: string; address: string }[] = (
+  const activePeers: { id: string; address: string }[] = (
     await axios.get(`${ctx.network}/other-peers?askingNode=${ctx.nodeId}`)
   ).data;
 
-  ctx.logger.debug("All active peers", peers);
+  ctx.logger.debug("All active peers", activePeers);
 
   // https://docs.avax.network/learn/platform-overview/avalanche-consensus/#algorithm
   // https://ipfs.io/ipfs/QmUy4jh5mGNZvLkjies1RWM4YuvJh5o2FYopNPVYwrRVGV page 4., Figure 3.
@@ -45,22 +46,31 @@ export const snowball = async (
   const votes: { ip: string; hash: string }[] = [];
 
   while (!decided) {
-    const randomPeers = peers
+    // TODO: round-robin? weighted round-robin based on nodes reputation?
+    const randomPeers = activePeers
       .sort(() => 0.5 - Math.random())
       .slice(0, SAMPLE_SIZE);
 
-    for (const peer of randomPeers) {
-      ctx.logger.info(`Querying ${peer.address}`);
-      // TODO: Promise.allSettled.
-      const { data: peerHash } = await axios.post(`${peer.address}/gossip`, {
+    const peersQuery: Promise<AxiosResponse<GossipQueryResult>>[] = randomPeers.map((peer) => {
+      return axios.post(`${peer.address}/gossip`, {
         type: "query",
         contractId,
         height,
       });
+    });
 
-      votes.push({ ip: peer.address, hash: peerHash });
-      ctx.logger.info(`Hash returned: ${peerHash}`);
-    }
+    const peersQueryResult = await Promise.allSettled(peersQuery);
+    peersQueryResult.forEach((result) => {
+      if (result.status === "fulfilled") {
+        const data = result.value.data;
+        votes.push({ ip: data.peer.address, hash: data.hash });
+        ctx.logger.info(`Hash returned:`, data);
+      } else {
+        ctx.logger.error(result.reason);
+      }
+
+    })
+
 
     const votesCounts = count(votes.map((item) => item.hash));
     for (const [peerHash, amount] of Object.entries(votesCounts)) {
@@ -90,7 +100,7 @@ export const snowball = async (
   // TODO: now we have consensus - but what next?
   // how to mark the state as accepted on all peers?
 
-  // TODO: sende some ARs (tokens) to nodes that
+  // TODO: send some ARs (tokens) to nodes that
   // returned accepted state?
 
   // const ip = hashes.find((item) => item.hash === hash)?.ip;
