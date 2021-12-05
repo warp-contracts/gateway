@@ -1,15 +1,22 @@
 import * as path from "path";
-
-require("dotenv").config();
 import { Knex } from "knex";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
 import { connect } from "../db/connect";
 import nodeRouter from "./nodeRouter";
-import { sdk } from "./smartweave";
-import { LoggerFactory, RedStoneLogger, SmartWeave } from "redstone-smartweave";
+import {
+  LoggerFactory,
+  RedStoneLogger,
+  SmartWeave,
+  SmartWeaveNodeFactory,
+} from "redstone-smartweave";
 import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
 import axios from "axios";
+import { initArweave } from "./arweave";
+import { blockListener } from "./blockListener";
+import Arweave from "arweave";
+
+require("dotenv").config();
 
 declare module "koa" {
   interface BaseContext {
@@ -18,19 +25,21 @@ declare module "koa" {
     logger: RedStoneLogger;
     whoami: NodeData;
     network: string;
+    arweave: Arweave;
   }
 }
 
 export type NodeData = {
   id: string;
   address: string;
-}
+};
 
 export const register = async (
   nodeId: string,
   address: string,
   networkAddress: string
 ) => {
+  // TODO: retries
   await axios.post(`${networkAddress}/register`, {
     nodeId,
     address,
@@ -38,6 +47,7 @@ export const register = async (
 };
 
 export const unregister = async (nodeId: string, networkAddress: string) => {
+  // TODO: retries
   await axios.post(`${networkAddress}/unregister`, {
     nodeId,
   });
@@ -55,18 +65,19 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
     instanceName: nodeId,
     moduleName: false,
   });
-
-  LoggerFactory.INST.logLevel("info");
-  LoggerFactory.INST.logLevel("debug", "node");
-
+  LoggerFactory.INST.logLevel("error");
+  LoggerFactory.INST.logLevel("info", "node");
   const logger = LoggerFactory.INST.create("node");
-  logger.info(`Starting`);
+
+  logger.info(`====== Starting ======`);
 
   const app = new Koa();
-
   const db = connect(port, path.join("db", "peers"));
+  const arweave = initArweave();
+
   app.context.db = db;
-  app.context.sdk = await sdk(db);
+  app.context.arweave = arweave;
+  app.context.sdk = await SmartWeaveNodeFactory.knexCached(arweave, db);
   app.context.logger = logger;
   app.context.whoami = { id: nodeId, address };
   app.context.network = networkAddress;
@@ -77,6 +88,8 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
   app.listen(port);
 
   await register(nodeId, address, networkAddress);
+
+  // blockListener(app.context);
 
   logger.info("Registered");
 

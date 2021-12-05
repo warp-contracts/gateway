@@ -15,6 +15,10 @@ export const gossipRoute = async (ctx: Router.RouterContext) => {
 
   if (type === "query") {
     try {
+      ctx.logger.info("Querying state for", {
+        contractId,
+        height,
+      });
       // evaluate contract
       await ctx.sdk.contract(contractId).readState(height);
 
