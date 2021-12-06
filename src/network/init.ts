@@ -41,7 +41,7 @@ declare module "koa" {
 
   const app = new Koa();
 
-  const db = connect(port, path.join("db", "network"));
+  const db = connect(port, "network", path.join("db", "network"));
   await init(db);
 
   app.context.db = db;

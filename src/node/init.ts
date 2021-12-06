@@ -13,14 +13,15 @@ import {
 import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
 import axios from "axios";
 import { initArweave } from "./arweave";
-import { blockListener } from "./blockListener";
 import Arweave from "arweave";
+import { blockListener, initBlocksDb } from "./blockListener";
 
 require("dotenv").config();
 
 declare module "koa" {
   interface BaseContext {
     db: Knex;
+    blocksDb: Knex;
     sdk: SmartWeave;
     logger: RedStoneLogger;
     whoami: NodeData;
@@ -66,16 +67,18 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
     moduleName: false,
   });
   LoggerFactory.INST.logLevel("error");
-  LoggerFactory.INST.logLevel("info", "node");
+  LoggerFactory.INST.logLevel("debug", "node");
   const logger = LoggerFactory.INST.create("node");
 
   logger.info(`====== Starting ======`);
 
   const app = new Koa();
-  const db = connect(port, path.join("db", "peers"));
+  const db = connect(port, "state", path.join("db", "peers"));
+  const blocksDb = connect(port, "blocks", path.join("db", "peers"));
   const arweave = initArweave();
 
   app.context.db = db;
+  app.context.blocksDb = blocksDb;
   app.context.arweave = arweave;
   app.context.sdk = await SmartWeaveNodeFactory.knexCached(arweave, db);
   app.context.logger = logger;
@@ -89,7 +92,8 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
 
   await register(nodeId, address, networkAddress);
 
-  // blockListener(app.context);
+  await initBlocksDb(blocksDb);
+  await blockListener(app.context);
 
   logger.info("Registered");
 

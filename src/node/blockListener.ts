@@ -3,7 +3,6 @@ import Application from "koa";
 import {
   Benchmark,
   GQLEdgeInterface,
-  GQLNodeInterface,
   GQLResultInterface,
   GQLTagInterface,
   GQLTransactionsResultInterface,
@@ -30,12 +29,6 @@ interface ReqVariables {
   after?: string;
 }
 
-export type BLOCKS_TABLE = {
-  id: string;
-  height: number;
-  transactions: string;
-};
-
 export type INTERACTIONS_TABLE = {
   id: string;
   transaction: string;
@@ -44,7 +37,7 @@ export type INTERACTIONS_TABLE = {
   contract_id: string;
   function: string;
   input: string;
-  confirmed: boolean;
+  confirmation_status: string;
 };
 
 // in theory avg. block time on Arweave is 120s (?)
@@ -80,28 +73,44 @@ const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilte
     }
   }`;
 
-async function init(db: Knex) {
-  // not sure which storage format will be better, so creating two separate tables
-  if (!(await db.schema.hasTable("blocks"))) {
-    await db.schema.createTable("blocks", (table) => {
-      table.string("id", 64).primary();
-      table.bigInteger("height").notNullable().unique().index();
-      table.json("transactions").notNullable();
-    });
-  }
-
+export async function initBlocksDb(db: Knex) {
   if (!(await db.schema.hasTable("interactions"))) {
     await db.schema.createTable("interactions", (table) => {
       table.string("id", 64).primary();
-      table.json("transaction").primary().notNullable();
+      table.json("transaction").notNullable();
       table.bigInteger("block_height").notNullable().index();
       table.string("block_id").notNullable();
       table.string("contract_id").notNullable().index();
-      table.string("function").notNullable().index();
+      table.string("function").index();
       table.json("input").notNullable();
-      table.boolean("confirmed").notNullable().defaultTo(false);
+      table
+        .string("confirmation_status")
+        .notNullable()
+        .defaultTo("not_processed");
     });
   }
+}
+
+export async function blockListener(context: Application.BaseContext) {
+  await doListenForBlocks(context);
+
+  setTimeout(async function () {
+    (function loop() {
+      // not using setInterval on purpose -
+      // https://developer.mozilla.org/en-US/docs/Web/API/setInterval#ensure_that_execution_duration_is_shorter_than_interval_frequency
+      setTimeout(async function () {
+        await doListenForBlocks(context);
+        loop();
+      }, INTERVAL_MS);
+    })();
+  }, INTERVAL_MS);
+}
+
+async function doListenForBlocks(context: Application.BaseContext) {
+  await Promise.allSettled([
+    checkNewBlocks(context),
+    verifyConfirmations(context),
+  ]);
 }
 
 // TODO: implement ;-)
@@ -109,28 +118,17 @@ function verifyConfirmations(context: Application.BaseContext) {
   return Promise.resolve(undefined);
 }
 
-export function blockListener(context: Application.BaseContext) {
-  // not using setInterval on purpose -
-  // https://developer.mozilla.org/en-US/docs/Web/API/setInterval#ensure_that_execution_duration_is_shorter_than_interval_frequency
-  (function loop() {
-    setTimeout(async function () {
-      // Promise.race?
-      await Promise.allSettled([
-        doListenForBlocks(context),
-        verifyConfirmations(context),
-      ]);
-      loop();
-    }, INTERVAL_MS);
-  })();
-}
-
-async function doListenForBlocks(context: Application.BaseContext) {
-  const { db, arweave, logger } = context;
+async function checkNewBlocks(context: Application.BaseContext) {
+  const { blocksDb, arweave, logger } = context;
   logger.info("Searching for new block");
 
   // 1. find last processed block height and current Arweave network height
   const results: any[] = await Promise.allSettled([
-    db("blocks").select("height").orderBy("height", "desc").limit(1).first(),
+    blocksDb("interactions")
+      .select("block_height")
+      .orderBy("block_height", "desc")
+      .limit(1)
+      .first(),
     arweave.network.getInfo(),
   ]);
   const rejections = results.filter((r) => {
@@ -144,8 +142,8 @@ async function doListenForBlocks(context: Application.BaseContext) {
     return;
   }
 
-  const lastProcessedBlockHeight = results[0].value;
   const currentNetworkHeight = results[1].value.height;
+  const lastProcessedBlockHeight = results[0].value["block_height"];
 
   logger.debug("Network info", {
     currentNetworkHeight,
@@ -163,70 +161,90 @@ async function doListenForBlocks(context: Application.BaseContext) {
     lastProcessedBlockHeight + 1,
     currentNetworkHeight
   );
+  logger.info(`Found ${interactions.length} interactions`);
 
-  const blockInteractions = new Map<
-    string,
-    { height: number; interactions: GQLNodeInterface[] }
-  >();
+  // 3. map interactions into inserts into "interactions" tables
+  let interactionsInserts: INTERACTIONS_TABLE[] = [];
 
-  // 3. map interactions into inserts into "blocks" and "interactions" tables
-  const blockInserts: BLOCKS_TABLE[] = [];
-  const interactionsInserts: INTERACTIONS_TABLE[] = [];
-
-  interactions.forEach((interaction) => {
+  for (let i = 0; i < interactions.length; i++) {
+    const interaction = interactions[i];
     const blockId = interaction.node.block.id;
     let contractId, input, functionName;
-
-    if (!blockInteractions.has(blockId)) {
-      blockInteractions.set(blockId, {
-        height: interaction.node.block.height,
-        interactions: [],
-      });
-    }
-    blockInteractions.get(blockId)?.interactions.push(interaction.node);
 
     const contractTag = findTag(interaction, SmartWeaveTags.CONTRACT_TX_ID);
     const inputTag = findTag(interaction, SmartWeaveTags.INPUT);
 
     // Eyes Pop - Skin Explodes - Everybody Dead
     if (contractTag === undefined || inputTag === undefined) {
-      context.logger.error(
+      logger.error(
         "Contract or input tag not found for interaction",
         interaction
       );
-      return;
+      continue;
       // TODO: probably would be wise to save such stuff in a separate table
     } else {
       contractId = contractTag.value;
       input = inputTag.value;
-      functionName = JSON.parse(input).function;
     }
 
-    interactionsInserts.push({
-      id: interaction.node.id,
-      transaction: JSON.stringify(interaction.node),
-      block_height: interaction.node.block.height,
-      block_id: blockId,
-      contract_id: contractId,
-      function: functionName,
-      input: input,
-      confirmed: false,
-    });
-  });
-  blockInteractions.forEach((value, key) => {
-    blockInserts.push({
-      id: key,
-      transactions: JSON.stringify(value.interactions),
-      height: value.height,
-    });
-  });
+    try {
+      functionName = JSON.parse(input).function;
+    } catch (e) {
+      logger.error("Could not parse function name", {
+        id: interaction.node.id,
+        input: input,
+      });
+      functionName = "Error during parsing function name";
+    }
 
-  // 4. finally inserting into DB
-  logger.info(`Saving ${interactionsInserts.length} interactions`);
-  await Promise.allSettled([
-    db("blocks").insert(blockInserts),
-    db("interactions").insert(interactionsInserts),
-  ]);
+    if (
+      interactionsInserts.find((i) => i.id === interaction.node.id) !==
+      undefined
+    ) {
+      logger.warn("Interaction already added", interaction.node.id);
+    } else {
+      interactionsInserts.push({
+        id: interaction.node.id,
+        transaction: JSON.stringify(interaction.node),
+        block_height: interaction.node.block.height,
+        block_id: blockId,
+        contract_id: contractId,
+        function: functionName,
+        input: input,
+        confirmation_status: "not_processed",
+      });
+    }
+
+    // note: max batch insert for sqlite
+    if (interactionsInserts.length === 500) {
+      try {
+        logger.info("Batch insert");
+        const interactionsInsertResult = await blocksDb("interactions").insert(
+          interactionsInserts
+        );
+        logger.info("interactionsInsertResult", interactionsInsertResult);
+        interactionsInserts = [];
+      } catch (e) {
+        logger.error(e);
+        process.exit(0);
+      }
+    }
+  }
+
+  // 4. inserting the reset interactions into DB
+  logger.info(`Saving last`, interactionsInserts.length);
+
+  if (interactionsInserts.length > 0) {
+    try {
+      const interactionsInsertResult = await blocksDb("interactions").insert(
+        interactionsInserts
+      );
+      logger.info("interactionsInsertResult", interactionsInsertResult);
+    } catch (e) {
+      logger.error(e);
+      process.exit(0);
+    }
+  }
 }
 
 // TODO: verify internalWrites

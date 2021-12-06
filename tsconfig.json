@@ -2,7 +2,8 @@
   "compilerOptions": {
     "strict": true,
     "outDir": "dist",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "downlevelIteration": true
   },
   "files": [
     "src/node/init.ts", "src/TsLogFactory.d.ts", "src/network/init.ts"]
