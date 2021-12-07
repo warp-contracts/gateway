@@ -42,17 +42,22 @@ export type INTERACTIONS_TABLE = {
 };
 
 // in theory avg. block time on Arweave is 120s (?)
-const INTERVAL_MS = 90 * 1000;
+const BLOCKS_INTERVAL_MS = 90 * 1000;
 
 const GQL_RETRY_MS = 30 * 1000;
 
 const MIN_CONFIRMATIONS = 10;
 
+const PARALLEL_REQUESTS = 20;
+
 const TX_CONFIRMATION_SUCCESSFUL_ROUNDS = 3;
 
 const TX_CONFIRMATION_MAX_ROUNDS = 5;
 
-const TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS = 5000;
+const TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS = 3000;
+
+const CONFIRMATIONS_INTERVAL_MS =
+  TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS * TX_CONFIRMATION_MAX_ROUNDS + 2000;
 
 const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -95,35 +100,69 @@ export async function initBlocksDb(db: Knex) {
       table
         .string("confirmation_status")
         .notNullable()
-        // not_processed | orphaned | confirmed
+        // not_processed | orphaned | confirmed | error
         .defaultTo("not_processed");
       table.string("confirming_peer");
       table.bigInteger("confirmed_at_height");
       table.bigInteger("confirmations");
     });
   }
+
+  if (!(await db.schema.hasTable("peers"))) {
+    await db.schema.createTable("peers", (table) => {
+      table.string("peer", 64).primary();
+      table.bigInteger("blocks").notNullable();
+      table.bigInteger("height").notNullable();
+      table.bigInteger("response_time").notNullable();
+    });
+  }
 }
 
 export async function blockListener(context: Application.BaseContext) {
-  await doListenForBlocks(context);
-
-  setTimeout(async function () {
-    (function loop() {
-      // not using setInterval on purpose -
-      // https://developer.mozilla.org/en-US/docs/Web/API/setInterval#ensure_that_execution_duration_is_shorter_than_interval_frequency
+  // TODO: this should be called every now and then...
+  // await rankPeers(context);
+  /*await checkNewBlocks(context);
+  (function blocksLoop() {
+    // not using setInterval on purpose -
+    // https://developer.mozilla.org/en-US/docs/Web/API/setInterval#ensure_that_execution_duration_is_shorter_than_interval_frequency
+    setTimeout(async function () {
+      await checkNewBlocks(context);
+      blocksLoop();
+    }, BLOCKS_INTERVAL_MS);
+  })();*/
+  await verifyConfirmations(context);
+  (function confirmationsLoop() {
       setTimeout(async function () {
-        await doListenForBlocks(context);
-        loop();
-      }, INTERVAL_MS);
+        await verifyConfirmations(context);
+        confirmationsLoop();
+      }, CONFIRMATIONS_INTERVAL_MS);
     })();
-  }, INTERVAL_MS);
 }
 
-async function doListenForBlocks(context: Application.BaseContext) {
-  await Promise.allSettled([
-    //checkNewBlocks(context),
-    verifyConfirmations(context),
-  ]);
+async function rankPeers(context: Application.BaseContext) {
+  const { logger, arweave, blocksDb } = context;
+  const peers = await arweave.network.getPeers();
+
+  for (const peer of peers) {
+    logger.debug(`checking ${peer}`);
+    try {
+      const benchmark = Benchmark.measure();
+      const result = await axios.get(`http://${peer}/info`);
+      const elapsed = benchmark.elapsed(true);
+
+      await blocksDb("peers")
+        .insert({
+          peer: peer,
+          blocks: result.data.blocks,
+          height: result.data.height,
+          response_time: elapsed,
+        })
+        .onConflict(["peer"])
+        .merge();
+    } catch (e) {
+      logger.error(`Error from ${peer}`, e);
+    }
+  }
 }
 
 async function verifyConfirmations(context: Application.BaseContext) {
@@ -140,7 +179,14 @@ async function verifyConfirmations(context: Application.BaseContext) {
 
   // note: as the "status" endpoint for arweave.net currently returns 504 - Bad Gateway for orphaned transactions,
   // we need to ask peers directly...
-  const peers = await arweave.network.getPeers();
+  // https://discord.com/channels/357957786904166400/812013044892172319/917819482787958806
+  // only 7 nodes are currently fully synced, duh...
+  const peers = await blocksDb.raw(`
+    SELECT peer FROM peers
+    WHERE height > 0
+    ORDER BY height - blocks ASC, response_time ASC
+    LIMIT 10;
+  `);
 
   const interactionsToCheck: { block_height: number; id: string }[] =
     await blocksDb.raw(
@@ -149,7 +195,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
     WHERE block_height < (SELECT max(block_height) FROM interactions) - ?
     AND confirmation_status = 'not_processed'
     ORDER BY block_height DESC LIMIT ?;`,
-      [MIN_CONFIRMATIONS, 20]
+      [MIN_CONFIRMATIONS, PARALLEL_REQUESTS]
     );
 
   // logger.debug(interactions);
@@ -177,8 +223,10 @@ async function verifyConfirmations(context: Application.BaseContext) {
     successfulRounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS &&
     rounds < TX_CONFIRMATION_MAX_ROUNDS
   ) {
-
-    if (successfulRounds + TX_CONFIRMATION_MAX_ROUNDS - rounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
+    if (
+      successfulRounds + TX_CONFIRMATION_MAX_ROUNDS - rounds <
+      TX_CONFIRMATION_SUCCESSFUL_ROUNDS
+    ) {
       logger.warn("There's no point in trying, exiting..");
       break;
     }
@@ -202,7 +250,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
         Promise.allSettled(
           interactionsToCheck.map((tx) => {
             const randomPeer = peers[Math.floor(Math.random() * peers.length)];
-            const randomPeerUrl = `http://${randomPeer}/`;
+            const randomPeerUrl = `http://${randomPeer.peer}/`;
             return axios.get(`${randomPeerUrl}/tx/${tx.id}/status`);
           })
         ),
@@ -225,26 +273,26 @@ async function verifyConfirmations(context: Application.BaseContext) {
             });
           } else {
             logger.error(
-              `Query for ${interactionsToCheck[i].id} to ${statusResponse.reason?.request?.host} rejected ${statusResponse.reason}.`
+              `Query for ${interactionsToCheck[i].id} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`
             );
             roundResult.push({
               txId: interactionsToCheck[i].id,
               peer: statusResponse.reason?.request?.host,
-              result: "unknown",
+              result: "error",
               confirmations: 0,
             });
           }
         } else {
-          logger.debug(
+          /*logger.debug(
             `Result from ${statusResponse.value.request.host}`,
             statusResponse.value.data
-          );
+          );*/
 
           roundResult.push({
             txId: interactionsToCheck[i].id,
             peer: statusResponse.value.request.host,
             result: "confirmed",
-            confirmations: statusResponse.value.data['number_of_confirmations'],
+            confirmations: statusResponse.value.data["number_of_confirmations"],
           });
         }
       }
@@ -265,7 +313,16 @@ async function verifyConfirmations(context: Application.BaseContext) {
   } else {
     logger.info("Verifying rounds");
 
-    const dbUpdates = [];
+    // sanity check...
+    for (let i = 0; i < statusesRounds.length; i++) {
+      const r = statusesRounds[i];
+      if (r.length !== PARALLEL_REQUESTS) {
+        logger.error(
+          `Each round should have ${PARALLEL_REQUESTS} results. Round ${i} has ${r.length}.`
+        );
+        return;
+      }
+    }
 
     // programming is just loops and if-s...
     for (let i = 0; i < interactionsToCheck.length; i++) {
@@ -295,44 +352,25 @@ async function verifyConfirmations(context: Application.BaseContext) {
         // sanity check...
         if (status === null) {
           logger.error("WTF? Status should not be null!");
+          continue;
         }
-        dbUpdates.push({
-          id: interactionsToCheck[i],
-          confirmation_status: status,
-          confirming_peer: peers.join(","),
-          confirmations: confirmations.join(","),
-        });
+        logger.debug("Updating status in DB");
+        try {
+          await blocksDb("interactions")
+            .where("id", interactionsToCheck[i].id)
+            .update({
+              confirmation_status: status,
+              confirming_peer: peers.join(","),
+              confirmations: confirmations.join(","),
+            });
+        } catch (e) {
+          logger.error(e);
+        }
       }
     }
-    /** Duh...
-     *
-     2021-12-07 15:36:05.321 WARN [node@Node_3000] Different response from peers for
-     {
-      interaction: {
-        block_height: 826057,
-        id: 'Pf3uMskSs2jszE2i2WQaVin1zQQerZCw0ZZbH9M_a4w'
-      },
-      current_peer: {
-        txId: 'Pf3uMskSs2jszE2i2WQaVin1zQQerZCw0ZZbH9M_a4w',
-        peer: '223.113.147.32',
-        result: 'orphaned',
-        confirmations: 0
-      },
-      prev_peer: {
-        txId: 'Pf3uMskSs2jszE2i2WQaVin1zQQerZCw0ZZbH9M_a4w',
-        peer: '112.13.101.240',
-        result: 'confirmed',
-        confirmations: undefined
-      }
-    }
-     */
-
-    logger.debug("DbUpdates", dbUpdates);
   }
 
   logger.debug("Done processing");
-
-  return Promise.resolve(undefined);
 }
 
 async function checkNewBlocks(context: Application.BaseContext) {
