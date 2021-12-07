@@ -9,6 +9,7 @@ import {
   SmartWeaveTags,
 } from "redstone-smartweave";
 import { sleep } from "../utils";
+import axios from "axios";
 
 const MAX_REQUEST = 100;
 
@@ -44,6 +45,14 @@ export type INTERACTIONS_TABLE = {
 const INTERVAL_MS = 90 * 1000;
 
 const GQL_RETRY_MS = 30 * 1000;
+
+const MIN_CONFIRMATIONS = 10;
+
+const TX_CONFIRMATION_SUCCESSFUL_ROUNDS = 3;
+
+const TX_CONFIRMATION_MAX_ROUNDS = 5;
+
+const TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS = 5000;
 
 const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -86,7 +95,11 @@ export async function initBlocksDb(db: Knex) {
       table
         .string("confirmation_status")
         .notNullable()
+        // not_processed | orphaned | confirmed
         .defaultTo("not_processed");
+      table.string("confirming_peer");
+      table.bigInteger("confirmed_at_height");
+      table.bigInteger("confirmations");
     });
   }
 }
@@ -108,13 +121,217 @@ export async function blockListener(context: Application.BaseContext) {
 
 async function doListenForBlocks(context: Application.BaseContext) {
   await Promise.allSettled([
-    checkNewBlocks(context),
+    //checkNewBlocks(context),
     verifyConfirmations(context),
   ]);
 }
 
-// TODO: implement ;-)
-function verifyConfirmations(context: Application.BaseContext) {
+async function verifyConfirmations(context: Application.BaseContext) {
+  const { arweave, logger, blocksDb } = context;
+
+  //FIXME: {@link checkNewBlocks) makes the same call...
+  const currentNetworkHeight = (await arweave.network.getInfo()).height;
+
+  const safeNetworkHeight = currentNetworkHeight - MIN_CONFIRMATIONS;
+  logger.info("Verify confirmations params:", {
+    currentNetworkHeight,
+    safeNetworkHeight,
+  });
+
+  // note: as the "status" endpoint for arweave.net currently returns 504 - Bad Gateway for orphaned transactions,
+  // we need to ask peers directly...
+  const peers = await arweave.network.getPeers();
+
+  const interactionsToCheck: { block_height: number; id: string }[] =
+    await blocksDb.raw(
+      `
+    SELECT block_height, id FROM interactions
+    WHERE block_height < (SELECT max(block_height) FROM interactions) - ?
+    AND confirmation_status = 'not_processed'
+    ORDER BY block_height DESC LIMIT ?;`,
+      [MIN_CONFIRMATIONS, 20]
+    );
+
+  // logger.debug(interactions);
+
+  type RoundResult = {
+    txId: string;
+    peer: string;
+    result: string;
+    confirmations: number;
+  }[];
+
+  let statusesRounds: RoundResult[] = Array<RoundResult>(
+    TX_CONFIRMATION_SUCCESSFUL_ROUNDS
+  );
+  let successfulRounds = 0;
+  let rounds = 0;
+
+  // at some point we could probably generify snowball and use it here to ask multiple peers.
+  // 'till then - for each set of the selected 'interactionsToCheck' transactions we're making
+  // TX_CONFIRMATION_SUCCESSFUL_ROUNDS query rounds (to randomly selected at each round peers).
+  // Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS
+  // AND response for the given transaction is the same for all the rounds - we're updating "confirmation"
+  // info for this transaction in the database.
+  while (
+    successfulRounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS &&
+    rounds < TX_CONFIRMATION_MAX_ROUNDS
+  ) {
+
+    if (successfulRounds + TX_CONFIRMATION_MAX_ROUNDS - rounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
+      logger.warn("There's no point in trying, exiting..");
+      break;
+    }
+
+    try {
+      const roundResult: {
+        txId: string;
+        peer: string;
+        result: string;
+        confirmations: number;
+      }[] = [];
+
+      const statuses = await Promise.race([
+        new Promise<any[]>(function (resolve, reject) {
+          setTimeout(
+            () => reject("Status query timeout, better luck next time..."),
+            TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS
+          );
+        }),
+
+        Promise.allSettled(
+          interactionsToCheck.map((tx) => {
+            const randomPeer = peers[Math.floor(Math.random() * peers.length)];
+            const randomPeerUrl = `http://${randomPeer}/`;
+            return axios.get(`${randomPeerUrl}/tx/${tx.id}/status`);
+          })
+        ),
+      ]);
+      for (let i = 0; i < statuses.length; i++) {
+        const statusResponse = statuses[i];
+        if (statusResponse.status === "rejected") {
+          if (
+            statusResponse.reason.response?.status === 404 &&
+            statusResponse.reason.response?.data === "Not Found."
+          ) {
+            logger.warn(
+              `Interaction ${interactionsToCheck[i].id} on ${statusResponse.reason.request.host} not found.`
+            );
+            roundResult.push({
+              txId: interactionsToCheck[i].id,
+              peer: statusResponse.reason.request.host,
+              result: "orphaned",
+              confirmations: 0,
+            });
+          } else {
+            logger.error(
+              `Query for ${interactionsToCheck[i].id} to ${statusResponse.reason?.request?.host} rejected ${statusResponse.reason}.`
+            );
+            roundResult.push({
+              txId: interactionsToCheck[i].id,
+              peer: statusResponse.reason?.request?.host,
+              result: "unknown",
+              confirmations: 0,
+            });
+          }
+        } else {
+          logger.debug(
+            `Result from ${statusResponse.value.request.host}`,
+            statusResponse.value.data
+          );
+
+          roundResult.push({
+            txId: interactionsToCheck[i].id,
+            peer: statusResponse.value.request.host,
+            result: "confirmed",
+            confirmations: statusResponse.value.data['number_of_confirmations'],
+          });
+        }
+      }
+      statusesRounds[successfulRounds] = roundResult;
+      successfulRounds++;
+    } catch (e) {
+      logger.error(e);
+    } finally {
+      rounds++;
+    }
+  }
+
+  if (successfulRounds != TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
+    logger.warn(
+      `Transactions verification was not successful, successful rounds ${successfulRounds},
+      required successful rounds ${TX_CONFIRMATION_SUCCESSFUL_ROUNDS}`
+    );
+  } else {
+    logger.info("Verifying rounds");
+
+    const dbUpdates = [];
+
+    // programming is just loops and if-s...
+    for (let i = 0; i < interactionsToCheck.length; i++) {
+      let status = null;
+      let sameStatus = 0;
+      const peers = [];
+      const confirmations = [];
+
+      for (let j = 0; j < TX_CONFIRMATION_SUCCESSFUL_ROUNDS; j++) {
+        const newStatus = statusesRounds[j][i].result;
+        if (status === null || newStatus === status) {
+          status = newStatus;
+          sameStatus++;
+          peers.push(statusesRounds[j][i].peer);
+          confirmations.push(statusesRounds[j][i].confirmations);
+        } else {
+          logger.warn("Different response from peers for", {
+            interaction: interactionsToCheck[i],
+            current_peer: statusesRounds[j][i],
+            prev_peer: statusesRounds[j - 1][i],
+          });
+          break;
+        }
+      }
+
+      if (sameStatus === TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
+        // sanity check...
+        if (status === null) {
+          logger.error("WTF? Status should not be null!");
+        }
+        dbUpdates.push({
+          id: interactionsToCheck[i],
+          confirmation_status: status,
+          confirming_peer: peers.join(","),
+          confirmations: confirmations.join(","),
+        });
+      }
+    }
+    /** Duh...
+     *
+     2021-12-07 15:36:05.321 WARN [node@Node_3000] Different response from peers for
+     {
+      interaction: {
+        block_height: 826057,
+        id: 'Pf3uMskSs2jszE2i2WQaVin1zQQerZCw0ZZbH9M_a4w'
+      },
+      current_peer: {
+        txId: 'Pf3uMskSs2jszE2i2WQaVin1zQQerZCw0ZZbH9M_a4w',
+        peer: '223.113.147.32',
+        result: 'orphaned',
+        confirmations: 0
+      },
+      prev_peer: {
+        txId: 'Pf3uMskSs2jszE2i2WQaVin1zQQerZCw0ZZbH9M_a4w',
+        peer: '112.13.101.240',
+        result: 'confirmed',
+        confirmations: undefined
+      }
+    }
+     */
+
+    logger.debug("DbUpdates", dbUpdates);
+  }
+
+  logger.debug("Done processing");
+
   return Promise.resolve(undefined);
 }
 
