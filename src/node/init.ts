@@ -27,6 +27,7 @@ declare module "koa" {
     whoami: NodeData;
     network: string;
     arweave: Arweave;
+    port: number;
   }
 }
 
@@ -35,24 +36,25 @@ export type NodeData = {
   address: string;
 };
 
-export const register = async (
+export async function register(
   nodeId: string,
   address: string,
   networkAddress: string
-) => {
+) {
   // TODO: retries
   await axios.post(`${networkAddress}/register`, {
     nodeId,
     address,
   });
-};
+}
 
-export const unregister = async (nodeId: string, networkAddress: string) => {
+export async function unregister(nodeId: string, networkAddress: string) {
   // TODO: retries
+  console.log('unregister', nodeId, networkAddress);
   await axios.post(`${networkAddress}/unregister`, {
     nodeId,
   });
-};
+}
 
 (async () => {
   const port = parseInt((process.env.PORT || 4242).toString());
@@ -74,7 +76,7 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
 
   const app = new Koa();
   const db = connect(port, "state", path.join("db", "peers"));
-  const blocksDb = connect(port, "blocks", path.join("db", "peers"));
+  const blocksDb = connect(3000/*port*/, "blocks", path.join("db", "peers"));
   const arweave = initArweave();
 
   app.context.db = db;
@@ -84,6 +86,7 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
   app.context.logger = logger;
   app.context.whoami = { id: nodeId, address };
   app.context.network = networkAddress;
+  app.context.port = port;
 
   app.use(bodyParser());
   app.use(nodeRouter.routes());
@@ -91,12 +94,6 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
   app.listen(port);
 
   await register(nodeId, address, networkAddress);
-
-  await initBlocksDb(blocksDb);
-  await blockListener(app.context);
-
-  logger.info("Registered");
-
   process.on("exit", async () => {
     await unregister(nodeId, networkAddress);
     process.exit();
@@ -105,6 +102,11 @@ export const unregister = async (nodeId: string, networkAddress: string) => {
     await unregister(nodeId, networkAddress);
     process.exit();
   });
+
+  await initBlocksDb(blocksDb);
+
+  await blockListener(app.context);
+  logger.info("Registered");
 
   logger.info(`Listening on port ${port}`);
 })();
