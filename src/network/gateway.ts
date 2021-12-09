@@ -100,7 +100,7 @@ const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilte
     }
   }`;
 
-export async function initBlocksDb(db: Knex) {
+export async function initGatewayDb(db: Knex) {
   if (!(await db.schema.hasTable("interactions"))) {
     await db.schema.createTable("interactions", (table) => {
       table.string("id", 64).primary();
@@ -132,7 +132,28 @@ export async function initBlocksDb(db: Knex) {
   }
 }
 
-export async function blockListener(context: Application.BaseContext) {
+/**
+ * Block listener consists of three separate listeners, each runs with its own interval:
+ *
+ * 1. peers listener - checks the status (ie. "/info" endpoint) of all the peers returned by the arweave.net/peers.
+ * If the given peer does not respond within MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS - it is blacklisted 'till next round.
+ * "Blocks", "height" from the response to "/info" and response times are being stored in the db - so that it would
+ * be possible to rank peers be their "completeness" (ie. how many blocks do they store) and response times.
+ *
+ * 2. blocks listener - listens for new blocks and loads the SmartWeave interaction transactions.
+ *
+ * 3. interactions verifier - tries its best to confirm that transactions are not orphaned.
+ * It takes the first PARALLEL_REQUESTS non confirmed transactions with block height lower then
+ * current - MIN_CONFIRMATIONS.
+ * For each set of the selected 'interactionsToCheck' transactions it makes
+ * TX_CONFIRMATION_SUCCESSFUL_ROUNDS query rounds (to randomly selected at each round peers).
+ * Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS
+ * AND response for the given transaction is the same for all the successful rounds
+ * - the "confirmation" info for given transaction in updated in the the database.
+ *
+ * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
+ */
+export async function gateway(context: Application.BaseContext) {
   (function peersCheckLoop() {
     setTimeout(async function () {
       // this operation takes quite a lot of time, so we're not blocking the rest of the node operation
@@ -167,7 +188,7 @@ export async function blockListener(context: Application.BaseContext) {
 }
 
 async function rankPeers(context: Application.BaseContext) {
-  const {logger, arweave, blocksDb} = context;
+  const {gatewayLogger: logger, arweave, gatewayDb} = context;
 
   let peers = [];
   try {
@@ -178,7 +199,7 @@ async function rankPeers(context: Application.BaseContext) {
   }
 
   for (const peer of peers) {
-    logger.debug(`Checking peer ${peer}`);
+    logger.debug(`Checking Arweave peer ${peer}`);
     try {
       const benchmark = Benchmark.measure();
       const result = await axios.get(`http://${peer}/info`, {
@@ -186,7 +207,7 @@ async function rankPeers(context: Application.BaseContext) {
       });
       const elapsed = benchmark.elapsed(true);
 
-      await blocksDb("peers")
+      await gatewayDb("peers")
         .insert({
           peer: peer,
           blocks: result.data.blocks,
@@ -198,7 +219,7 @@ async function rankPeers(context: Application.BaseContext) {
         .merge();
     } catch (e: any) {
       logger.error(`Error from ${peer}`, e.message);
-      await blocksDb("peers")
+      await gatewayDb("peers")
         .insert({
           peer: peer,
           blocks: 0,
@@ -213,7 +234,7 @@ async function rankPeers(context: Application.BaseContext) {
 }
 
 async function verifyConfirmations(context: Application.BaseContext) {
-  const {arweave, logger, blocksDb} = context;
+  const {arweave, gatewayLogger: logger, gatewayDb} = context;
 
   let currentNetworkHeight;
   try {
@@ -224,7 +245,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
   }
 
   const safeNetworkHeight = currentNetworkHeight - MIN_CONFIRMATIONS;
-  logger.info("Verify confirmations params:", {
+  logger.debug("Verify confirmations params:", {
     currentNetworkHeight,
     safeNetworkHeight,
   });
@@ -233,7 +254,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
   // we need to ask peers directly...
   // https://discord.com/channels/357957786904166400/812013044892172319/917819482787958806
   // only 7 nodes are currently fully synced, duh...
-  const peers: { peer: string }[] = await blocksDb.raw(`
+  const peers: { peer: string }[] = await gatewayDb.raw(`
       SELECT peer
       FROM peers
       WHERE height > 0
@@ -242,11 +263,13 @@ async function verifyConfirmations(context: Application.BaseContext) {
           LIMIT ${PARALLEL_REQUESTS};
   `);
 
-  /*const diff = (context.port - 3000) * 5000;
-  logger.debug("Diff", diff);*/
 
+  // note:
+  // 1. excluding Kyve contracts, as they moved to Moonbeam (and their contracts have the most interactions)
+  // 2. excluding Koi contracts (well, those with the most interactions, as there are dozens of Koi contracts)
+  // - as they're using their own infrastructure and probably won't be interested in using this solution.
   const interactionsToCheck: { block_height: number; id: string }[] =
-    await blocksDb.raw(
+    await gatewayDb.raw(
       `
           SELECT block_height, id
           FROM interactions
@@ -274,7 +297,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
     return;
   }
 
-  logger.debug(`Checking ${interactionsToCheck.length}`);
+  logger.debug(`Checking ${interactionsToCheck.length} interactions.`);
 
   let statusesRounds: RoundResult[] = Array<RoundResult>(
     TX_CONFIRMATION_SUCCESSFUL_ROUNDS
@@ -282,12 +305,14 @@ async function verifyConfirmations(context: Application.BaseContext) {
   let successfulRounds = 0;
   let rounds = 0;
 
+  // we need to make sure that each interaction in each round will be checked by a different peer.
+  // - that's why we keep the peers registry per interaction
+  const interactionsPeers = new Map<string, { peer: string }[]>();
+  interactionsToCheck.forEach(i => {
+    interactionsPeers.set(i.id, [...peers]);
+  });
+
   // at some point we could probably generify snowball and use it here to ask multiple peers.
-  // 'till then - for each set of the selected 'interactionsToCheck' transactions we're making
-  // TX_CONFIRMATION_SUCCESSFUL_ROUNDS query rounds (to randomly selected at each round peers).
-  // Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS
-  // AND response for the given transaction is the same for all the successful rounds
-  // - we're updating "confirmation" info for this transaction in the database.
   while (successfulRounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS && rounds < TX_CONFIRMATION_MAX_ROUNDS) {
 
     // too many rounds have already failed and there's no chance to get the minimal successful rounds...
@@ -295,13 +320,6 @@ async function verifyConfirmations(context: Application.BaseContext) {
       logger.warn("There's no point in trying, exiting..");
       return;
     }
-
-    // we need to make sure that each interaction in each round will be checked by a different peer.
-    // - that's why we keep the peers registry per interaction
-    const interactionsPeers = new Map<string, { peer: string }[]>();
-    interactionsToCheck.forEach(i => {
-      interactionsPeers.set(i.id, [...peers]);
-    });
 
     try {
       const roundResult: {
@@ -324,6 +342,11 @@ async function verifyConfirmations(context: Application.BaseContext) {
         Promise.allSettled(
           interactionsToCheck.map((tx) => {
             const interactionPeers = interactionsPeers.get(tx.id)!;
+            logger.trace("Interaction peers before", {
+              interaction: tx.id,
+              length: interactionPeers.length,
+              peers: interactionPeers,
+            })
             const randomPeer = interactionPeers[Math.floor(Math.random() * interactionPeers.length)];
 
             // removing the selected peer for this interaction
@@ -331,6 +354,12 @@ async function verifyConfirmations(context: Application.BaseContext) {
             interactionPeers.splice(peers.indexOf(randomPeer), 1);
             const randomPeerUrl = `http://${randomPeer.peer}`;
             logger.debug(`[${tx.id}]: ${randomPeerUrl}`);
+            logger.trace("Interaction peers after", {
+              interaction: tx.id,
+              randomPeer,
+              length: interactionsPeers.get(tx.id)!.length,
+              peers: interactionsPeers.get(tx.id)!
+            })
 
             return axios.get(`${randomPeerUrl}/tx/${tx.id}/status`);
           })
@@ -427,7 +456,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
           continue;
         }
         try {
-          await blocksDb("interactions")
+          await gatewayDb("interactions")
             .where("id", interactionsToCheck[i].id)
             .update({
               confirmation_status: status,
@@ -445,14 +474,14 @@ async function verifyConfirmations(context: Application.BaseContext) {
 }
 
 async function checkNewBlocks(context: Application.BaseContext) {
-  const {blocksDb, arweave, logger} = context;
+  const {gatewayDb, arweave, gatewayLogger: logger} = context;
   logger.info("Searching for new blocks");
 
   // 1. find last processed block height and current Arweave network height
   let results: any[];
   try {
     results = await Promise.allSettled([
-      blocksDb("interactions")
+      gatewayDb("interactions")
         .select("block_height")
         .orderBy("block_height", "desc")
         .limit(1)
@@ -555,7 +584,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
     if (interactionsInserts.length === MAX_BATCH_INSERT_SQLITE) {
       try {
         logger.info(`Batch insert ${MAX_BATCH_INSERT_SQLITE} interactions.`);
-        const interactionsInsertResult = await blocksDb("interactions").insert(interactionsInserts);
+        const interactionsInsertResult = await gatewayDb("interactions").insert(interactionsInserts);
         logger.debug("interactionsInsertResult", interactionsInsertResult);
         interactionsInserts = [];
       } catch (e) {
@@ -572,7 +601,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
 
   if (interactionsInserts.length > 0) {
     try {
-      const interactionsInsertResult = await blocksDb("interactions").insert(interactionsInserts);
+      const interactionsInsertResult = await gatewayDb("interactions").insert(interactionsInserts);
       logger.debug("interactionsInsertResult", interactionsInsertResult);
     } catch (e) {
       logger.error(e);
@@ -636,7 +665,7 @@ async function load(
     context: Application.BaseContext,
     variables: ReqVariables
   ): Promise<GQLTransactionsResultInterface> {
-    const {arweave, logger} = context;
+    const {arweave, gatewayLogger: logger} = context;
 
     const benchmark = Benchmark.measure();
     let response = await arweave.api.post("graphql", {

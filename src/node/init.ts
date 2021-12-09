@@ -14,14 +14,14 @@ import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFact
 import axios from "axios";
 import { initArweave } from "./arweave";
 import Arweave from "arweave";
-import { blockListener, initBlocksDb } from "./blockListener";
+import { gateway, initGatewayDb } from "../network/gateway";
 
 require("dotenv").config();
 
 declare module "koa" {
   interface BaseContext {
     db: Knex;
-    blocksDb: Knex;
+    gatewayDb: Knex;
     sdk: SmartWeave;
     logger: RedStoneLogger;
     whoami: NodeData;
@@ -76,11 +76,9 @@ export async function unregister(nodeId: string, networkAddress: string) {
 
   const app = new Koa();
   const db = connect(port, "state", path.join("db", "peers"));
-  const blocksDb = connect(3000/*port*/, "blocks", path.join("db", "peers"));
   const arweave = initArweave();
 
   app.context.db = db;
-  app.context.blocksDb = blocksDb;
   app.context.arweave = arweave;
   app.context.sdk = await SmartWeaveNodeFactory.knexCached(arweave, db);
   app.context.logger = logger;
@@ -102,11 +100,6 @@ export async function unregister(nodeId: string, networkAddress: string) {
     await unregister(nodeId, networkAddress);
     process.exit();
   });
-
-  await initBlocksDb(blocksDb);
-
-  await blockListener(app.context);
-  logger.info("Registered");
 
   logger.info(`Listening on port ${port}`);
 })();

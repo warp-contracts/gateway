@@ -6,6 +6,9 @@ import { LoggerFactory, RedStoneLogger } from "redstone-smartweave";
 import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
 import { connect } from "../db/connect";
 import networkRouter from "./networkRouter";
+import {initArweave} from "../node/arweave";
+import Arweave from "arweave";
+import {gateway, initGatewayDb} from "./gateway";
 
 require("dotenv").config();
 
@@ -23,8 +26,11 @@ const init = async (db: Knex) => {
 
 declare module "koa" {
   interface BaseContext {
-    db: Knex;
+    networkDb: Knex;
+    gatewayDb: Knex;
     logger: RedStoneLogger;
+    gatewayLogger: RedStoneLogger;
+    arweave: Arweave;
   }
 }
 
@@ -35,21 +41,36 @@ declare module "koa" {
   LoggerFactory.use(new TsLogFactory());
   LoggerFactory.INST.logLevel("info");
   LoggerFactory.INST.logLevel("debug", "network");
+  LoggerFactory.INST.logLevel("debug", "gateway");
 
-  const logger = LoggerFactory.INST.create("network");
-  logger.info(`Starting`);
+  const networkLogger = LoggerFactory.INST.create("network");
+  const gatewayLogger = LoggerFactory.INST.create("gateway");
+  networkLogger.info(`Starting`);
 
   const app = new Koa();
 
   const db = connect(port, "network", path.join("db", "network"));
   await init(db);
 
+  const gatewayDb = connect(port, "gateway", path.join("db", "network"));
+  await initGatewayDb(gatewayDb);
+
+  const arweave = initArweave();
   app.context.db = db;
-  app.context.logger = logger;
+  app.context.gatewayDb = gatewayDb;
+  app.context.logger = networkLogger;
+  app.context.gatewayLogger = gatewayLogger;
+  app.context.arweave = arweave;
 
   app.use(bodyParser());
   app.use(networkRouter.routes());
 
   app.listen(port);
-  logger.info(`Listening on port ${port}`);
+  networkLogger.info(`Listening on port ${port}`);
+
+  try {
+    await gateway(app.context);
+  } catch (e: any) {
+    networkLogger.error('Error from gateway', e.message);
+  }
 })();
