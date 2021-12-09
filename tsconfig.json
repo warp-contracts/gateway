@@ -5,6 +5,9 @@
     "esModuleInterop": true,
     "downlevelIteration": true
   },
+  "ts-node": {
+    "files": true
+  },
   "files": [
     "src/node/init.ts", "src/TsLogFactory.d.ts", "src/network/init.ts"]
 }

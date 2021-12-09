@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "dev:start": "ts-node-dev src/node/init.ts",
-    "dev:watch": "ts-node-dev --watch -- src/node/init.ts",
+    "dev:network:start": "ts-node-dev src/network/init.ts",
+    "dev:network:watch": "ts-node-dev --watch -- src/network/init.ts",
     "build": "tsc",
     "start:node": "node dist/node/init.js",
     "start:network": "node dist/network/init.js",
@@ -10,6 +10,7 @@
   "license": "MIT",
   "author": "Redstone Team <dev@redstone.finance>",
   "dependencies": {
+    "@koa/cors": "^3.1.0",
     "@koa/router": "10.1.1",
     "arweave": "1.10.18",
     "axios": "0.24.0",

@@ -117,6 +117,7 @@ export async function initGatewayDb(db: Knex) {
       table.string("confirming_peer");
       table.bigInteger("confirmed_at_height");
       table.bigInteger("confirmations");
+      table.index(['contract_id','block_height'], 'contract_id_block_height_index');
     });
   }
 

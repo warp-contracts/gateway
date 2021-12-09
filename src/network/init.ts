@@ -13,7 +13,8 @@ import gatewayRouter from "./gateway/gatewayRouter";
 
 require("dotenv").config();
 
-const compress = require('koa-compress')
+const compress = require('koa-compress');
+const cors = require('@koa/cors');
 
 async function init(db: Knex) {
   if (!(await db.schema.hasTable("peers"))) {
@@ -65,6 +66,7 @@ declare module "koa" {
   app.context.gatewayLogger = gatewayLogger;
   app.context.arweave = arweave;
 
+  app.use(cors());
   app.use(bodyParser());
   app.use(compress({
     threshold: 2048,
