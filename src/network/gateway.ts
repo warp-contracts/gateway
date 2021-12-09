@@ -63,8 +63,7 @@ const TX_CONFIRMATION_MAX_ROUNDS = 4;
 
 const TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS = 3000;
 
-const CONFIRMATIONS_INTERVAL_MS =
-  TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS * TX_CONFIRMATION_MAX_ROUNDS + 300;
+const CONFIRMATIONS_INTERVAL_MS = TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS * TX_CONFIRMATION_MAX_ROUNDS + 300;
 
 const MAX_BATCH_INSERT_SQLITE = 500;
 
@@ -133,7 +132,7 @@ export async function initGatewayDb(db: Knex) {
 }
 
 /**
- * Block listener consists of three separate listeners, each runs with its own interval:
+ * Gateway consists of three separate listeners, each runs with its own interval:
  *
  * 1. peers listener - checks the status (ie. "/info" endpoint) of all the peers returned by the arweave.net/peers.
  * If the given peer does not respond within MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS - it is blacklisted 'till next round.
@@ -299,9 +298,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
 
   logger.debug(`Checking ${interactionsToCheck.length} interactions.`);
 
-  let statusesRounds: RoundResult[] = Array<RoundResult>(
-    TX_CONFIRMATION_SUCCESSFUL_ROUNDS
-  );
+  let statusesRounds: RoundResult[] = Array<RoundResult>(TX_CONFIRMATION_SUCCESSFUL_ROUNDS);
   let successfulRounds = 0;
   let rounds = 0;
 
@@ -312,7 +309,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
     interactionsPeers.set(i.id, [...peers]);
   });
 
-  // at some point we could probably generify snowball and use it here to ask multiple peers.
+  // at some point we could probably generify the snowball and use it here to ask multiple peers.
   while (successfulRounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS && rounds < TX_CONFIRMATION_MAX_ROUNDS) {
 
     // too many rounds have already failed and there's no chance to get the minimal successful rounds...
@@ -381,6 +378,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
             });
           } else {
             // no proper response from peer (eg. 500)
+            // TODO: consider blacklisting such peer (after returning error X times?) 'till next peersCheckLoop
             logger.error(`Query for ${interactionsToCheck[i].id} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`);
             roundResult.push({
               txId: interactionsToCheck[i].id,
