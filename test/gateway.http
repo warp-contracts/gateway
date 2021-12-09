@@ -1,0 +1,9 @@
+### load contracts data
+GET http://localhost:5666/gateway/contracts
+
+
+### load all contract interactions
+GET http://localhost:5666/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY
+
+
+

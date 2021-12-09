@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 
-export const unregister = async (ctx: Router.RouterContext) => {
-  const { nodeId } = ctx.request.body as {
+export async function unregisterRoute(ctx: Router.RouterContext) {
+  const {nodeId} = ctx.request.body as {
     nodeId: string;
   };
 
@@ -18,14 +18,14 @@ export const unregister = async (ctx: Router.RouterContext) => {
 
       if (updated.length === 0) {
         ctx.status = 404;
-        ctx.body = { status: 404, message: "Not found" };
+        ctx.body = {status: 404, message: "Not found"};
       } else {
-        ctx.body = { status: 200, message: "Unregistered" };
+        ctx.body = {status: 200, message: "Unregistered"};
       }
     } catch (e: any) {
       ctx.logger.error(e);
       ctx.status = 500;
-      ctx.body = { status: 500, message: e };
+      ctx.body = {status: 500, message: e};
     }
   }
-};
+}

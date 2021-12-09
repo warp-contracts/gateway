@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 
-export const register = async (ctx: Router.RouterContext) => {
-  const { nodeId, address } = ctx.request.body as {
+export async function registerRoute(ctx: Router.RouterContext) {
+  const {nodeId, address} = ctx.request.body as {
     nodeId: string;
     address: string;
   };
@@ -24,11 +24,11 @@ export const register = async (ctx: Router.RouterContext) => {
         .onConflict(["id"])
         .merge();
 
-      ctx.body = { status: 201, message: "registered" };
+      ctx.body = {status: 201, message: "registered"};
     } catch (e: any) {
       ctx.logger.error(e);
       ctx.status = 500;
-      ctx.body = { message: e };
+      ctx.body = {message: e};
     }
   }
-};
+}

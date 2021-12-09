@@ -8,7 +8,7 @@ import {
   GQLTransactionsResultInterface,
   SmartWeaveTags,
 } from "redstone-smartweave";
-import {sleep} from "../utils";
+import {sleep} from "../../utils";
 import axios from "axios";
 
 const MAX_GQL_REQUEST = 100;
@@ -277,6 +277,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
             AND contract_id NOT IN (
                                     "LkfzZvdl_vfjRXZOPjnov18cGnnK3aDKj0qSQCgkCX8", /* kyve  */
                                     "l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c", /* kyve  */
+                                    "l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c", /* kyve  */
                                     "B1SRLyFzWJjeA0ywW41Qu1j7ZpBLHsXSSrWLrT3ebd8", /* kyve  */
                                     "cETTyJQYxJLVQ6nC3VxzsZf1x2-6TW2LFkGZa91gUWc", /* koi   */
                                     "QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8", /* koi   */
@@ -339,24 +340,12 @@ async function verifyConfirmations(context: Application.BaseContext) {
         Promise.allSettled(
           interactionsToCheck.map((tx) => {
             const interactionPeers = interactionsPeers.get(tx.id)!;
-            logger.trace("Interaction peers before", {
-              interaction: tx.id,
-              length: interactionPeers.length,
-              peers: interactionPeers,
-            })
             const randomPeer = interactionPeers[Math.floor(Math.random() * interactionPeers.length)];
 
             // removing the selected peer for this interaction
             // - so it won't be selected again in any of the next rounds.
             interactionPeers.splice(peers.indexOf(randomPeer), 1);
             const randomPeerUrl = `http://${randomPeer.peer}`;
-            logger.debug(`[${tx.id}]: ${randomPeerUrl}`);
-            logger.trace("Interaction peers after", {
-              interaction: tx.id,
-              randomPeer,
-              length: interactionsPeers.get(tx.id)!.length,
-              peers: interactionsPeers.get(tx.id)!
-            })
 
             return axios.get(`${randomPeerUrl}/tx/${tx.id}/status`);
           })
@@ -514,9 +503,9 @@ async function checkNewBlocks(context: Application.BaseContext) {
   }
 
   // 2. load interactions [last processed block + 1, currentNetworkHeight]
-  let interactions: GQLEdgeInterface[]
+  let gqlInteractions: GQLEdgeInterface[]
   try {
-    interactions = await load(
+    gqlInteractions = await load(
       context,
       lastProcessedBlockHeight + 1,
       currentNetworkHeight
@@ -526,18 +515,19 @@ async function checkNewBlocks(context: Application.BaseContext) {
     return;
   }
 
-  if (interactions.length === 0) {
+  if (gqlInteractions.length === 0) {
     logger.info("Now new interactions");
     return;
   }
 
-  logger.info(`Found ${interactions.length} new interactions`);
+  logger.info(`Found ${gqlInteractions.length} new interactions`);
 
   // 3. map interactions into inserts to "interactions" table
   let interactionsInserts: INTERACTIONS_TABLE[] = [];
+  const interactionsInsertsIds = new Set<String>();
 
-  for (let i = 0; i < interactions.length; i++) {
-    const interaction = interactions[i];
+  for (let i = 0; i < gqlInteractions.length; i++) {
+    const interaction = gqlInteractions[i];
     const blockId = interaction.node.block.id;
     let contractId, input, functionName;
 
@@ -564,9 +554,15 @@ async function checkNewBlocks(context: Application.BaseContext) {
       functionName = "[Error during parsing function name]";
     }
 
-    if (interactionsInserts.find((i) => i.id === interaction.node.id) !== undefined) {
+    // now this one is really fucked-up - if the interaction contains the same tag X-times,
+    // the default GQL endpoint will return this interaction X-times...
+    // this is causing "SQLITE_CONSTRAINT: UNIQUE constraint failed: interactions.id"
+    // - and using "ON CONFLICT" does not work here - as it works only for
+    // the rows currently stored in db - not the ones that we're trying to batch insert.
+    if (interactionsInsertsIds.has(interaction.node.id)) {
       logger.warn("Interaction already added", interaction.node.id);
     } else {
+      interactionsInsertsIds.add(interaction.node.id)
       interactionsInserts.push({
         id: interaction.node.id,
         transaction: JSON.stringify(interaction.node),
@@ -579,10 +575,29 @@ async function checkNewBlocks(context: Application.BaseContext) {
       });
     }
 
+
+    // why using onConflict.merge()?
+    // because it happened once that GQL endpoint returned the exact same transactions
+    // twice - for different block heights (827991 and then 827993) :facepalm:
+    // For the record, these transactions were:
+    // INmaBb6pk0MATLrs3mCw5bjeRCbR2e-j-v4swpWHPTg
+    // QIbp0CwxNUwA8xQSS36Au2Lj1QEgnO8n-shQ2d3AWps
+    // UJhsjQLhSr1mL4C-t3XvotAhYGIN-P7EkkxNyRRIQ-w
+    // UZ1XnYr4waM7Zm77TZduZ4Tx8uS8y9PeyX6kKEPQh10
+    // cZHBNtzkSF_MtkZCz1RD8_D9lVjOOYAuEUk2xbdm7LA
+    // lwGTY3yEBfxTgPFO4DZMouHWVaXLJu7SxP-hpDb_S2M
+    // ouv9X3-ceGPhb2ALVaLq2qzj_ZDgbSmjGj9wz5k5qRo
+    // qT-ihh8K3J7Lek4774-GmFoAhU4pemWZPXv66B09xCI
+    // qUk-UuPAOaOkoqMP_btCJLYP-c-8kHRKjg_nefQVLgQ
     if (interactionsInserts.length === MAX_BATCH_INSERT_SQLITE) {
       try {
         logger.info(`Batch insert ${MAX_BATCH_INSERT_SQLITE} interactions.`);
-        const interactionsInsertResult = await gatewayDb("interactions").insert(interactionsInserts);
+        const interactionsInsertResult =
+          await gatewayDb("interactions")
+            .insert(interactionsInserts)
+            .onConflict("id")
+            .merge();
+
         logger.debug("interactionsInsertResult", interactionsInsertResult);
         interactionsInserts = [];
       } catch (e) {
@@ -599,7 +614,10 @@ async function checkNewBlocks(context: Application.BaseContext) {
 
   if (interactionsInserts.length > 0) {
     try {
-      const interactionsInsertResult = await gatewayDb("interactions").insert(interactionsInserts);
+      const interactionsInsertResult = await gatewayDb("interactions")
+        .insert(interactionsInserts)
+        .onConflict("id")
+        .merge();
       logger.debug("interactionsInsertResult", interactionsInsertResult);
     } catch (e) {
       logger.error(e);

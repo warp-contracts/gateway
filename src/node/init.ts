@@ -14,7 +14,7 @@ import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFact
 import axios from "axios";
 import { initArweave } from "./arweave";
 import Arweave from "arweave";
-import { gateway, initGatewayDb } from "../network/gateway";
+import { gateway, initGatewayDb } from "../network/gateway/gateway";
 
 require("dotenv").config();
 

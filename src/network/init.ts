@@ -1,18 +1,21 @@
 import * as path from "path";
-import { Knex } from "knex";
+import {Knex} from "knex";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
-import { LoggerFactory, RedStoneLogger } from "redstone-smartweave";
-import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
-import { connect } from "../db/connect";
-import networkRouter from "./networkRouter";
+import {LoggerFactory, RedStoneLogger} from "redstone-smartweave";
+import {TsLogFactory} from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
+import {connect} from "../db/connect";
+import networkRouter from "./routes/networkRouter";
 import {initArweave} from "../node/arweave";
 import Arweave from "arweave";
-import {gateway, initGatewayDb} from "./gateway";
+import {gateway, initGatewayDb} from "./gateway/gateway";
+import gatewayRouter from "./gateway/gatewayRouter";
 
 require("dotenv").config();
 
-const init = async (db: Knex) => {
+const compress = require('koa-compress')
+
+async function init(db: Knex) {
   if (!(await db.schema.hasTable("peers"))) {
     await db.schema.createTable("peers", (table) => {
       table.string("id", 64).primary();
@@ -22,7 +25,7 @@ const init = async (db: Knex) => {
       table.timestamp("registerTime").notNullable();
     });
   }
-};
+}
 
 declare module "koa" {
   interface BaseContext {
@@ -63,7 +66,20 @@ declare module "koa" {
   app.context.arweave = arweave;
 
   app.use(bodyParser());
+  app.use(compress({
+    threshold: 2048,
+    gzip: {
+      flush: require('zlib').constants.Z_SYNC_FLUSH
+    },
+    deflate: {
+      flush: require('zlib').constants.Z_SYNC_FLUSH,
+    },
+    br: false // disable brotli
+  }))
   app.use(networkRouter.routes());
+  app.use(networkRouter.allowedMethods());
+  app.use(gatewayRouter.routes());
+  app.use(gatewayRouter.allowedMethods());
 
   app.listen(port);
   networkLogger.info(`Listening on port ${port}`);

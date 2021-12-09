@@ -1,6 +1,6 @@
 import Router from "@koa/router";
 
-export const peers = async (ctx: Router.RouterContext) => {
+export async function peersRoute(ctx: Router.RouterContext) {
   const peers = await ctx.db
     .select(["id", "address"])
     .from("peers")
@@ -9,9 +9,9 @@ export const peers = async (ctx: Router.RouterContext) => {
   ctx.logger.info(`Found ${peers.length} peers`);
 
   ctx.body = peers;
-};
+}
 
-export const otherPeers = async (ctx: Router.RouterContext) => {
+export async function otherPeers(ctx: Router.RouterContext) {
   const askingNode = ctx.request.query.askingNode as string;
 
   const peers = await ctx.db
@@ -23,4 +23,4 @@ export const otherPeers = async (ctx: Router.RouterContext) => {
   ctx.logger.info(`Found ${peers.length} peers`);
 
   ctx.body = peers;
-};
+}

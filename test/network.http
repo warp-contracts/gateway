@@ -1,12 +1,12 @@
 ### load peers
-GET http://localhost:5666/peers
+GET http://localhost:5666/network/peers
 
 ### load other peers
-GET http://localhost:5666/other-peers?askingNode=testNode_2
+GET http://localhost:5666/network/other-peers?askingNode=testNode_2
 
 
 ### register node
-POST http://localhost:5666/register
+POST http://localhost:5666/network/register
 Content-Type: application/json
 
 {
@@ -16,7 +16,7 @@ Content-Type: application/json
 
 
 ### unregister node
-POST http://localhost:5666/unregister
+POST http://localhost:5666/network/unregister
 Content-Type: application/json
 
 {
