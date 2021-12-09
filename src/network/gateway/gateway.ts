@@ -267,6 +267,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
   // 1. excluding Kyve contracts, as they moved to Moonbeam (and their contracts have the most interactions)
   // 2. excluding Koi contracts (well, those with the most interactions, as there are dozens of Koi contracts)
   // - as they're using their own infrastructure and probably won't be interested in using this solution.
+  // TODO: make this list configurable.
   const interactionsToCheck: { block_height: number; id: string }[] =
     await gatewayDb.raw(
       `
@@ -286,7 +287,7 @@ async function verifyConfirmations(context: Application.BaseContext) {
                                     "qzVAzvhwr1JFTPE8lIU9ZG_fuihOmBr7ewZFcT3lIUc", /* koi   */
                                     "OFD4GqQcqp-Y_Iqh8DN_0s3a_68oMvvnekeOEu_a45I", /* kyve  */
                                     "CdPAQNONoR83Shj3CbI_9seC-LqgI1oLaRJhSwP90-o", /* koi   */
-                                    "dNXaqE_eATp2SRvyFjydcIPHbsXAe9UT-Fktcqs7MDk" /* kyve  */
+                                    "dNXaqE_eATp2SRvyFjydcIPHbsXAe9UT-Fktcqs7MDk"  /* kyve  */
               )
           ORDER BY block_height DESC LIMIT ?;`,
       [MIN_CONFIRMATIONS, PARALLEL_REQUESTS]
@@ -485,7 +486,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
   });
 
   if (rejections.length > 0) {
-    logger.error("Error while processing next block", rejections.map((r) => r.reason));
+    logger.error("Error while processing next block", rejections.map((r) => r.message));
     return;
   }
 
@@ -574,7 +575,6 @@ async function checkNewBlocks(context: Application.BaseContext) {
         confirmation_status: "not_processed",
       });
     }
-
 
     // why using onConflict.merge()?
     // because it happened once that GQL endpoint returned the exact same transactions

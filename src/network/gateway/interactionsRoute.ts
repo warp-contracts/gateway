@@ -8,11 +8,16 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
   const {contractId, from, to} = ctx.query;
 
-  logger.debug("Contracts route", {
+  logger.debug("Interactions route", {
     contractId,
     from,
     to,
   });
+
+  const bindings: any[] = [];
+  bindings.push(contractId);
+  from && bindings.push(from as string);
+  to && bindings.push(to as string);
 
   try {
     const benchmark = Benchmark.measure();
@@ -20,8 +25,9 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
       `
           SELECT "transaction"
           FROM interactions
-          WHERE contract_id = ?;
-      `, [contractId as string]
+          WHERE contract_id = ? ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
+          ORDER BY block_height ASC;
+      `, bindings
     );
     logger.debug("Interactions loaded in", benchmark.elapsed());
     ctx.body = rows;
