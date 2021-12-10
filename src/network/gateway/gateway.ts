@@ -554,7 +554,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
     return;
   }
 
-  logger.info(`Found ${gqlInteractions.length} new interactions`);
+  logger.info(`Found ${gqlInteractions.length} interactions`);
 
   // 3. map interactions into inserts to "interactions" table
   let interactionsInserts: INTERACTIONS_TABLE[] = [];
