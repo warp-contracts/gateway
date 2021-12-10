@@ -1,4 +1,5 @@
 import Router from "@koa/router";
+import {Benchmark} from "redstone-smartweave";
 
 export async function contractsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
@@ -6,6 +7,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
   logger.debug("Contracts route")
 
   try {
+    const benchmark = Benchmark.measure();
     const rows: any[] = await gatewayDb.raw(
       `
           SELECT contract_id                                                                  AS contract,
@@ -21,6 +23,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
       `
     );
     ctx.body = rows;
+    logger.debug("Contracts loaded in", benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;

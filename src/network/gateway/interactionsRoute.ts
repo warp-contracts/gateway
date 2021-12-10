@@ -24,8 +24,8 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   from && bindings.push(from as string);
   to && bindings.push(to as string);
   confirmationStatus && bindings.push(confirmationStatus)
-  parsedPage && bindings.push(offset);
   parsedPage && bindings.push(INTERACTIONS_PER_PAGE);
+  parsedPage && bindings.push(offset);
 
   try {
     const benchmark = Benchmark.measure();
@@ -34,7 +34,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
           SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
           FROM interactions
           WHERE contract_id = ? ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''} ${confirmationStatus ? ' AND confirmation_status = ?' : ''}
-          ORDER BY block_height ASC ${page ? ' LIMIT ?, ?' : ''};
+          ORDER BY block_height ASC ${page ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
     const total = rows?.length > 0 ? rows[0].total : 0;
