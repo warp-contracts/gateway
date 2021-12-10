@@ -516,13 +516,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
 
   const blocksDiff = currentNetworkHeight - lastProcessedBlockHeight;
 
-  // "less", because gateway sometimes returns lower network height than in the prev. response..
-  if (blocksDiff <= 0) {
-    logger.info("No new blocks, nothing to do...");
-    return;
-  }
-
-  const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
+  const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS - blocksDiff;
   const heightTo = currentNetworkHeight;
 
   logger.debug("Loading interactions for blocks", {
