@@ -3,7 +3,6 @@ import Router from "@koa/router";
 export async function contractsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
 
-
   logger.debug("Contracts route")
 
   try {

@@ -6,12 +6,11 @@ const INTERACTIONS_PER_PAGE = 500;
 export async function interactionsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
 
-  logger.debug("query", ctx.query);
-
-  const {contractId, page, from, to} = ctx.query;
+  const {contractId, confirmationStatus, page, from, to} = ctx.query;
 
   logger.debug("Interactions route", {
     contractId,
+    confirmationStatus,
     page,
     from,
     to
@@ -24,6 +23,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   bindings.push(contractId);
   from && bindings.push(from as string);
   to && bindings.push(to as string);
+  confirmationStatus && bindings.push(confirmationStatus)
   parsedPage && bindings.push(offset);
   parsedPage && bindings.push(INTERACTIONS_PER_PAGE);
 
@@ -33,7 +33,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
       `
           SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
           FROM interactions
-          WHERE contract_id = ? ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
+          WHERE contract_id = ? ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''} ${confirmationStatus ? ' AND confirmation_status = ?' : ''}
           ORDER BY block_height ASC ${page ? ' LIMIT ?, ?' : ''};
       `, bindings
     );
@@ -51,7 +51,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
         status: r.confirmation_status,
         confirming_peers: r.confirming_peer,
         confirmations: r.confirmations,
-        interaction: JSON.parse(r.interaction)
+        interaction: JSON.parse(r.interaction) // how to deal with double escaping?
       }))
     };
     logger.debug("Interactions loaded in", benchmark.elapsed());
