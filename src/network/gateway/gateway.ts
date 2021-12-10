@@ -53,7 +53,9 @@ const BLOCKS_INTERVAL_MS = 90 * 1000;
 
 const GQL_RETRY_MS = 30 * 1000;
 
-const MIN_CONFIRMATIONS = 10;
+const MIN_CONFIRMATIONS = 15;
+
+const LOAD_PAST_BLOCKS = 10;
 
 const PARALLEL_REQUESTS = 10;
 
@@ -111,6 +113,7 @@ export async function initGatewayDb(db: Knex) {
       table.json("input").notNullable();
       table
         .string("confirmation_status")
+        .index()
         .notNullable()
         // not_processed | orphaned | confirmed | error
         .defaultTo("not_processed");
@@ -154,7 +157,7 @@ export async function initGatewayDb(db: Knex) {
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
 export async function gateway(context: Application.BaseContext) {
-  (function peersCheckLoop() {
+  /*(function peersCheckLoop() {
     setTimeout(async function () {
       // this operation takes quite a lot of time, so we're not blocking the rest of the node operation
       rankPeers(context)
@@ -167,7 +170,7 @@ export async function gateway(context: Application.BaseContext) {
       peersCheckLoop();
     }, PEERS_CHECK_INTERVAL_MS);
   })();
-
+*/
   await checkNewBlocks(context);
   (function blocksLoop() {
     // not using setInterval on purpose -
@@ -178,13 +181,13 @@ export async function gateway(context: Application.BaseContext) {
     }, BLOCKS_INTERVAL_MS);
   })();
 
-  await verifyConfirmations(context);
+  /*await verifyConfirmations(context);
   (function confirmationsLoop() {
     setTimeout(async function () {
       await verifyConfirmations(context);
       confirmationsLoop();
     }, CONFIRMATIONS_INTERVAL_MS);
-  })();
+  })();*/
 }
 
 async function rankPeers(context: Application.BaseContext) {
@@ -511,18 +514,35 @@ async function checkNewBlocks(context: Application.BaseContext) {
     lastProcessedBlockHeight,
   });
 
-  if (lastProcessedBlockHeight === currentNetworkHeight) {
+  const blocksDiff = currentNetworkHeight - lastProcessedBlockHeight;
+
+  // "less", because gateway sometimes returns lower network height than in the prev. response..
+  if (blocksDiff <= 0) {
     logger.info("No new blocks, nothing to do...");
     return;
   }
 
-  // 2. load interactions [last processed block + 1, currentNetworkHeight]
+  const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
+  const heightTo = currentNetworkHeight;
+
+  logger.debug("Loading interactions for blocks", {
+    heightFrom,
+    heightTo,
+  });
+
+  // 2. load interactions
   let gqlInteractions: GQLEdgeInterface[]
   try {
     gqlInteractions = await load(
       context,
-      lastProcessedBlockHeight + 1,
-      currentNetworkHeight
+      // Checking LOAD_PAST_BLOCKS blocks back in the past, as
+      // arweave.net GQL endpoint (very) rarely returns no transactions for the latest block
+      // - even if there are some transactions in this block...
+      // We want to be sure that we won't miss any transaction because of a random Arweave gateway quirk...
+      // There's no risk of duplicates, as transaction's id is the primary key of the table
+      // - and "ON CONFLICT" clause protects from unique constraint errors.
+      heightFrom,
+      heightTo
     );
   } catch (e: any) {
     logger.error("Error while loading interactions", e.message);
@@ -611,7 +631,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
             .onConflict("id")
             .merge();
 
-        logger.debug("interactionsInsertResult", interactionsInsertResult);
+        logger.debug(`interactionsInsertResult ${interactionsInsertResult}`);
         interactionsInserts = [];
       } catch (e) {
         // note: not sure how to behave in this case...
@@ -631,7 +651,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
         .insert(interactionsInserts)
         .onConflict("id")
         .merge();
-      logger.debug("interactionsInsertResult", interactionsInsertResult);
+      logger.debug(`interactionsInsertResult ${interactionsInsertResult}`);
     } catch (e) {
       logger.error(e);
       return;

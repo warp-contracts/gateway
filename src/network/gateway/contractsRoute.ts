@@ -4,7 +4,12 @@ import {Benchmark} from "redstone-smartweave";
 export async function contractsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
 
-  logger.debug("Contracts route")
+  logger.debug("Contracts route");
+
+  const {page} = ctx.query;
+
+  const parsedPage = page ? parseInt(page as string) : 1;
+
 
   try {
     const benchmark = Benchmark.measure();
@@ -15,7 +20,8 @@ export async function contractsRoute(ctx: Router.RouterContext) {
                  count(case when confirmation_status != "not_processed" then 1 else null end) AS verifications,
                  count(case when confirmation_status == "orphaned" then 1 else null end)      AS orphaned,
                  count(case when confirmation_status == "confirmed" then 1 else null end)     AS confirmed,
-                 max(block_height)                                                            AS last_interaction_height
+                 max(block_height)                                                            AS last_interaction_height,
+                 count(*) OVER ()                                                             AS total
           FROM interactions
           WHERE contract_id != ''
           GROUP BY contract_id
