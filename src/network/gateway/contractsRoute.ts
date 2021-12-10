@@ -3,21 +3,14 @@ import Router from "@koa/router";
 export async function contractsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
 
-  const {nodeId, address} = ctx.request.body as {
-    nodeId: string;
-    address: string;
-  };
 
-  logger.debug("Contracts route", {
-    nodeId,
-    address,
-  });
+  logger.debug("Contracts route")
 
   try {
     const rows: any[] = await gatewayDb.raw(
       `
           SELECT contract_id                                                                  AS contract,
-                 count("transaction")                                                         AS interactions,
+                 count(interaction)                                                           AS interactions,
                  count(case when confirmation_status != "not_processed" then 1 else null end) AS verifications,
                  count(case when confirmation_status == "orphaned" then 1 else null end)      AS orphaned,
                  count(case when confirmation_status == "confirmed" then 1 else null end)     AS confirmed,
@@ -29,8 +22,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
       `
     );
     ctx.body = rows;
-  }
-  catch (e: any) {
+  } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
     ctx.body = {message: e};

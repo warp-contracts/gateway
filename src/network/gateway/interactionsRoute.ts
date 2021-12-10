@@ -1,36 +1,61 @@
 import Router from "@koa/router";
 import {Benchmark} from "redstone-smartweave";
 
+const INTERACTIONS_PER_PAGE = 500;
+
 export async function interactionsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
 
   logger.debug("query", ctx.query);
 
-  const {contractId, from, to} = ctx.query;
+  const {contractId, page, from, to} = ctx.query;
 
   logger.debug("Interactions route", {
     contractId,
+    page,
     from,
-    to,
+    to
   });
+
+  const parsedPage = page ? parseInt(page as string) : undefined;
+  const offset = parsedPage ? (parsedPage - 1) * INTERACTIONS_PER_PAGE : 0;
 
   const bindings: any[] = [];
   bindings.push(contractId);
   from && bindings.push(from as string);
   to && bindings.push(to as string);
+  parsedPage && bindings.push(offset);
+  parsedPage && bindings.push(INTERACTIONS_PER_PAGE);
 
   try {
     const benchmark = Benchmark.measure();
     const rows: any[] = await gatewayDb.raw(
       `
-          SELECT "transaction"
+          SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
           FROM interactions
           WHERE contract_id = ? ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
-          ORDER BY block_height ASC;
+          ORDER BY block_height ASC ${page ? ' LIMIT ?, ?' : ''};
       `, bindings
     );
+    const total = rows?.length > 0 ? rows[0].total : 0;
+
+    ctx.body = {
+      paging: {
+        total,
+        limit: INTERACTIONS_PER_PAGE,
+        items: rows?.length,
+        page: parsedPage,
+        pages: Math.ceil(total / INTERACTIONS_PER_PAGE)
+      },
+      interactions: rows?.map(r => ({
+        status: r.confirmation_status,
+        confirming_peers: r.confirming_peer,
+        confirmations: r.confirmations,
+        interaction: JSON.parse(r.interaction)
+      }))
+    };
     logger.debug("Interactions loaded in", benchmark.elapsed());
-    ctx.body = rows;
+
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;

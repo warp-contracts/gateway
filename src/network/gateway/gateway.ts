@@ -39,7 +39,7 @@ type RoundResult = {
 
 export type INTERACTIONS_TABLE = {
   id: string;
-  transaction: string;
+  interaction: string;
   block_height: number;
   block_id: string;
   contract_id: string;
@@ -103,7 +103,7 @@ export async function initGatewayDb(db: Knex) {
   if (!(await db.schema.hasTable("interactions"))) {
     await db.schema.createTable("interactions", (table) => {
       table.string("id", 64).primary();
-      table.json("transaction").notNullable();
+      table.json("interaction").notNullable();
       table.bigInteger("block_height").notNullable().index();
       table.string("block_id").notNullable();
       table.string("contract_id").notNullable().index();
@@ -117,7 +117,7 @@ export async function initGatewayDb(db: Knex) {
       table.string("confirming_peer");
       table.bigInteger("confirmed_at_height");
       table.bigInteger("confirmations");
-      table.index(['contract_id','block_height'], 'contract_id_block_height_index');
+      table.index(['contract_id', 'block_height'], 'contract_id_block_height_index');
     });
   }
 
@@ -254,14 +254,20 @@ async function verifyConfirmations(context: Application.BaseContext) {
   // we need to ask peers directly...
   // https://discord.com/channels/357957786904166400/812013044892172319/917819482787958806
   // only 7 nodes are currently fully synced, duh...
-  const peers: { peer: string }[] = await gatewayDb.raw(`
-      SELECT peer
-      FROM peers
-      WHERE height > 0
-        AND blacklisted = false
-      ORDER BY height - blocks ASC, response_time ASC
-          LIMIT ${PARALLEL_REQUESTS};
-  `);
+  let peers: { peer: string; }[];
+  try {
+    peers = await gatewayDb.raw(`
+        SELECT peer
+        FROM peers
+        WHERE height > 0
+          AND blacklisted = false
+        ORDER BY height - blocks ASC, response_time ASC
+            LIMIT ${PARALLEL_REQUESTS};
+    `);
+  } catch (e: any) {
+    logger.error('Error while fetching peers', e.message);
+    return;
+  }
 
 
   // note:
@@ -269,30 +275,36 @@ async function verifyConfirmations(context: Application.BaseContext) {
   // 2. excluding Koi contracts (well, those with the most interactions, as there are dozens of Koi contracts)
   // - as they're using their own infrastructure and probably won't be interested in using this solution.
   // TODO: make this list configurable.
-  const interactionsToCheck: { block_height: number; id: string }[] =
-    await gatewayDb.raw(
-      `
-          SELECT block_height, id
-          FROM interactions
-          WHERE block_height < (SELECT max(block_height) FROM interactions) - ?
-            AND confirmation_status = 'not_processed'
-            AND contract_id NOT IN (
-                                    "LkfzZvdl_vfjRXZOPjnov18cGnnK3aDKj0qSQCgkCX8", /* kyve  */
-                                    "l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c", /* kyve  */
-                                    "l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c", /* kyve  */
-                                    "B1SRLyFzWJjeA0ywW41Qu1j7ZpBLHsXSSrWLrT3ebd8", /* kyve  */
-                                    "cETTyJQYxJLVQ6nC3VxzsZf1x2-6TW2LFkGZa91gUWc", /* koi   */
-                                    "QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8", /* koi   */
-                                    "8cq1wbjWHNiPg7GwYpoDT2m9HX99LY7tklRQWfh1L6c", /* kyve  */
-                                    "NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s", /* koi   */
-                                    "qzVAzvhwr1JFTPE8lIU9ZG_fuihOmBr7ewZFcT3lIUc", /* koi   */
-                                    "OFD4GqQcqp-Y_Iqh8DN_0s3a_68oMvvnekeOEu_a45I", /* kyve  */
-                                    "CdPAQNONoR83Shj3CbI_9seC-LqgI1oLaRJhSwP90-o", /* koi   */
-                                    "dNXaqE_eATp2SRvyFjydcIPHbsXAe9UT-Fktcqs7MDk"  /* kyve  */
-              )
-          ORDER BY block_height DESC LIMIT ?;`,
-      [MIN_CONFIRMATIONS, PARALLEL_REQUESTS]
-    );
+  let interactionsToCheck: { block_height: number; id: string }[]
+  try {
+    interactionsToCheck =
+      await gatewayDb.raw(
+        `
+            SELECT block_height, id
+            FROM interactions
+            WHERE block_height < (SELECT max(block_height) FROM interactions) - ?
+              AND confirmation_status = 'not_processed'
+              AND contract_id NOT IN (
+                                      "LkfzZvdl_vfjRXZOPjnov18cGnnK3aDKj0qSQCgkCX8", /* kyve  */
+                                      "l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c", /* kyve  */
+                                      "l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c", /* kyve  */
+                                      "B1SRLyFzWJjeA0ywW41Qu1j7ZpBLHsXSSrWLrT3ebd8", /* kyve  */
+                                      "cETTyJQYxJLVQ6nC3VxzsZf1x2-6TW2LFkGZa91gUWc", /* koi   */
+                                      "QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8", /* koi   */
+                                      "8cq1wbjWHNiPg7GwYpoDT2m9HX99LY7tklRQWfh1L6c", /* kyve  */
+                                      "NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s", /* koi   */
+                                      "qzVAzvhwr1JFTPE8lIU9ZG_fuihOmBr7ewZFcT3lIUc", /* koi   */
+                                      "OFD4GqQcqp-Y_Iqh8DN_0s3a_68oMvvnekeOEu_a45I", /* kyve  */
+                                      "CdPAQNONoR83Shj3CbI_9seC-LqgI1oLaRJhSwP90-o", /* koi   */
+                                      "dNXaqE_eATp2SRvyFjydcIPHbsXAe9UT-Fktcqs7MDk" /* kyve  */
+                )
+            ORDER BY block_height DESC LIMIT ?;`,
+        [MIN_CONFIRMATIONS, PARALLEL_REQUESTS]
+      );
+  } catch (e: any) {
+    logger.error("Error while fetching interactions", e.message);
+    return;
+  }
 
   if (interactionsToCheck.length === 0) {
     logger.info("No new interactions to confirm.");
@@ -567,7 +579,7 @@ async function checkNewBlocks(context: Application.BaseContext) {
       interactionsInsertsIds.add(interaction.node.id)
       interactionsInserts.push({
         id: interaction.node.id,
-        transaction: JSON.stringify(interaction.node),
+        interaction: JSON.stringify(interaction.node),
         block_height: interaction.node.block.height,
         block_id: blockId,
         contract_id: contractId,
