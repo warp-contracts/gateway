@@ -86,9 +86,9 @@ async function verifyInteractions(context: Application.BaseContext) {
                                       'l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c', /* kyve  */
                                       'B1SRLyFzWJjeA0ywW41Qu1j7ZpBLHsXSSrWLrT3ebd8', /* kyve  */
                                       'cETTyJQYxJLVQ6nC3VxzsZf1x2-6TW2LFkGZa91gUWc', /* koi   */
-                                      'QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8', /* koi   */
+                /*  'QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8',  koi   */
                                       '8cq1wbjWHNiPg7GwYpoDT2m9HX99LY7tklRQWfh1L6c', /* kyve  */
-                                      'NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s', /* koi   */
+                /*                     'NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s', koi   */
                                       'qzVAzvhwr1JFTPE8lIU9ZG_fuihOmBr7ewZFcT3lIUc', /* koi   */
                                       'OFD4GqQcqp-Y_Iqh8DN_0s3a_68oMvvnekeOEu_a45I', /* kyve  */
                                       'CdPAQNONoR83Shj3CbI_9seC-LqgI1oLaRJhSwP90-o', /* koi   */

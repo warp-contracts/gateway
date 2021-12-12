@@ -114,7 +114,7 @@ async function syncBlocks(context: Application.BaseContext) {
   const blocksDiff = currentNetworkHeight - lastProcessedBlockHeight;
 
   const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS - blocksDiff;
-  const heightTo = currentNetworkHeight;
+  const heightTo = currentNetworkHeight - blocksDiff;
 
   logger.debug("Loading interactions for blocks", {
     heightFrom,
