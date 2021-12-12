@@ -29,7 +29,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const rows: any[] = await gatewayDb.raw(
+    const result: any = await gatewayDb.raw(
       `
           SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
           FROM interactions
@@ -37,21 +37,23 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
           ORDER BY block_height ASC ${page ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
-    const total = rows?.length > 0 ? rows[0].total : 0;
+    const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
+
+    logger.debug(result);
 
     ctx.body = {
       paging: {
         total,
         limit: INTERACTIONS_PER_PAGE,
-        items: rows?.length,
+        items: result?.rows.length,
         page: parsedPage,
         pages: Math.ceil(total / INTERACTIONS_PER_PAGE)
       },
-      interactions: rows?.map(r => ({
+      interactions: result?.rows?.map((r: any) => ({
         status: r.confirmation_status,
         confirming_peers: r.confirming_peer,
         confirmations: r.confirmations,
-        interaction: JSON.parse(r.interaction) // how to deal with double escaping?
+        interaction: r.interaction
       }))
     };
     logger.debug("Interactions loaded in", benchmark.elapsed());

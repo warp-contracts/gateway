@@ -1,6 +1,6 @@
 import Router from "@koa/router";
-import {contractsRoute} from "./contractsRoute";
-import {interactionsRoute} from "./interactionsRoute";
+import {contractsRoute} from "./routes/contractsRoute";
+import {interactionsRoute} from "./routes/interactionsRoute";
 
 const gatewayRouter = new Router({prefix: '/gateway'});
 

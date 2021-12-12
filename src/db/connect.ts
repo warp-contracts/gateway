@@ -1,15 +1,13 @@
 import { knex, Knex } from "knex";
 
-export const connect = (port: number, type: string, baseDir: string): Knex => {
+export const connect = (): Knex => {
   return knex({
-    client: "sqlite3",
-    connection: {
-      filename: `${baseDir}/db-${type}-${port}.sqlite`,
-    },
+    client: 'pg',
+    connection: process.env.DB_URL,
     useNullAsDefault: true,
     pool: {
       "min": 3,
-      "max": 10,
+      "max": 20,
       "createTimeoutMillis": 3000,
       "acquireTimeoutMillis": 30000,
       "idleTimeoutMillis": 30000,
