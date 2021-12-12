@@ -42,7 +42,7 @@ declare module "koa" {
 
   app.use(cors());
   app.use(bodyParser());
-  app.use(compress({
+ /* app.use(compress({
     threshold: 2048,
     gzip: {
       flush: require('zlib').constants.Z_SYNC_FLUSH
@@ -51,7 +51,7 @@ declare module "koa" {
       flush: require('zlib').constants.Z_SYNC_FLUSH,
     },
     br: false // disable brotli
-  }))
+  }))*/
 
   app.use(gatewayRouter.routes());
   app.use(gatewayRouter.allowedMethods());
