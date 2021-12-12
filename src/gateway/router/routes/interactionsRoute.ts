@@ -39,8 +39,6 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     );
     const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
 
-    logger.debug(result);
-
     ctx.body = {
       paging: {
         total,
