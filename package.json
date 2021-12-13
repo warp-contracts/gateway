@@ -3,7 +3,7 @@
     "dev:network:start": "ts-node-dev src/gateway/init.ts",
     "dev:network:watch": "ts-node-dev --watch -- src/gateway/init.ts",
     "build": "tsc",
-    "start": "node dist/gateway/init.js",
+    "start:prod": "node dist/gateway/init.js",
     "format": "prettier --write ."
   },
   "license": "MIT",
@@ -11,6 +11,7 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "@koa/router": "10.1.1",
+    "@types/yargs": "^17.0.7",
     "arweave": "1.10.18",
     "axios": "0.24.0",
     "dotenv": "10.0.0",
@@ -21,7 +22,7 @@
     "node-fetch": "3.1.0",
     "pg": "^8.7.1",
     "redstone-smartweave": "0.4.2",
-    "sqlite3": "5.0.2"
+    "yargs": "^17.3.0"
   },
   "devDependencies": {
     "@types/koa-bodyparser": "^4.3.4",

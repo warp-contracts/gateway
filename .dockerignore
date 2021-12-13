@@ -1,0 +1,3 @@
+node_modules
+dist
+.secrets/sw-gateway-ec2-key.cer

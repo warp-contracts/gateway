@@ -1,3 +1,5 @@
+import yargs from 'yargs'
+import {hideBin} from 'yargs/helpers'
 import {Knex} from "knex";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
@@ -8,9 +10,9 @@ import Arweave from "arweave";
 import {initGatewayDb, runGateway} from "./runGateway";
 import gatewayRouter from "./router/gatewayRouter";
 
-require("dotenv").config();
+const argv = yargs(hideBin(process.argv)).parseSync();
+const envPath = argv.env_path || '.secrets/.env';
 
-const compress = require('koa-compress');
 const cors = require('@koa/cors');
 
 declare module "koa" {
@@ -23,6 +25,10 @@ declare module "koa" {
 }
 
 (async () => {
+  require("dotenv").config({
+    path: envPath
+  });
+
   const port = parseInt((process.env.PORT || 5666).toString());
 
   LoggerFactory.use(new TsLogFactory());
@@ -42,16 +48,6 @@ declare module "koa" {
 
   app.use(cors());
   app.use(bodyParser());
- /* app.use(compress({
-    threshold: 2048,
-    gzip: {
-      flush: require('zlib').constants.Z_SYNC_FLUSH
-    },
-    deflate: {
-      flush: require('zlib').constants.Z_SYNC_FLUSH,
-    },
-    br: false // disable brotli
-  }))*/
 
   app.use(gatewayRouter.routes());
   app.use(gatewayRouter.allowedMethods());
