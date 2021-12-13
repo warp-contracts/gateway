@@ -4,7 +4,8 @@ import {runLoadPeersTask} from "./tasks/loadPeers";
 import {runSyncBlocksTask} from "./tasks/syncBlocks";
 import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
 
-
+// TODO: I would move the `initGatewayDb` to a seaparate module (e.g. schemas.ts or db.ts)
+// along with the `INTERACTIONS_TABLE` type
 export type INTERACTIONS_TABLE = {
   interaction_id: string;
   interaction: string;
@@ -15,7 +16,6 @@ export type INTERACTIONS_TABLE = {
   input: string;
   confirmation_status: string;
 };
-
 
 export async function initGatewayDb(db: Knex) {
   if (!(await db.schema.hasTable("interactions"))) {
@@ -70,7 +70,7 @@ export async function initGatewayDb(db: Knex) {
  * TX_CONFIRMATION_SUCCESSFUL_ROUNDS query rounds (to randomly selected at each round peers).
  * Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS
  * AND response for the given transaction is the same for all the successful rounds
- * - the "confirmation" info for given transaction in updated in the the database.
+ * - the "confirmation" info for given transaction in (in -> is?) updated in the the database.
  *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */

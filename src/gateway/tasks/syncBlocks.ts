@@ -63,6 +63,9 @@ interface ReqVariables {
 
 
 export async function runSyncBlocksTask(context: Application.BaseContext) {
+  // Hmm, not sure if this approach is much better, as it can result in fastly increasing memory usage
+  // I see the problem with long execution duration that is described below, but It doesn't look like a perfect
+  // solution for me. May be we can resaerch a bit and come up with a better idea (I will be happy to apply it in the redstone-node as well)
   await syncBlocks(context);
   (function syncBlocksLoop() {
     // not using setInterval on purpose -
@@ -202,7 +205,7 @@ async function syncBlocks(context: Application.BaseContext) {
 
     // why using onConflict.merge()?
     // because it happened once that GQL endpoint returned the exact same transactions
-    // twice - for different block heights (827991 and then 827993) :facepalm:
+    // twice - for different block heights (827991 and then 827993) :facepalm: LOL, blockchain
     // For the record, these transactions were:
     // INmaBb6pk0MATLrs3mCw5bjeRCbR2e-j-v4swpWHPTg
     // QIbp0CwxNUwA8xQSS36Au2Lj1QEgnO8n-shQ2d3AWps

@@ -17,8 +17,13 @@ type ConfirmationRoundResult = {
   confirmations: number;
 }[];
 
+// TODO: in future we could unify the tasks interface and logic in a BaseTask.ts class (for example)
+// Now it looks like some pieces of code are duplicated (like repeated executions)
+
 export async function runVerifyInteractionsTask(context: Application.BaseContext) {
   await verifyInteractions(context);
+  // The same question: why not to use setInterval instead
+  // This approach may generate memory costs, as you never exit from the parent function
   (function verifyInteractionsLoop() {
     setTimeout(async function () {
       await verifyInteractions(context);
@@ -149,6 +154,10 @@ async function verifyInteractions(context: Application.BaseContext) {
           );
         }),
 
+
+        // TODO: maybe using _.shuffle on peers array and then using them sequentially can make the code more readable
+        // _ = lodash
+
         Promise.allSettled(
           interactionsToCheck.map((tx) => {
             const interactionPeers = interactionsPeers.get(tx.interaction_id)!;
@@ -167,12 +176,14 @@ async function verifyInteractions(context: Application.BaseContext) {
       // verifying responses from peers
       for (let i = 0; i < statuses.length; i++) {
         const statusResponse = statuses[i];
+        const txId = interactionsToCheck[i].interaction_id;
+
         if (statusResponse.status === "rejected") {
           // interaction is (probably) orphaned
           if (statusResponse.reason.response?.status === 404) {
-            logger.warn(`Interaction ${interactionsToCheck[i].interaction_id} on ${statusResponse.reason.request.host} not found.`);
+            logger.warn(`Interaction ${txId} on ${statusResponse.reason.request.host} not found.`);
             roundResult.push({
-              txId: interactionsToCheck[i].interaction_id,
+              txId,
               peer: statusResponse.reason.request.host,
               result: "orphaned",
               confirmations: 0,
@@ -180,9 +191,9 @@ async function verifyInteractions(context: Application.BaseContext) {
           } else {
             // no proper response from peer (eg. 500)
             // TODO: consider blacklisting such peer (after returning error X times?) 'till next peersCheckLoop
-            logger.error(`Query for ${interactionsToCheck[i].interaction_id} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`);
+            logger.error(`Query for ${txId} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`);
             roundResult.push({
-              txId: interactionsToCheck[i].interaction_id,
+              txId,
               peer: statusResponse.reason?.request?.host,
               result: "error",
               confirmations: 0,
@@ -191,7 +202,7 @@ async function verifyInteractions(context: Application.BaseContext) {
         } else {
           // transaction confirmed by given peer
           roundResult.push({
-            txId: interactionsToCheck[i].interaction_id,
+            txId,
             peer: statusResponse.value.request.host,
             result: "confirmed",
             confirmations: statusResponse.value.data["number_of_confirmations"],
@@ -224,7 +235,7 @@ async function verifyInteractions(context: Application.BaseContext) {
       }
     }
 
-    // programming is just loops and if-s...
+    // programming is just loops and if-s... XD
     // For each interaction we're verifying whether the result returned in each round is the same.
     // If it is the same for all rounds - we store the confirmation status in the db.
     // It it is not the same - we're logging the difference and move to the next interaction.
@@ -244,7 +255,7 @@ async function verifyInteractions(context: Application.BaseContext) {
         } else {
           logger.warn("Different response from peers for", {
             current_peer: statusesRounds[j][i],
-            prev_peer: statusesRounds[j - 1][i]
+            prev_peer: statusesRounds[j - 1][i] // Will it work correctly for j == 0?
           });
           break;
         }
@@ -253,7 +264,7 @@ async function verifyInteractions(context: Application.BaseContext) {
       if (sameStatusOccurrence === TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
         // sanity check...
         if (status === null) {
-          logger.error("WTF? Status should not be null!");
+          logger.error("WTF? Status should not be null!"); // Hahaha, great descriptive error messages :)
           continue;
         }
         try {

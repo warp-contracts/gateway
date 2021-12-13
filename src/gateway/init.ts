@@ -15,6 +15,9 @@ const envPath = argv.env_path || '.secrets/.env';
 
 const cors = require('@koa/cors');
 
+// TODO: why do we delcare a module for an external dependency
+// If there are no types, I'd put it in decs.d.ts
+// More info: https://medium.com/@steveruiz/using-a-javascript-library-without-type-declarations-in-a-typescript-project-3643490015f3
 declare module "koa" {
   interface BaseContext {
     gatewayDb: Knex;

@@ -16,6 +16,9 @@ export async function runLoadPeersTask(context: Application.BaseContext) {
 
   logger.info("Starting [loadPeers] task.");
 
+  // Hmm, why not use `setInterval` instead?
+  // I think this approach (with recursive calls) can also result in
+  // increased memory usage
   (function loadPeersTask() {
     setTimeout(async function () {
       // this operation takes quite a lot of time, so we're not blocking the rest of the node operation
@@ -37,26 +40,28 @@ export async function loadPeers(context: Application.BaseContext) {
   logger.info("Updating peers...");
 
   let newPeers: PeerList = [];
+  // Do we really need this try cactch?
+  // In case of errors it will end this functions gracefully and
+  // will print "Peers check complete" (which is not true)
   try {
     newPeers = await arweave.network.getPeers();
   } catch (e) {
     logger.error("Error from Arweave while loading peers", e);
-    return;
+    return; // can we throw e here instead of calling return
   }
 
   const currentPeers: { peer: string }[] = await gatewayDb('peers').select('peer');
 
   const peersToRemove: string[] = [];
   currentPeers.forEach(currentPeer => {
-    if (!newPeers.find(peer => {
-      return currentPeer.peer === peer
-    })) {
+    if (!newPeers.find(peer => currentPeer.peer === peer)) {
       peersToRemove.push(currentPeer.peer);
     }
   });
 
   logger.debug("Removing no longer available peers", peersToRemove);
 
+  // I'd rename removed to removedCount. What do you think?
   const removed = await gatewayDb("peers")
     .whereIn("peer", peersToRemove)
     .delete();
@@ -66,6 +71,8 @@ export async function loadPeers(context: Application.BaseContext) {
   for (const peer of newPeers) {
     logger.debug(`Checking Arweave peer ${peer} [${(newPeers.indexOf(peer) + 1)} / ${newPeers.length}]`);
     try {
+      // For me it's a bit misleading that you use Benchmark module from the redstone-smartweave module
+      // Maybe we can create a separate NPM module for benchmarking or check if there are ready solutions
       const benchmark = Benchmark.measure();
       const result = await axios.get(`http://${peer}/info`, {
         timeout: MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS
