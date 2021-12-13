@@ -64,7 +64,7 @@ export async function loadPeers(context: Application.BaseContext) {
   logger.debug(`Removed ${removed} elements.`);
 
   for (const peer of newPeers) {
-    logger.debug(`Checking Arweave peer ${peer} [${(newPeers.indexOf(peer) + 1) / newPeers.length}]`);
+    logger.debug(`Checking Arweave peer ${peer} [${(newPeers.indexOf(peer) + 1)} / ${newPeers.length}]`);
     try {
       const benchmark = Benchmark.measure();
       const result = await axios.get(`http://${peer}/info`, {
