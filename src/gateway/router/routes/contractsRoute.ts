@@ -34,7 +34,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
       `, bindings
     );
 
-    const total = result?.rows?.length > 0 ? result.rows[0].total : 0;
+    const total = result?.rows?.length > 0 ? parseInt(result.rows[0].total) : 0;
     ctx.body = {
       paging: {
         total,
