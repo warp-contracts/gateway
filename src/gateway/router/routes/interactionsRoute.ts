@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 import {Benchmark} from "redstone-smartweave";
 
-const INTERACTIONS_PER_PAGE = 500;
+const INTERACTIONS_PER_PAGE = 2000;
 
 export async function interactionsRoute(ctx: Router.RouterContext) {
   const {gatewayLogger: logger, gatewayDb} = ctx;
