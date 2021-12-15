@@ -4,54 +4,7 @@ import {runLoadPeersTask} from "./tasks/loadPeers";
 import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
 import {runVerifyOrphansTask} from "./tasks/verifyOrphans";
 import {runSyncTransactionsTask} from "./tasks/syncTransactions";
-
-
-export type INTERACTIONS_TABLE = {
-  interaction_id: string;
-  interaction: string;
-  block_height: number;
-  block_id: string;
-  contract_id: string;
-  function: string;
-  input: string;
-  confirmation_status: string;
-};
-
-
-export async function initGatewayDb(db: Knex) {
-  if (!(await db.schema.hasTable("interactions"))) {
-    await db.schema.createTable("interactions", (table) => {
-      table.increments("id").primary();
-      table.string("interaction_id", 64).notNullable().index();
-      table.json("interaction").notNullable();
-      table.bigInteger("block_height").notNullable().index();
-      table.string("block_id").notNullable();
-      table.string("contract_id").notNullable().index();
-      table.string("function").index();
-      table.jsonb("input").notNullable();
-      table
-        .string("confirmation_status")
-        .index()
-        .notNullable()
-        // not_processed | orphaned | confirmed | forked
-        .defaultTo("not_processed");
-      table.string("confirming_peer");
-      table.bigInteger("confirmed_at_height");
-      table.bigInteger("confirmations");
-      table.index(['contract_id', 'block_height'], 'contract_id_block_height_index');
-    });
-  }
-
-  if (!(await db.schema.hasTable("peers"))) {
-    await db.schema.createTable("peers", (table) => {
-      table.string("peer", 64).primary();
-      table.bigInteger("blocks").notNullable();
-      table.bigInteger("height").notNullable();
-      table.bigInteger("response_time").notNullable();
-      table.boolean("blacklisted").notNullable().defaultTo("false");
-    });
-  }
-}
+import {GatewayContext} from "./init";
 
 
 /**
@@ -71,11 +24,11 @@ export async function initGatewayDb(db: Knex) {
  * TX_CONFIRMATION_SUCCESSFUL_ROUNDS query rounds (to randomly selected at each round peers).
  * Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS
  * AND response for the given transaction is the same for all the successful rounds
- * - the "confirmation" info for given transaction in updated in the the database.
+ * - the "confirmation" info for given transaction is updated in the the database.
  *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
-export async function runGateway(context: Application.BaseContext) {
+export async function runGateway(context: GatewayContext) {
   await runLoadPeersTask(context);
 
   await runSyncTransactionsTask(context);

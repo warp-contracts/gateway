@@ -7,20 +7,20 @@ import {LoggerFactory, RedStoneLogger} from "redstone-smartweave";
 import {TsLogFactory} from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
 import {connect} from "../db/connect";
 import Arweave from "arweave";
-import {initGatewayDb, runGateway} from "./runGateway";
+import {runGateway} from "./runGateway";
 import gatewayRouter from "./router/gatewayRouter";
+import Application from "koa";
+import {initGatewayDb} from "../db/schema";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
 
 const cors = require('@koa/cors');
 
-declare module "koa" {
-  interface BaseContext {
-    gatewayDb: Knex;
-    logger: RedStoneLogger;
-    arweave: Arweave;
-  }
+export interface GatewayContext {
+  gatewayDb: Knex;
+  logger: RedStoneLogger;
+  arweave: Arweave;
 }
 
 (async () => {
@@ -40,7 +40,7 @@ declare module "koa" {
   const gatewayDb = connect();
   await initGatewayDb(gatewayDb);
 
-  const app = new Koa();
+  const app = new Koa<Application.DefaultState, GatewayContext>();
   app.context.gatewayDb = gatewayDb;
   app.context.logger = gatewayLogger;
   app.context.arweave = arweave;
