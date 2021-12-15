@@ -115,7 +115,15 @@ async function syncTransactions(context: Application.BaseContext) {
     heightTo,
   });
 
-  // 2. load interactions
+  /**
+   *Loading interactions for blocks
+   0|gateway  | {
+0|gateway  |   heightFrom: 828114,
+0|gateway  |   heightTo: 830078
+0|gateway  | }
+   */
+
+    // 2. load interactions
   let gqlInteractions: GQLEdgeInterface[]
   try {
     gqlInteractions = await load(

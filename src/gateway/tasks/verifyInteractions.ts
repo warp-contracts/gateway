@@ -188,6 +188,7 @@ async function verifyInteractions(context: Application.BaseContext) {
         } else {
           // transaction confirmed by given peer
           const confirmations = parseInt(statusResponse.value.data["number_of_confirmations"]);
+          logger.debug(`Confirmed ${interactionsToCheck[i].interaction_id} with ${confirmations}`);
 
           roundResult.push({
             txId: interactionsToCheck[i].interaction_id,
@@ -256,6 +257,7 @@ async function verifyInteractions(context: Application.BaseContext) {
           continue;
         }
         try {
+          logger.debug("Updating confirmation status in db");
           await gatewayDb("interactions")
             .where("interaction_id", interactionsToCheck[i].interaction_id)
             .update({
