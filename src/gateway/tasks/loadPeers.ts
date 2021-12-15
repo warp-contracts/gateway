@@ -2,37 +2,26 @@ import Application from "koa";
 import {PeerList} from "arweave/node/network";
 import {Benchmark} from "redstone-smartweave";
 import axios from "axios";
+import {TaskRunner} from "./TaskRunner";
 
 const MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS = 3000;
 const PEERS_CHECK_INTERVAL_MS = 1000 * 60 * 60;
 
 export async function runLoadPeersTask(context: Application.BaseContext) {
-  const {gatewayLogger: logger} = context;
+  const {logger} = context;
   const currentPeers: { peer: string }[] = await context.gatewayDb('peers').select('peer');
   if (currentPeers.length < 500) {
     logger.info("Pre-loading peers...");
     await loadPeers(context);
   }
 
-  logger.info("Starting [loadPeers] task.");
-
-  (function loadPeersTask() {
-    setTimeout(async function () {
-      // this operation takes quite a lot of time, so we're not blocking the rest of the node operation
-      loadPeers(context)
-        .then(() => {
-          context.logger.info("Peers check complete");
-        })
-        .catch(r => {
-          context.logger.error("Peers check failed", r.reason);
-        });
-      loadPeersTask();
-    }, PEERS_CHECK_INTERVAL_MS);
-  })();
+  await TaskRunner
+    .from("[load peers]", loadPeers, context)
+    .runAsyncEvery(PEERS_CHECK_INTERVAL_MS, false);
 }
 
 export async function loadPeers(context: Application.BaseContext) {
-  const {gatewayLogger: logger, arweave, gatewayDb} = context;
+  const {logger, arweave, gatewayDb} = context;
 
   logger.info("Updating peers...");
 

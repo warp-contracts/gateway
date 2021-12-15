@@ -1,8 +1,9 @@
 import {Knex} from "knex";
 import Application from "koa";
 import {runLoadPeersTask} from "./tasks/loadPeers";
-import {runSyncBlocksTask} from "./tasks/syncBlocks";
 import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
+import {runVerifyOrphansTask} from "./tasks/verifyOrphans";
+import {runSyncTransactionsTask} from "./tasks/syncTransactions";
 
 
 export type INTERACTIONS_TABLE = {
@@ -32,7 +33,7 @@ export async function initGatewayDb(db: Knex) {
         .string("confirmation_status")
         .index()
         .notNullable()
-        // not_processed | orphaned | confirmed
+        // not_processed | orphaned | confirmed | forked
         .defaultTo("not_processed");
       table.string("confirming_peer");
       table.bigInteger("confirmed_at_height");
@@ -77,7 +78,9 @@ export async function initGatewayDb(db: Knex) {
 export async function runGateway(context: Application.BaseContext) {
   await runLoadPeersTask(context);
 
-  await runSyncBlocksTask(context);
+  await runSyncTransactionsTask(context);
 
   await runVerifyInteractionsTask(context)
+
+  await runVerifyOrphansTask(context);
 }
