@@ -1,16 +1,17 @@
 import Application from "koa";
 import {TaskRunner} from "./TaskRunner";
 import {MIN_CONFIRMATIONS} from "./verifyInteractions";
+import {GatewayContext} from "../init";
 
 const ORPHANS_CHECK_INTERVAL_MS = 1000 * 60 * 60 * 4;
 
-export async function runVerifyOrphansTask(context: Application.BaseContext) {
+export async function runVerifyOrphansTask(context: GatewayContext) {
   await TaskRunner
     .from("[orphans check]", verifyOrphans, context)
     .runAsyncEvery(ORPHANS_CHECK_INTERVAL_MS);
 }
 
-async function verifyOrphans(context: Application.BaseContext) {
+async function verifyOrphans(context: GatewayContext) {
   const {arweave, logger, gatewayDb} = context;
 
   let orphans: { id: string; }[];

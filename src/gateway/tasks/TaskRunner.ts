@@ -1,16 +1,17 @@
 import Application from "koa";
+import {GatewayContext} from "../init";
 
 export class TaskRunner {
   private constructor(
     private readonly name: string,
-    private readonly worker: (context: Application.BaseContext) => Promise<void>,
-    private readonly context: Application.BaseContext) {
+    private readonly worker: (context: GatewayContext) => Promise<void>,
+    private readonly context: GatewayContext) {
   }
 
   static from(
     name: string,
-    worker: (context: Application.BaseContext) => Promise<void>,
-    context: Application.BaseContext): TaskRunner {
+    worker: (context: GatewayContext) => Promise<void>,
+    context: GatewayContext): TaskRunner {
     return new TaskRunner(name, worker, context);
   }
 

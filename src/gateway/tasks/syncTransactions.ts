@@ -9,6 +9,7 @@ import {
 import {INTERACTIONS_TABLE} from "../runGateway";
 import {sleep} from "../../utils";
 import {TaskRunner} from "./TaskRunner";
+import {GatewayContext} from "../init";
 
 // in theory avg. block time on Arweave is 120s (?)
 const BLOCKS_INTERVAL_MS = 90 * 1000;
@@ -17,6 +18,7 @@ const MAX_GQL_REQUEST = 100;
 const GQL_RETRY_MS = 30 * 1000;
 // that's a limit for sqlite
 const MAX_BATCH_INSERT = 500;
+
 const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
       pageInfo {
@@ -63,13 +65,13 @@ interface ReqVariables {
 }
 
 
-export async function runSyncTransactionsTask(context: Application.BaseContext) {
+export async function runSyncTransactionsTask(context: GatewayContext) {
   await TaskRunner
     .from("[sync transactions]", syncTransactions, context)
     .runSyncEvery(BLOCKS_INTERVAL_MS);
 }
 
-async function syncTransactions(context: Application.BaseContext) {
+async function syncTransactions(context: GatewayContext) {
   const {gatewayDb, arweave, logger} = context;
   logger.info("Syncing blocks");
 
@@ -106,7 +108,6 @@ async function syncTransactions(context: Application.BaseContext) {
     lastProcessedBlockHeight,
   });
 
-  // select max(block_height) from interactions;
   const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
   const heightTo = currentNetworkHeight;
 
@@ -115,15 +116,7 @@ async function syncTransactions(context: Application.BaseContext) {
     heightTo,
   });
 
-  /**
-   *Loading interactions for blocks
-   0|gateway  | {
-0|gateway  |   heightFrom: 828114,
-0|gateway  |   heightTo: 830078
-0|gateway  | }
-   */
-
-    // 2. load interactions
+  // 2. load interactions
   let gqlInteractions: GQLEdgeInterface[]
   try {
     gqlInteractions = await load(
@@ -254,7 +247,7 @@ async function syncTransactions(context: Application.BaseContext) {
 
 // TODO: verify internalWrites
 async function load(
-  context: Application.BaseContext,
+  context: GatewayContext,
   from: number,
   to: number
 ): Promise<GQLEdgeInterface[]> {
@@ -275,7 +268,7 @@ async function load(
   return await loadPages(context, mainTransactionsVariables);
 
   async function loadPages(
-    context: Application.BaseContext,
+    context: GatewayContext,
     variables: ReqVariables
   ) {
     let transactions = await getNextPage(context, variables);
@@ -304,7 +297,7 @@ async function load(
   }
 
   async function getNextPage(
-    context: Application.BaseContext,
+    context: GatewayContext,
     variables: ReqVariables
   ): Promise<GQLTransactionsResultInterface> {
     const {arweave, logger} = context;

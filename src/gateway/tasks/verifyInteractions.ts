@@ -1,13 +1,14 @@
 import Application from "koa";
 import axios from "axios";
 import {TaskRunner} from "./TaskRunner";
+import {GatewayContext} from "../init";
 
-export const MIN_CONFIRMATIONS = 15;
+export const MIN_CONFIRMATIONS = 10;
 const PARALLEL_REQUESTS = 10;
 const TX_CONFIRMATION_SUCCESSFUL_ROUNDS = 3;
 const TX_CONFIRMATION_MAX_ROUNDS = 4;
 const TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS = 3000;
-const CONFIRMATIONS_INTERVAL_MS = 5000/*TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS * TX_CONFIRMATION_MAX_ROUNDS + 300*/;
+const CONFIRMATIONS_INTERVAL_MS = 5000;
 
 let lastVerificationHeight = 0;
 
@@ -18,13 +19,13 @@ type ConfirmationRoundResult = {
   confirmations: number;
 }[];
 
-export async function runVerifyInteractionsTask(context: Application.BaseContext) {
+export async function runVerifyInteractionsTask(context: GatewayContext) {
   await TaskRunner
     .from("[verify interactions]", verifyInteractions, context)
     .runSyncEvery(CONFIRMATIONS_INTERVAL_MS);
 }
 
-async function verifyInteractions(context: Application.BaseContext) {
+async function verifyInteractions(context: GatewayContext) {
   const {arweave, logger, gatewayDb} = context;
 
   let currentNetworkHeight;
@@ -164,12 +165,13 @@ async function verifyInteractions(context: Application.BaseContext) {
       // verifying responses from peers
       for (let i = 0; i < statuses.length; i++) {
         const statusResponse = statuses[i];
+        const txId = interactionsToCheck[i].interaction_id;
         if (statusResponse.status === "rejected") {
           // interaction is (probably) orphaned
           if (statusResponse.reason.response?.status === 404) {
-            logger.warn(`Interaction ${interactionsToCheck[i].interaction_id} on ${statusResponse.reason.request.host} not found.`);
+            logger.warn(`Interaction ${txId} on ${statusResponse.reason.request.host} not found.`);
             roundResult.push({
-              txId: interactionsToCheck[i].interaction_id,
+              txId: txId,
               peer: statusResponse.reason.request.host,
               result: "orphaned",
               confirmations: 0,
@@ -177,9 +179,9 @@ async function verifyInteractions(context: Application.BaseContext) {
           } else {
             // no proper response from peer (eg. 500)
             // TODO: consider blacklisting such peer (after returning error X times?) 'till next peersCheckLoop
-            logger.error(`Query for ${interactionsToCheck[i].interaction_id} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`);
+            logger.error(`Query for ${txId} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`);
             roundResult.push({
-              txId: interactionsToCheck[i].interaction_id,
+              txId: txId,
               peer: statusResponse.reason?.request?.host,
               result: "error",
               confirmations: 0,
@@ -188,10 +190,10 @@ async function verifyInteractions(context: Application.BaseContext) {
         } else {
           // transaction confirmed by given peer
           const confirmations = parseInt(statusResponse.value.data["number_of_confirmations"]);
-          logger.debug(`Confirmed ${interactionsToCheck[i].interaction_id} with ${confirmations}`);
+          logger.trace(`Confirmed ${txId} with ${confirmations}`);
 
           roundResult.push({
-            txId: interactionsToCheck[i].interaction_id,
+            txId: txId,
             peer: statusResponse.value.request.host,
             result: confirmations >= MIN_CONFIRMATIONS ? 'confirmed' : 'forked',
             confirmations: statusResponse.value.data["number_of_confirmations"],
@@ -244,6 +246,9 @@ async function verifyInteractions(context: Application.BaseContext) {
         } else {
           logger.warn("Different response from peers for", {
             current_peer: statusesRounds[j][i],
+            // note: j - 1 is safe here, because in this branch j >= 1
+            // - if the status is different, than it means we're checking at least
+            // second round for the given transaction
             prev_peer: statusesRounds[j - 1][i]
           });
           break;
@@ -257,7 +262,7 @@ async function verifyInteractions(context: Application.BaseContext) {
           continue;
         }
         try {
-          logger.debug("Updating confirmation status in db");
+          logger.trace("Updating confirmation status in db");
           await gatewayDb("interactions")
             .where("interaction_id", interactionsToCheck[i].interaction_id)
             .update({
