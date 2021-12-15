@@ -1,7 +1,8 @@
 import Application from "koa";
 import axios from "axios";
+import {TaskRunner} from "./TaskRunner";
 
-const MIN_CONFIRMATIONS = 15;
+export const MIN_CONFIRMATIONS = 15;
 const PARALLEL_REQUESTS = 10;
 const TX_CONFIRMATION_SUCCESSFUL_ROUNDS = 3;
 const TX_CONFIRMATION_MAX_ROUNDS = 4;
@@ -18,17 +19,13 @@ type ConfirmationRoundResult = {
 }[];
 
 export async function runVerifyInteractionsTask(context: Application.BaseContext) {
-  await verifyInteractions(context);
-  (function verifyInteractionsLoop() {
-    setTimeout(async function () {
-      await verifyInteractions(context);
-      verifyInteractionsLoop();
-    }, CONFIRMATIONS_INTERVAL_MS);
-  })();
+  await TaskRunner
+    .from("[verify interactions]", verifyInteractions, context)
+    .runSyncEvery(CONFIRMATIONS_INTERVAL_MS);
 }
 
 async function verifyInteractions(context: Application.BaseContext) {
-  const {arweave, gatewayLogger: logger, gatewayDb} = context;
+  const {arweave, logger, gatewayDb} = context;
 
   let currentNetworkHeight;
   try {
@@ -45,7 +42,7 @@ async function verifyInteractions(context: Application.BaseContext) {
     lastVerificationHeight
   });
 
-  // note: as the "status" endpoint for arweave.net currently returns 504 - Bad Gateway for orphaned transactions,
+  // note: as the "status" endpoint for arweave.net sometime returns 504 - Bad Gateway for orphaned transactions,
   // we need to ask peers directly...
   // https://discord.com/channels/357957786904166400/812013044892172319/917819482787958806
   // only 7 nodes are currently fully synced, duh...
@@ -190,10 +187,12 @@ async function verifyInteractions(context: Application.BaseContext) {
           }
         } else {
           // transaction confirmed by given peer
+          const confirmations = parseInt(statusResponse.value.data["number_of_confirmations"]);
+
           roundResult.push({
             txId: interactionsToCheck[i].interaction_id,
             peer: statusResponse.value.request.host,
-            result: "confirmed",
+            result: confirmations >= MIN_CONFIRMATIONS ? 'confirmed' : 'forked',
             confirmations: statusResponse.value.data["number_of_confirmations"],
           });
         }

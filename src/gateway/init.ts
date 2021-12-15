@@ -11,7 +11,7 @@ import {initGatewayDb, runGateway} from "./runGateway";
 import gatewayRouter from "./router/gatewayRouter";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
-const envPath = argv.env_path || '.secrets/.env';
+const envPath = argv.env_path || '.secrets/prod.env';
 
 const cors = require('@koa/cors');
 
@@ -19,7 +19,6 @@ declare module "koa" {
   interface BaseContext {
     gatewayDb: Knex;
     logger: RedStoneLogger;
-    gatewayLogger: RedStoneLogger;
     arweave: Arweave;
   }
 }
@@ -43,7 +42,7 @@ declare module "koa" {
 
   const app = new Koa();
   app.context.gatewayDb = gatewayDb;
-  app.context.gatewayLogger = gatewayLogger;
+  app.context.logger = gatewayLogger;
   app.context.arweave = arweave;
 
   app.use(cors());
@@ -58,7 +57,7 @@ declare module "koa" {
   try {
     await runGateway(app.context);
   } catch (e: any) {
-    gatewayLogger.error('Error from gateway', e.message);
+    gatewayLogger.error('Error from gateway', e);
   }
 })();
 

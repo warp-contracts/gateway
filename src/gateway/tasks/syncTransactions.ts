@@ -8,6 +8,7 @@ import {
 } from "redstone-smartweave";
 import {INTERACTIONS_TABLE} from "../runGateway";
 import {sleep} from "../../utils";
+import {TaskRunner} from "./TaskRunner";
 
 // in theory avg. block time on Arweave is 120s (?)
 const BLOCKS_INTERVAL_MS = 90 * 1000;
@@ -62,20 +63,14 @@ interface ReqVariables {
 }
 
 
-export async function runSyncBlocksTask(context: Application.BaseContext) {
-  await syncBlocks(context);
-  (function syncBlocksLoop() {
-    // not using setInterval on purpose -
-    // https://developer.mozilla.org/en-US/docs/Web/API/setInterval#ensure_that_execution_duration_is_shorter_than_interval_frequency
-    setTimeout(async function () {
-      await syncBlocks(context);
-      syncBlocksLoop();
-    }, BLOCKS_INTERVAL_MS);
-  })();
+export async function runSyncTransactionsTask(context: Application.BaseContext) {
+  await TaskRunner
+    .from("[sync transactions]", syncTransactions, context)
+    .runSyncEvery(BLOCKS_INTERVAL_MS);
 }
 
-async function syncBlocks(context: Application.BaseContext) {
-  const {gatewayDb, arweave, gatewayLogger: logger} = context;
+async function syncTransactions(context: Application.BaseContext) {
+  const {gatewayDb, arweave, logger} = context;
   logger.info("Syncing blocks");
 
   // 1. find last processed block height and current Arweave network height
@@ -304,7 +299,7 @@ async function load(
     context: Application.BaseContext,
     variables: ReqVariables
   ): Promise<GQLTransactionsResultInterface> {
-    const {arweave, gatewayLogger: logger} = context;
+    const {arweave, logger} = context;
 
     const benchmark = Benchmark.measure();
     let response = await arweave.api.post("graphql", {

@@ -4,6 +4,7 @@
     "dev:network:watch": "ts-node-dev --watch -- src/gateway/init.ts",
     "build": "tsc",
     "start:prod": "node dist/gateway/init.js",
+    "start:local": "node dist/gateway/init.js --env_path .secrets/local.env",
     "format": "prettier --write ."
   },
   "license": "MIT",
