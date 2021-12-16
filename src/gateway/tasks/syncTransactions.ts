@@ -144,7 +144,7 @@ async function syncTransactions(context: GatewayContext) {
 
   // 3. map interactions into inserts to "interactions" table
   let interactionsInserts: INTERACTIONS_TABLE[] = [];
-  const interactionsInsertsIds = new Set<String>();
+  const interactionsInsertsIds = new Set<string>();
 
   for (let i = 0; i < gqlInteractions.length; i++) {
     const interaction = gqlInteractions[i];
@@ -289,8 +289,7 @@ async function load(
 
       txInfos.push(
         ...transactions.edges.filter(
-          (tx) => !tx.node.parent || !tx.node.parent.id
-        )
+          (tx) => !tx.node.parent || !tx.node.parent.id || !tx.node.bundledIn || !tx.node.bundledIn.id)
       );
     }
     return txInfos;

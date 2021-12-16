@@ -21,9 +21,9 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
   const bindings: any[] = [];
   bindings.push(contractId);
+  confirmationStatus && bindings.push(confirmationStatus)
   from && bindings.push(from as string);
   to && bindings.push(to as string);
-  confirmationStatus && bindings.push(confirmationStatus)
   parsedPage && bindings.push(INTERACTIONS_PER_PAGE);
   parsedPage && bindings.push(offset);
 
@@ -33,7 +33,10 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
       `
           SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
           FROM interactions
-          WHERE contract_id = ? ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''} ${confirmationStatus ? ' AND confirmation_status = ?' : ''}
+          WHERE contract_id = ? 
+                ${confirmationStatus ? ' AND confirmation_status = ?' : ''} 
+                ${from ? ' AND block_height >= ?' : ''} 
+                ${to ? ' AND block_height <= ?' : ''}
           ORDER BY block_height ASC ${page ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
