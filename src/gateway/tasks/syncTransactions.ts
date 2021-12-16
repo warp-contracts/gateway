@@ -1,22 +1,22 @@
-import Application from "koa";
 import {
   Benchmark,
   GQLEdgeInterface,
-  GQLResultInterface, GQLTagInterface,
+  GQLResultInterface,
   GQLTransactionsResultInterface,
-  SmartWeaveTags
+  SmartWeaveTags,
+  TagsParser
 } from "redstone-smartweave";
-import {INTERACTIONS_TABLE} from "../runGateway";
 import {sleep} from "../../utils";
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
+import {INTERACTIONS_TABLE} from "../../db/schema";
 
 // in theory avg. block time on Arweave is 120s (?)
-const BLOCKS_INTERVAL_MS = 90 * 1000;
+const BLOCKS_INTERVAL_MS = 60 * 1000;
 const LOAD_PAST_BLOCKS = 10;
 const MAX_GQL_REQUEST = 100;
 const GQL_RETRY_MS = 30 * 1000;
-// that's a limit for sqlite
+// that was a limit for sqlite, but let's leave it for now...
 const MAX_BATCH_INSERT = 500;
 
 const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
@@ -64,6 +64,7 @@ interface ReqVariables {
   after?: string;
 }
 
+const tagsParser = new TagsParser();
 
 export async function runSyncTransactionsTask(context: GatewayContext) {
   await TaskRunner
@@ -149,19 +150,16 @@ async function syncTransactions(context: GatewayContext) {
   for (let i = 0; i < gqlInteractions.length; i++) {
     const interaction = gqlInteractions[i];
     const blockId = interaction.node.block.id;
-    let contractId, input, functionName;
+    let functionName;
 
-    const contractTag = findTag(interaction, SmartWeaveTags.CONTRACT_TX_ID);
-    const inputTag = findTag(interaction, SmartWeaveTags.INPUT);
+    const contractId = tagsParser.getContractTag(interaction);
+    const input = tagsParser.getInputTag(interaction, contractId)?.value;
 
     // Eyes Pop - Skin Explodes - Everybody Dead
-    if (contractTag === undefined || inputTag === undefined) {
+    if (contractId === undefined || input === undefined) {
       logger.error("Contract or input tag not found for interaction", interaction);
       continue;
       // TODO: probably would be wise to save such stuff in a separate table?
-    } else {
-      contractId = contractTag.value;
-      input = inputTag.value;
     }
 
     try {
@@ -197,7 +195,7 @@ async function syncTransactions(context: GatewayContext) {
 
     // why using onConflict.merge()?
     // because it happened once that GQL endpoint returned the exact same transactions
-    // twice - for different block heights (827991 and then 827993) :facepalm:
+    // twice - for different block heights (827991 and then 827993)
     // For the record, these transactions were:
     // INmaBb6pk0MATLrs3mCw5bjeRCbR2e-j-v4swpWHPTg
     // QIbp0CwxNUwA8xQSS36Au2Lj1QEgnO8n-shQ2d3AWps
@@ -332,13 +330,4 @@ async function load(
 
     return data.data.transactions;
   }
-}
-
-function findTag(
-  interaction: GQLEdgeInterface,
-  tagName: string
-): GQLTagInterface | undefined {
-  return interaction.node.tags.find((t) => {
-    return t.name === tagName;
-  });
 }
