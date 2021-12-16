@@ -8,7 +8,7 @@ import {GatewayContext} from "./init";
 
 
 /**
- * Gateway consists of three separate tasks, each runs with its own interval:
+ * Gateway consists of four separate tasks, each runs with its own interval:
  *
  * 1. peers tasks - checks the status (ie. "/info" endpoint) of all the peers returned by the arweave.net/peers.
  * If the given peer does not respond within MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS - it is blacklisted 'till next round.
@@ -25,6 +25,9 @@ import {GatewayContext} from "./init";
  * Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS
  * AND response for the given transaction is the same for all the successful rounds
  * - the "confirmation" info for given transaction is updated in the the database.
+ *
+ * 4. orphans verifier task - additional task that double-verifies interactions marked as orphans. If during the
+ * re-check the interaction won't be recognized as an orphan - it is returned to the "not processed" pool.
  *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
