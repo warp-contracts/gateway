@@ -1,9 +1,22 @@
-RedStone Gateway - a fast and reliable portal to Arweave SmartWeave interaction transactions.
+# RedStone SmartWeave Gateway
 
-- fast - load your contract interactions in seconds, not minutes!
-- safe - built-in protection against forks and orphaned transactions
-- reliable - protection against random quirks (like same transactions repeated multiple times) from base Arweave
-  gateways
+RedStone SmartWeave Gateway - a fast and reliable portal to Arweave SmartWeave interaction transactions.
+1. fast - load your contract interactions in seconds, not minutes!
+2. reliable - built-in protection against forks and orphaned transactions
+
+- [RedStone SmartWeave Gateway](#redstone-smartweave-gateway)
+   + [Reasoning](#reasoning)
+   + [Our solution](#our-solution)
+   + [Benchmarks](#benchmarks)
+   + [Orphaned transactions](#orphaned-transactions)
+   + [Installation](#installation)
+   + [Running](#running)
+   + [Running (Docker)](#running--docker-)
+   + [HTTP API Reference](#http-api-reference)
+      - [Contracts endpoint](#contracts-endpoint)
+      - [Interactions endpoint](#interactions-endpoint)
+   + [Further development](#further-development)
+
 
 ### Reasoning
 
@@ -12,22 +25,25 @@ separate Arweave transaction. In order to evaluate the contract state, all of it
 current available solution ("general-purpose" Arweave gateway)
 has some flaws:
 
-1. It is slow. The interactions can be loaded using the GQL endpoint, which can return only 100 interactions in a single
+1. **It is slow**  
+The interactions can be loaded using the GQL endpoint, which can return only 100 interactions in a single
    batch/query. At the time of writing, each query takes from ~300ms to ~5 seconds. For
    our "loot" contract (that has 9821 interactions) it means that loading all the contract interactions takes around 1 minute.  
-   There are contracts with much more interactions - the biggest one has over 280000 interactions - loading all the
-   interactions would for this contract takes ~3 hours. This clearly shows that current solution
+   There are contracts with much more interactions - the biggest one has over 280K interactions - loading all the
+   interactions for this contract takes ~3 hours. This clearly shows that current solution
    scales poorly and is a first big obstacle for a wider SmartWeave contracts adoption.
 
-2. The Arweave gateway GQL endpoint tends to return orphaned transactions - i.e. such transactions, that are not part of
+2. **Orphaned transactions**  
+The Arweave gateway GQL endpoint tends to return orphaned transactions - i.e. such transactions, that are not part of
    any Arweave block - probably due to some caching issues/bug in the Arweave
    gateway (https://discord.com/channels/357957786904166400/756557551234973696/891254856638160917)
    The state evaluated with such orphaned transactions is obviously flawed. In case of our loot contract - 25
    transactions returned by the Arweave gateway are orphaned.
 
-3. No protection against transactions from forked blocks.
+3. **Forked blocks problem**  
+No protection against transactions from forked blocks.
 
-All the above issues are a big obstacle in a wider SmartWeave contracts adoption. It also makes things like caching the
+All the above issues are a big obstacle for a wider SmartWeave contracts adoption. It also makes things like caching the
 contract state very risky - as you have very little guarantee that the state has been evaluated for proper inputs.
 
 ### Our solution
@@ -40,9 +56,9 @@ The RedStone Gateway consists of three main tasks:
 
 1. The Sync Arweave Peers Task - this task is responsible for loading information about currently active peers and rank
    them by the amount of synced blocks and response times.
-2. The Sync Blocks Task - this task is responsible for loading and indexing SmartWeave interaction transactions from the
+2. The Sync Transactions Task - this task is responsible for loading and indexing SmartWeave interaction transactions from the
    newly mined blocks
-3. Confirm Transactions Task - the most complicated task, responsible for confirming transactions.
+3. Confirm Interactions Task - the most complicated task, responsible for confirming transactions.
 
    - It takes the first PARALLEL_REQUESTS, non-confirmed transactions with block height lower than current -
      MIN_CONFIRMATIONS.
@@ -53,7 +69,7 @@ The RedStone Gateway consists of three main tasks:
 
    * the "confirmation" info for given transaction in updated in the database.
 
-![confrim interactions tsdk](./docs/conf_task.png)
+![confrim interactions task](./docs/conf_task.png)
 
 ### Benchmarks
 
@@ -96,17 +112,6 @@ This creates a huge problem when evaluating the state - especially in case of PS
 | hFhD2XG0LNKQTo4WCMfhFbD2ssxMn1vOyzwZt0qiJI4  |       Koi       |       3 |
 | o-qJmQ4B0d6TnyA_awjhiBdiq0O4Vt_dNWU3pTnhTu8  |    Bones PST    |       2 |
 
-### Further development
-
-1. An option to define the observed contracts - so that each project could run its own instance dedicated to his
-   contracts
-2. Scale the infrastructure, create backup instances, etc.
-3. A form of decentralization with disputes/voting on a challenged responses.
-4. Custom network of Arweave nodes, that will listen on and index only SmartWeave interaction transactions (probably
-   with the help of the customized Vartex gateway).
-5. Even better protection against forks - analyzing blocks history
-6. As the amount of data being transferred is rather huge - consider moving from json to protobuf?
-7. A fully featured web app that will allow browsing and interacting with contracts
 
 ### Installation
 
@@ -137,6 +142,7 @@ Result is ordered by `[last_interaction_height DESC, count(interaction) DESC]`
 Parameters:
 
 1. `page` [optional] - page, e.g.: `gateway/contracts?page=3`. If not set, first page is returned by default.
+2. `limit` [optional] - amount of interactions per single page
 
 Response:
 
@@ -177,7 +183,8 @@ Parameters:
 
 1. `contractId` - tx id of the contract to load the interactions for
 2. `page` [optional] - page, e.g.: `gateway/interactions?page=3`. If not set, first page is returned by default.
-3. `confirmatinStatus` [optional], e.g.: `gateway/interactions?confirmationStatus=orphaned`. If not set, loads all the contract interactions.
+3. `limit` [optional] - amount of interactions per single page
+4. `confirmatinStatus` [optional], e.g.: `gateway/interactions?confirmationStatus=orphaned`. If not set, loads all the contract interactions.
    1. `confimed` - loads only the `confirmed` contract interactions
    2. `orphaned` - loads only the `orphaned` contract interactions
    3. `not_orphaned` - loads both `confirmed` and `not processed` interactions
@@ -235,3 +242,16 @@ Examples:
 2. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2` - loads all contract interactions, shows 2nd. page
 3. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2&confirmationStatus=confirmed` - loads only confirmed contract interactions, shows 2nd. page
 4. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=820000&to=831901` - loads only confirmed contract interaction from block height 820000 to block height 831901
+
+
+### Further development
+
+1. An option to define the observed contracts - so that each project could run its own instance dedicated to his
+   contracts
+2. Scale the infrastructure, create backup instances, etc.
+3. A form of decentralization with disputes/voting on a challenged responses.
+4. Custom network of Arweave nodes, that will listen on and index only SmartWeave interaction transactions (probably
+   with the help of the customized Vartex gateway).
+5. Even better protection against forks - analyzing blocks history
+6. As the amount of data being transferred is rather huge - consider moving from json to protobuf?
+7. A fully featured web app that will allow browsing and interacting with contracts
