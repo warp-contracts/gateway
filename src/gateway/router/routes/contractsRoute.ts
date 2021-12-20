@@ -1,32 +1,33 @@
 import Router from "@koa/router";
 import {Benchmark} from "redstone-smartweave";
 
-const CONTRACTS_PER_PAGE = 100;
+const MAX_CONTRACTS_PER_PAGE = 100;
 
 export async function contractsRoute(ctx: Router.RouterContext) {
-  const {gatewayLogger: logger, gatewayDb} = ctx;
+  const {logger, gatewayDb} = ctx;
 
-  logger.debug("Contracts route");
+  const {page, limit} = ctx.query;
 
-  const {page} = ctx.query;
+  logger.debug("Contracts route", {page, limit});
 
   const parsedPage = page ? parseInt(page as string) : 1;
-  const offset = parsedPage ? (parsedPage - 1) * CONTRACTS_PER_PAGE : 0;
+  const parsedLimit = limit ? Math.min(parseInt(limit as string), MAX_CONTRACTS_PER_PAGE) : MAX_CONTRACTS_PER_PAGE;
+  const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
   const bindings: any[] = [];
-  parsedPage && bindings.push(CONTRACTS_PER_PAGE);
+  parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
   try {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT contract_id                                                                  AS contract,
-                 count(interaction)                                                           AS interactions,
-                 count(case when confirmation_status = 'orphaned' then 1 else null end)       AS orphaned,
-                 count(case when confirmation_status = 'confirmed' then 1 else null end)      AS confirmed,
-                 max(block_height)                                                            AS last_interaction_height,
-                 count(*) OVER ()                                                             AS total
+          SELECT contract_id                                                             AS contract,
+                 count(interaction)                                                      AS interactions,
+                 count(case when confirmation_status = 'orphaned' then 1 else null end)  AS orphaned,
+                 count(case when confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
+                 max(block_height)                                                       AS last_interaction_height,
+                 count(*) OVER ()                                                        AS total
           FROM interactions
           WHERE contract_id != ''
           GROUP BY contract_id
@@ -38,10 +39,10 @@ export async function contractsRoute(ctx: Router.RouterContext) {
     ctx.body = {
       paging: {
         total,
-        limit: CONTRACTS_PER_PAGE,
+        limit: parsedLimit,
         items: result?.rows.length,
         page: parsedPage,
-        pages: Math.ceil(total / CONTRACTS_PER_PAGE)
+        pages: Math.ceil(total / parsedLimit)
       },
       contracts: result?.rows
     };
