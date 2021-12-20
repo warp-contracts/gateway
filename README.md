@@ -1,6 +1,8 @@
 # RedStone SmartWeave Gateway
 
 RedStone SmartWeave Gateway - a fast and reliable portal to Arweave SmartWeave interaction transactions.
+(Sounds complicated, how about a fast and reliable way to load [SmartWeave as a link] transactions).
+ 
 1. fast - load your contract interactions in seconds, not minutes!
 2. reliable - built-in protection against forks and orphaned transactions
 
@@ -20,18 +22,20 @@ RedStone SmartWeave Gateway - a fast and reliable portal to Arweave SmartWeave i
 
 ### Reasoning
 
-SmartWeave is an Arweave-based protocol for lazy-evaluated smart contracts. Each interaction with contract is saved as a
-separate Arweave transaction. In order to evaluate the contract state, all of its interactions must be loaded first. The
-current available solution ("general-purpose" Arweave gateway)
-has some flaws:
+SmartWeave is an Arweave-based protocol for lazy-evaluated smart contracts. Each interaction with a contract is saved as a
+separate Arweave transaction. In order to evaluate the contract state, all of its interactions must be loaded first.
+
+(How about adding 1-2 sentences emphasizing the need for a dedicated gateway. In the case of typical content getting a duplicated or orphaned transaction is not a severe issue, while any inconsistency could be extremely harmful to smart contracts leading to a potential financial loss due to the corrupted state of token contracts).
+
+The current solution ("general-purpose" Arweave gateway) has some flaws:
 
 1. **It is slow**  
 The interactions can be loaded using the GQL endpoint, which can return only 100 interactions in a single
    batch/query. At the time of writing, each query takes from ~300ms to ~5 seconds. For
-   our "loot" contract (that has 9821 interactions) it means that loading all the contract interactions takes around 1 minute.  
+   our ["loot" contract - please add link] (that has 9821 interactions) it means that loading all the interactions takes around 1 minute.  
    There are contracts with much more interactions - the biggest one has over 280K interactions - loading all the
-   interactions for this contract takes ~3 hours. This clearly shows that current solution
-   scales poorly and is a first big obstacle for a wider SmartWeave contracts adoption.
+   interactions for this contract takes ~3 hours. This clearly shows that the current solution
+   scales poorly and is a big obstacle for a wider SmartWeave contracts adoption.
 
 2. **Orphaned transactions**  
 The Arweave gateway GQL endpoint tends to return orphaned transactions - i.e. such transactions, that are not part of
@@ -42,23 +46,23 @@ The Arweave gateway GQL endpoint tends to return orphaned transactions - i.e. su
 
 3. **Forked blocks problem**  
 No protection against transactions from forked blocks.
+(I don't see difference between 3rd and 2nd - I liked your example with duplicated transactions, can we use it here?)
 
-All the above issues are a big obstacle for a wider SmartWeave contracts adoption. It also makes things like caching the
-contract state very risky - as you have very little guarantee that the state has been evaluated for proper inputs.
+All the issues also make things like caching the contract state very risky - as you have no guarantee that the state has been evaluated for proper inputs.
 
 ### Our solution
 
-We're combining data from both the Arweave Gateway and the Arweave peers directly, perform transactions validation,
+We combine data from both the Arweave Gateway and the Arweave peers directly, perform transactions validation,
 store and index them in a dedicated database.
 ![gateway](./docs/gateway.png)
 
 The RedStone Gateway consists of three main tasks:
 
-1. The Sync Arweave Peers Task - this task is responsible for loading information about currently active peers and rank
+1. The Sync Arweave Peers Task - this task is responsible for loading information about currently active peers and ranking
    them by the amount of synced blocks and response times.
 2. The Sync Transactions Task - this task is responsible for loading and indexing SmartWeave interaction transactions from the
    newly mined blocks
-3. Confirm Interactions Task - the most complicated task, responsible for confirming transactions.
+3. Confirm Interactions Task - the most complicated task, responsible for checking if a transaction doesn't come from an orphaned block.
 
    - It takes the first PARALLEL_REQUESTS, non-confirmed transactions with block height lower than current -
      MIN_CONFIRMATIONS.
@@ -67,7 +71,7 @@ The RedStone Gateway consists of three main tasks:
    - Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS AND response for the given
      transaction is the same for all the successful rounds
 
-   * the "confirmation" info for given transaction in updated in the database.
+   * the "confirmation" info for a given transaction is updated in the database.
 
 ![confrim interactions task](./docs/conf_task.png)
 
@@ -90,9 +94,9 @@ Tested for block height range: 0 - 831901
 
 ### Orphaned transactions
 
-List of first 15 contracts with the most orphaned transactions. Orphaned transactions are transactions that are not part
+List of first 15 contracts with the highest number of orphaned transactions. Orphaned transactions are transactions that are not part
 of any block - but they are still returned by the Arweave GQL endpoint.
-This creates a huge problem when evaluating the state - especially in case of PSTs and `transfer` interactions.
+This creates a huge problem when evaluating the state - especially in the case of PSTs and `transfer` interactions.
 
 | Contract                                     |     Project     | Orphans |
 | -------------------------------------------- | :-------------: | ------: |
@@ -246,10 +250,9 @@ Examples:
 
 ### Further development
 
-1. An option to define the observed contracts - so that each project could run its own instance dedicated to his
-   contracts
+1. An option to define the observed contracts - so that each project could run its own instance dedicated to its contracts
 2. Scale the infrastructure, create backup instances, etc.
-3. A form of decentralization with disputes/voting on a challenged responses.
+3. A form of decentralization with disputes/voting on challenged responses.
 4. Custom network of Arweave nodes, that will listen on and index only SmartWeave interaction transactions (probably
    with the help of the customized Vartex gateway).
 5. Even better protection against forks - analyzing blocks history
