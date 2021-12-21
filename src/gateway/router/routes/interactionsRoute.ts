@@ -23,7 +23,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
   const parsedConfirmationStatus = confirmationStatus
-    ? confirmationStatus == "not_orphaned"
+    ? confirmationStatus == "not_corrupted"
       ? ['confirmed', 'not_processed'] : [confirmationStatus]
     : undefined;
 

@@ -1,8 +1,6 @@
-import {Knex} from "knex";
-import Application from "koa";
 import {runLoadPeersTask} from "./tasks/loadPeers";
 import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
-import {runVerifyOrphansTask} from "./tasks/verifyOrphans";
+import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransactions";
 import {runSyncTransactionsTask} from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
 
@@ -17,7 +15,7 @@ import {GatewayContext} from "./init";
  *
  * 2. blocks sync task - listens for new blocks and loads the SmartWeave interaction transactions.
  *
- * 3. interactions verifier task - tries its best to confirm that transactions are not orphaned.
+ * 3. interactions verifier task - tries its best to confirm that transactions are not corrupted.
  * It takes the first PARALLEL_REQUESTS non confirmed transactions with block height lower then
  * current - MIN_CONFIRMATIONS.
  * For each set of the selected 'interactionsToCheck' transactions it makes
@@ -26,8 +24,8 @@ import {GatewayContext} from "./init";
  * AND response for the given transaction is the same for all the successful rounds
  * - the "confirmation" info for given transaction is updated in the the database.
  *
- * 4. orphans verifier task - additional task that double-verifies interactions marked as orphans. If during the
- * re-check the interaction won't be recognized as an orphan - it is returned to the "not processed" pool.
+ * 4. corrupted transactions verifier task - additional task that double-verifies interactions marked as corrupted. If during the
+ * re-check the interaction won't be recognized as corrupted - it is returned to the "not processed" pool.
  *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
@@ -38,5 +36,5 @@ export async function runGateway(context: GatewayContext) {
 
   await runVerifyInteractionsTask(context)
 
-  await runVerifyOrphansTask(context);
+  await runVerifyCorruptedTransactionsTask(context);
 }

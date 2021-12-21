@@ -43,7 +43,7 @@ async function verifyInteractions(context: GatewayContext) {
     lastVerificationHeight
   });
 
-  // note: as the "status" endpoint for arweave.net sometime returns 504 - Bad Gateway for orphaned transactions,
+  // note: as the "status" endpoint for arweave.net sometime returns 504 - Bad Gateway for corrupted transactions,
   // we need to ask peers directly...
   // https://discord.com/channels/357957786904166400/812013044892172319/917819482787958806
   // only 7 nodes are currently fully synced, duh...
@@ -167,13 +167,13 @@ async function verifyInteractions(context: GatewayContext) {
         const statusResponse = statuses[i];
         const txId = interactionsToCheck[i].interaction_id;
         if (statusResponse.status === "rejected") {
-          // interaction is (probably) orphaned
+          // interaction is (probably) corrupted
           if (statusResponse.reason.response?.status === 404) {
             logger.warn(`Interaction ${txId} on ${statusResponse.reason.request.host} not found.`);
             roundResult.push({
               txId: txId,
               peer: statusResponse.reason.request.host,
-              result: "orphaned",
+              result: "corrupted",
               confirmations: 0,
             });
           } else {

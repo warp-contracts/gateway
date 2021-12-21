@@ -4,13 +4,13 @@ RedStone SmartWeave Gateway - a fast and reliable way to
 load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) transactions.
 
 1. fast - load your contract interactions in seconds, not minutes!
-2. reliable - built-in protection against forks and orphaned transactions
+2. reliable - built-in protection against forks and corrupted transactions
 
 - [RedStone SmartWeave Gateway](#redstone-smartweave-gateway)
     + [Reasoning](#reasoning)
     + [Our solution](#our-solution)
     + [Benchmarks](#benchmarks)
-    + [Orphaned transactions](#orphaned-transactions)
+    + [Corrupted transactions](#corrupted-transactions)
     + [Installation](#installation)
     + [Running](#running)
     + [Running (Docker)](#running--docker-)
@@ -24,7 +24,7 @@ load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) t
 SmartWeave is an Arweave-based protocol for lazy-evaluated smart contracts. Each interaction with a contract is saved as
 a separate Arweave transaction. In order to evaluate the contract state, all of its interactions must be loaded first.
 
-In the case of typical content getting an orphaned or not confirmed transaction is not a severe issue, while any
+In the case of typical content getting a corrupted or not confirmed transaction is not a severe issue, while any
 inconsistency could be extremely harmful to smart contracts, leading to a potential financial loss due to the corrupted
 state of token contracts.
 
@@ -36,31 +36,32 @@ The current available solution ("general-purpose" Arweave gateway) has some flaw
    For our [loot contract](https://github.com/redstone-finance/smartweave-loot) (that has 9821 interactions) it means
    that loading all the interactions takes around 1 minute.   
    There are contracts with much more interactions - the biggest one has over 280K interactions - loading all the
-   interactions for this contract takes ~3 hours. This clearly shows that the current solution scales poorly and is a first
-   big obstacle for a wider SmartWeave contracts adoption.
+   interactions for this contract takes ~3 hours. This clearly shows that the current solution scales poorly and is a
+   first big obstacle for a wider SmartWeave contracts adoption.
 
-2. **Orphaned transactions**  
-   The Arweave gateway GQL endpoint tends to return orphaned transactions - i.e. such transactions, that are not part of
-   any Arweave block - probably due to some caching issues/bug in the Arweave
+2. **Corrupted transactions**  
+   The Arweave gateway GQL endpoint tends to return corrupted transactions - i.e. such transactions, that are not part
+   of any Arweave block - probably due to some caching issues/bug in the Arweave
    gateway (https://discord.com/channels/357957786904166400/756557551234973696/891254856638160917)
-   The state evaluated with such orphaned transactions is obviously flawed. In case of our loot contract - 25
-   transactions returned by the Arweave gateway are orphaned.
+   The state evaluated with such corrupted transactions is obviously flawed. In case of our loot contract - 25
+   transactions returned by the Arweave gateway are corrupted.
 
 3. **Forked blocks problem**  
    No protection against transactions from forked blocks.
 
-All the issues also make things like caching the contract state very risky - as you have no guarantee that the state has been evaluated for proper inputs.
+All the issues also make things like caching the contract state very risky - as you have no guarantee that the state has
+been evaluated for proper inputs.
 
 ### Our solution
 
-We combine data from both the Arweave Gateway and the Arweave peers directly, perform transactions validation,
-store and index them in a dedicated database.
+We combine data from both the Arweave Gateway and the Arweave peers directly, perform transactions validation, store and
+index them in a dedicated database.
 ![gateway](./docs/gateway.png)
 
 The RedStone Gateway consists of three main tasks:
 
-1. The Sync Arweave Peers Task - this task is responsible for loading information about currently active peers and ranking
-   them by the amount of synced blocks and response times.
+1. The Sync Arweave Peers Task - this task is responsible for loading information about currently active peers and
+   ranking them by the amount of synced blocks and response times.
 2. The Sync Transactions Task - this task is responsible for loading and indexing SmartWeave interaction transactions
    from the newly mined blocks
 3. Confirm Interactions Task - the most complicated task, responsible for confirming transactions.
@@ -74,7 +75,7 @@ The RedStone Gateway consists of three main tasks:
 
     * the "confirmation" info for a given transaction is updated in the database.
 
-![confrim interactions task](./docs/conf_task.png)
+![confirmm interactions task](./docs/conf_task.png)
 
 ### Benchmarks
 
@@ -93,13 +94,13 @@ Tested for block height range: 0 - 831901
 | <sub>-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ</sub> |   ArDrive PST   |                    4786 |          <sub>20s</sub> |       <sub>710ms</sub> |              <sub>190ms</sub> |
 | <sub>usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A</sub> |    Verto PST    |                    1041 |           <sub>3s</sub> |       <sub>459ms</sub> |              <sub>142ms</sub> |
 
-### Orphaned transactions
+### Corrupted transactions
 
-List of first 15 contracts with the highest number of orphaned transactions. Orphaned transactions are transactions that are not part
-of any block - but they are still returned by the Arweave GQL endpoint. This creates a huge problem when evaluating the
-state - especially in the case of PSTs and `transfer` interactions.
+List of first 15 contracts with the highest number of corrupted transactions. Corrupted transactions are transactions
+that are not part of any block - but they are still returned by the Arweave GQL endpoint. This creates a huge problem
+when evaluating the state - especially in the case of PSTs and `transfer` interactions.
 
-| Contract                                     |     Project     | Orphans |
+| Contract                                     |     Project     | Corrupted |
 | -------------------------------------------- | :-------------: | ------: |
 | Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY  | RedStone - loot |      25 |
 | -8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ  |   ArDrive PST   |       9 |
@@ -176,8 +177,8 @@ Response:
       // total amount of interactions
       "last_interaction_height": 835229,
       // last synced interaction block height
-      "orphaned": "6",
-      // amount of orphaned interactions
+      "corrupted": "6",
+      // amount of corrupted interactions
       "total": "4145"
       // total amount of contracts (helper)
     }
@@ -194,6 +195,7 @@ Examples:
 #### Interactions endpoint
 
 `/gateway/interactions?contractId=<contract_id>&confirmationStatus=<confirmation_status>&from=<block_height_from>&to=<block_height_to>&page=<page>`
+
 - returns a list of a given contract interactions, ordered by `[block_height ASC]`.
 
 Parameters:
@@ -201,11 +203,11 @@ Parameters:
 1. `contractId` - tx id of the contract to load the interactions for
 2. `page` [optional] - page, e.g.: `gateway/interactions?page=3`. If not set, first page is returned by default.
 3. `limit` [optional] - amount of interactions per single page
-4. `confirmatinStatus` [optional], e.g.: `gateway/interactions?confirmationStatus=orphaned`. If not set, loads all the
+4. `confirmatinStatus` [optional], e.g.: `gateway/interactions?confirmationStatus=corrupted`. If not set, loads all the
    contract interactions.
     1. `confimed` - loads only the `confirmed` contract interactions
-    2. `orphaned` - loads only the `orphaned` contract interactions
-    3. `not_orphaned` - loads both `confirmed` and `not processed` interactions
+    2. `corrupted` - loads only the `corrupted` contract interactions
+    3. `not_corrupted` - loads both `confirmed` and `not processed` interactions
 
 Response:
 
@@ -278,7 +280,7 @@ Response:
         "recipient": ""
       },
       "status": "confirmed"
-      // confirmation status of this interaction (not_processed | confirmed | orphaned | forked)
+      // confirmation status of this interaction (not_processed | confirmed | corrupted | forked)
     }
   ]
 }
@@ -289,15 +291,16 @@ Examples:
 1. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY` -
    loads all contract interactions
 2. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2`
-   - loads all contract interactions, shows 2nd. page
+    - loads all contract interactions, shows 2nd. page
 3. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2&confirmationStatus=confirmed`
-   - loads only confirmed contract interactions, shows 2nd. page
+    - loads only confirmed contract interactions, shows 2nd. page
 4. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=820000&to=831901`
-   - loads only confirmed contract interaction from block height 820000 to block height 831901
+    - loads only confirmed contract interaction from block height 820000 to block height 831901
 
 ### Further development
 
-1. An option to define the observed contracts - so that each project could run its own instance dedicated to its contracts.
+1. An option to define the observed contracts - so that each project could run its own instance dedicated to its
+   contracts.
 2. Scale the infrastructure, create backup instances, etc.
 3. A form of decentralization with disputes/voting on challenged responses.
 4. Custom network of Arweave nodes, that will listen on and index only SmartWeave interaction transactions (probably
