@@ -9,7 +9,7 @@ GET http://localhost:5666/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq
 http://localhost:5666/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=771000
 
 ### with filtering
-http://localhost:5666/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=orphaned
+http://localhost:5666/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=corrupted
 
 ### ...and paging
 http://localhost:5666/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&page=10

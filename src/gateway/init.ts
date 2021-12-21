@@ -11,6 +11,8 @@ import {runGateway} from "./runGateway";
 import gatewayRouter from "./router/gatewayRouter";
 import Application from "koa";
 import {initGatewayDb} from "../db/schema";
+import * as fs from "fs";
+import cluster from 'cluster';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -28,6 +30,16 @@ export interface GatewayContext {
     path: envPath
   });
 
+  let removeLock = false;
+
+  process.on('SIGINT', () => {
+    logger.warn("SIGINT");
+    if (removeLock) {
+      logger.debug("Removing lock file.");
+      fs.rmSync('gateway.lock');
+    }
+  });
+
   const port = parseInt((process.env.PORT || 5666).toString());
 
   LoggerFactory.use(new TsLogFactory());
@@ -35,14 +47,15 @@ export interface GatewayContext {
   LoggerFactory.INST.logLevel("debug", "gateway");
 
   const arweave = initArweave();
-  const gatewayLogger = LoggerFactory.INST.create("gateway");
+  const logger = LoggerFactory.INST.create("gateway");
 
   const gatewayDb = connect();
+
   await initGatewayDb(gatewayDb);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
   app.context.gatewayDb = gatewayDb;
-  app.context.logger = gatewayLogger;
+  app.context.logger = logger;
   app.context.arweave = arweave;
 
   app.use(cors());
@@ -52,12 +65,22 @@ export interface GatewayContext {
   app.use(gatewayRouter.allowedMethods());
 
   app.listen(port);
-  gatewayLogger.info(`Listening on port ${port}`);
+  logger.info(`Listening on port ${port}`);
 
-  try {
-    await runGateway(app.context);
-  } catch (e: any) {
-    gatewayLogger.error('Error from gateway', e);
+  if (!fs.existsSync('gateway.lock')) {
+    try {
+      logger.debug(`Creating lock file for ${cluster.worker?.id}`);
+      // note: if another process in cluster have already created the file - writing here
+      // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
+      fs.writeFileSync('gateway.lock', "" + cluster.worker?.id, { flag: 'wx' });
+      removeLock = true;
+
+      // note: only one worker in cluster runs the gateway tasks
+      // all workers in cluster run the http server
+      await runGateway(app.context);
+    } catch (e: any) {
+      logger.error('Error from gateway', e);
+    }
   }
 })();
 

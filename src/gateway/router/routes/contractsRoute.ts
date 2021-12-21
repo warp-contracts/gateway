@@ -24,7 +24,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
       `
           SELECT contract_id                                                             AS contract,
                  count(interaction)                                                      AS interactions,
-                 count(case when confirmation_status = 'orphaned' then 1 else null end)  AS orphaned,
+                 count(case when confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
                  count(case when confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
                  max(block_height)                                                       AS last_interaction_height,
                  count(*) OVER ()                                                        AS total

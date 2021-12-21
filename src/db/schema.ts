@@ -28,7 +28,7 @@ export async function initGatewayDb(db: Knex) {
         .index()
         .notNullable()
         // TODO: add constraint for allowed values
-        // not_processed | orphaned | confirmed | forked
+        // not_processed | corrupted | confirmed | forked
         .defaultTo("not_processed");
       table.string("confirming_peer");
       table.bigInteger("confirmed_at_height");
