@@ -13,6 +13,7 @@ import Application from "koa";
 import {initGatewayDb} from "../db/schema";
 import * as fs from "fs";
 import cluster from 'cluster';
+import welcomeRouter from "./router/welcomeRouter";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -63,6 +64,9 @@ export interface GatewayContext {
 
   app.use(gatewayRouter.routes());
   app.use(gatewayRouter.allowedMethods());
+
+  app.use(welcomeRouter.routes());
+  app.use(welcomeRouter.allowedMethods());
 
   app.listen(port);
   logger.info(`Listening on port ${port}`);
