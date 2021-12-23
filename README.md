@@ -11,6 +11,8 @@ load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) t
     + [Our solution](#our-solution)
     + [Benchmarks](#benchmarks)
     + [Corrupted transactions](#corrupted-transactions)
+    + [Public access](#public-access)
+    + [RedStone SmartContracts SDK integration](#redstone-smart-contracts-sdk-integration)
     + [Installation](#installation)
     + [Running](#running)
     + [Running (Docker)](#running--docker-)
@@ -98,7 +100,10 @@ Tested for block height range: 0 - 831901
 
 List of first 15 contracts with the highest number of corrupted transactions. Corrupted transactions are transactions
 that are not part of any block - but they are still returned by the Arweave GQL endpoint. This creates a huge problem
-when evaluating the state - especially in the case of PSTs and `transfer` interactions.
+when evaluating the state - especially in the case of PSTs and `transfer` interactions.  
+You can read more about these issues [here](https://discord.com/channels/357957786904166400/756557551234973696/827281270722527293), 
+[here](https://discord.com/channels/357957786904166400/756557551234973696/891254856638160917)
+and [here](https://discord.com/channels/357957786904166400/358038065974870018/903427357409439755).
 
 | Contract                                     |     Project     | Corrupted |
 | -------------------------------------------- | :-------------: | ------: |
@@ -117,6 +122,14 @@ when evaluating the state - especially in the case of PSTs and `transfer` intera
 | k-3vYDcwrusBtnouFXh6QlRvwfH57lLvnG8jnf_q1EM  |       Koi       |       4 |
 | hFhD2XG0LNKQTo4WCMfhFbD2ssxMn1vOyzwZt0qiJI4  |       Koi       |       3 |
 | o-qJmQ4B0d6TnyA_awjhiBdiq0O4Vt_dNWU3pTnhTu8  |    Bones PST    |       2 |
+
+### Public access 
+RedStone SmartWeave Gateway is currently publicly available under [https://gateway.redstone.finance/](https://gateway.redstone.finance/).
+
+### RedStone SmartContracts SDK integration
+We've prepared a dedicated plugin for the RedStone SmartContracts SDK that allows to easily connect and load
+interactions from the RedStone SmartWeave Gateway.
+More details [here](https://github.com/redstone-finance/redstone-smartcontracts#using-the-redstone-gateway).
 
 ### Installation
 
@@ -151,7 +164,7 @@ Parameters:
 
 Response:
 
-```json
+```json5
 {
   "paging": {
     // paging info object
@@ -211,7 +224,7 @@ Parameters:
 
 Response:
 
-```json
+```json5
 {
   // paging info object
   "paging": {
