@@ -81,7 +81,8 @@ The RedStone Gateway consists of three main tasks:
 
 ### Benchmarks
 
-Tested for block height range: 0 - 831901
+Tested for block height range: 0 - 831901. Benchmarks source can be found [here](https://github.com/redstone-finance/redstone-smartcontracts/blob/main/tools/gateway-benchmark.ts)
+and [here](https://github.com/redstone-finance/redstone-smartcontracts/blob/main/tools/gateways-comparison-benchmark.ts).
 
 | Contract                                               |     Project     | <sub>Interactions</sub> |   <sub>Arweave GW</sub> | <sub>RedStone GW</sub> | <sub>RedStone GW(cache)</sub> |
 | ------------------------------------------------------ | :-------------: | ----------------------: | ----------------------: | ---------------------: | ----------------------------: |
@@ -95,6 +96,8 @@ Tested for block height range: 0 - 831901
 | <sub>Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY</sub> | RedStone - loot |                    9821 |      <sub>1min 1s</sub> |       <sub>834ms</sub> |              <sub>358ms</sub> |
 | <sub>-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ</sub> |   ArDrive PST   |                    4786 |          <sub>20s</sub> |       <sub>710ms</sub> |              <sub>190ms</sub> |
 | <sub>usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A</sub> |    Verto PST    |                    1041 |           <sub>3s</sub> |       <sub>459ms</sub> |              <sub>142ms</sub> |
+
+![img.png](./docs/benchmark.png)
 
 ### Corrupted transactions
 
@@ -154,7 +157,7 @@ More details [here](https://github.com/redstone-finance/redstone-smartcontracts#
 
 #### Contracts endpoint
 
-`/gateway/contracts?page=<page>` - returns the list of all the currently registered contract.  
+`/gateway/contracts?page=<page>` - returns the list of all the currently registered contracts.  
 Result is ordered by `[last_interaction_height DESC, count(interaction) DESC]`
 
 Parameters:
