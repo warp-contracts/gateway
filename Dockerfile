@@ -17,4 +17,4 @@ RUN yarn build
 EXPOSE 5666
 
 # Running the gateway
-CMD yarn start:prod --env_path ./.secrets/.env
+CMD yarn start:prod --env_path .secrets/.env

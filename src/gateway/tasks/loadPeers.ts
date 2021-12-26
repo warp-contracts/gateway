@@ -21,7 +21,7 @@ export async function runLoadPeersTask(context: GatewayContext) {
     .runAsyncEvery(PEERS_CHECK_INTERVAL_MS, false);
 }
 
-export async function loadPeers(context: GatewayContext) {
+async function loadPeers(context: GatewayContext) {
   const {logger, arweave, gatewayDb} = context;
 
   logger.info("Updating peers...");

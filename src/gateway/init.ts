@@ -39,6 +39,7 @@ export interface GatewayContext {
       logger.debug("Removing lock file.");
       fs.rmSync('gateway.lock');
     }
+    process.exit();
   });
 
   const port = parseInt((process.env.PORT || 5666).toString());

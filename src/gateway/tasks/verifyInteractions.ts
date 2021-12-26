@@ -62,6 +62,11 @@ async function verifyInteractions(context: GatewayContext) {
     return;
   }
 
+  if (peers.length < PARALLEL_REQUESTS) {
+    logger.warn("Arweave peers not loaded yet.");
+    return;
+  }
+
 
   // note:
   // 1. excluding Kyve contracts, as they moved to Moonbeam (and their contracts have the most interactions)

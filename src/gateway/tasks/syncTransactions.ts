@@ -102,7 +102,9 @@ async function syncTransactions(context: GatewayContext) {
   }
 
   const currentNetworkHeight = results[1].value.height;
-  const lastProcessedBlockHeight = results[0].value["block_height"];
+  // note: the first SW interaction was registered at 472810 block height
+  const lastProcessedBlockHeight = results[0].value?.block_height || 472810;
+  logger.debug(`Last processed block height: ${lastProcessedBlockHeight}`);
 
   logger.debug("Network info", {
     currentNetworkHeight,
@@ -110,7 +112,10 @@ async function syncTransactions(context: GatewayContext) {
   });
 
   const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
-  const heightTo = currentNetworkHeight;
+  let heightTo = currentNetworkHeight;
+  if (heightTo > heightFrom + 5000) {
+    heightTo = heightFrom + 5000;
+  }
 
   logger.debug("Loading interactions for blocks", {
     heightFrom,
