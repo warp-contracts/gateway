@@ -43,7 +43,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
           SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
           FROM interactions
           WHERE contract_id = ? ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
-          ORDER BY block_height ASC, interaction_id ASC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
+          ORDER BY block_height DESC, interaction_id DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
     const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;

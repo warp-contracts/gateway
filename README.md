@@ -81,8 +81,8 @@ The RedStone Gateway consists of three main tasks:
 
 ### Benchmarks
 
-Tested for block height range: 0 - 831901. Benchmarks source can be found [here](https://github.com/redstone-finance/redstone-smartcontracts/blob/main/tools/gateway-benchmark.ts)
-and [here](https://github.com/redstone-finance/redstone-smartcontracts/blob/main/tools/gateways-comparison-benchmark.ts).
+Tested for block height range: 0 - 831901. Benchmarks source can be found [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark.ts)
+and [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark-comparison.ts).
 
 | Contract                                               |     Project     | <sub>Interactions</sub> |   <sub>Arweave GW</sub> | <sub>RedStone GW</sub> | <sub>RedStone GW(cache)</sub> |
 | ------------------------------------------------------ | :-------------: | ----------------------: | ----------------------: | ---------------------: | ----------------------------: |
@@ -141,12 +141,20 @@ More details [here](https://github.com/redstone-finance/redstone-smartcontracts#
 
 ### Running
 
+To run gateway in production:
 1. Create a file `.secrets/.env` with a `DB_URL` property with PostgreSQL connections string,
    eg: `DB_URL=postgresql://<user>:<password>@<db-host>:<db-port>/<database-name>`
 
-2. Run gateway with `yarn start`.  
+2. Run gateway with `yarn start:prod`.  
    You can pass the `env_path` param with path to the `.env` file, eg:  
    `yarn start:prod --env_path .secrets/.env`
+
+
+To run gateway locally:
+1. Create a file `.secrets/local.env` with a `DB_URL` property with PostgreSQL connections string,
+   eg: `DB_URL=postgresql://<user>:<password>@<db-host>:<db-port>/<database-name>`
+
+2. Run gateway with `yarn start:local`.  
 
 ### Running (Docker)
 
@@ -205,8 +213,8 @@ Response:
 
 Examples:
 
-1. `curl https://d1o5nlqr4okus2.cloudfront.net/gateway/contracts`
-2. `curl https://d1o5nlqr4okus2.cloudfront.net/gateway/contracts?page=6`
+1. `curl https://gateway.redstone.finance/gateway/contracts`
+2. `curl https://gateway.redstone.finance/gateway/contracts?page=6`
 
 #### Interactions endpoint
 
@@ -304,13 +312,13 @@ Response:
 
 Examples:
 
-1. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY` -
+1. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY` -
    loads all contract interactions
-2. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2`
+2. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2`
     - loads all contract interactions, shows 2nd. page
-3. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2&confirmationStatus=confirmed`
+3. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2&confirmationStatus=confirmed`
     - loads only confirmed contract interactions, shows 2nd. page
-4. `https://d1o5nlqr4okus2.cloudfront.net/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=820000&to=831901`
+4. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=820000&to=831901`
     - loads only confirmed contract interaction from block height 820000 to block height 831901
 
 ### Further development
