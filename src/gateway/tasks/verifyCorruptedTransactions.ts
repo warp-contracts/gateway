@@ -7,7 +7,7 @@ const CORRUPTED_CHECK_INTERVAL_MS = 1000 * 60 * 60 * 4;
 export async function runVerifyCorruptedTransactionsTask(context: GatewayContext) {
   await TaskRunner
     .from("[corrupted transactions check]", verifyCorruptedTransactions, context)
-    .runAsyncEvery(CORRUPTED_CHECK_INTERVAL_MS);
+    .runAsyncEvery(CORRUPTED_CHECK_INTERVAL_MS, false);
 }
 
 async function verifyCorruptedTransactions(context: GatewayContext) {

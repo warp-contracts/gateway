@@ -3,6 +3,7 @@ import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
 import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransactions";
 import {runSyncTransactionsTask} from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
+import {runContractsMetadataTask} from "./tasks/contractsMetadata";
 
 
 /**
@@ -27,6 +28,8 @@ import {GatewayContext} from "./init";
  * 4. corrupted transactions verifier task - additional task that double-verifies interactions marked as corrupted. If during the
  * re-check the interaction won't be recognized as corrupted - it is returned to the "not processed" pool.
  *
+ * 5. contracts metadata task - loads the contracts metadata (src, init state, owner, etc.)
+ *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
 export async function runGateway(context: GatewayContext) {
@@ -37,4 +40,6 @@ export async function runGateway(context: GatewayContext) {
   await runVerifyInteractionsTask(context)
 
   await runVerifyCorruptedTransactionsTask(context);
+
+  await runContractsMetadataTask(context);
 }

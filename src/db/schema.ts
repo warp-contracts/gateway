@@ -47,4 +47,18 @@ export async function initGatewayDb(db: Knex) {
       table.boolean("blacklisted").notNullable().defaultTo("false");
     });
   }
+
+  if (!(await db.schema.hasTable("contracts"))) {
+    await db.schema.createTable("contracts", (table) => {
+      table.string("contract_id", 64).primary();
+      table.string("src_tx_id", 64).index();
+      table.text("src");
+      table.jsonb("init_state");
+      table.string("owner", 64).index();
+      // pst | other
+      table.string("type", 64).index();
+      // eg: kyve, koi, pianity, redstone, verto...
+      table.string("project", 64).index();
+    });
+  }
 }
