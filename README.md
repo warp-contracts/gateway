@@ -232,6 +232,7 @@ Parameters:
     1. `confimed` - loads only the `confirmed` contract interactions
     2. `corrupted` - loads only the `corrupted` contract interactions
     3. `not_corrupted` - loads both `confirmed` and `not processed` interactions
+5. `totalCount` [optional], e.g.: `gateway/interactions?totalCount=true`. If set to `true` endpoint returns interactions' count for each of confirmation statuses (confirmed | corrupted | forked | not_processed)
 
 Response:
 
@@ -249,6 +250,15 @@ Response:
     // page number
     "pages": 42
     // total amount of pages
+  },
+  // summary of interactions count based on confirmation status of each interaction
+  "total": {
+    "confirmations": {
+      "confirmed: "56",
+      "corrupted": "2",
+      "not_processed": "1",
+      "forked": "0"
+    }
   },
   // array of "interaction" objects
   "interactions": [

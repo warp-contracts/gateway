@@ -6,7 +6,7 @@ const MAX_INTERACTIONS_PER_PAGE = 5000;
 export async function interactionsRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb} = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to} = ctx.query;
+  const {contractId, confirmationStatus, page, limit, from, to, totalCount} = ctx.query;
 
   logger.debug("Interactions route", {
     contractId,
@@ -14,7 +14,8 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     page,
     limit,
     from,
-    to
+    to,
+    totalCount
   });
 
   const parsedPage = page ? parseInt(page as string) : 1;
@@ -46,6 +47,18 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
           ORDER BY block_height DESC, interaction_id DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
+
+    const totalInteractions: any = totalCount == 'true' && await gatewayDb.raw(
+      `
+          SELECT count(case when confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
+                count(case when confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
+                count(case when confirmation_status = 'not_processed' then 1 else null end) AS not_processed,
+                count(case when confirmation_status = 'forked' then 1 else null end) AS forked
+          FROM interactions
+          WHERE contract_id = ?;
+      `, contractId
+    );
+
     const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
 
     ctx.body = {
@@ -56,6 +69,14 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
         page: parsedPage,
         pages: Math.ceil(total / parsedLimit)
       },
+      ...(totalInteractions && {
+        total: {
+          confirmed: totalInteractions?.rows[0].confirmed,
+          corrupted: totalInteractions?.rows[0].corrupted,
+          not_processed: totalInteractions?.rows[0].not_processed,
+          forked: totalInteractions?.rows[0].forked
+        }
+      }),
       interactions: result?.rows?.map((r: any) => ({
         status: r.confirmation_status,
         confirming_peers: r.confirming_peer,
@@ -63,6 +84,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
         interaction: r.interaction
       }))
     };
+
     logger.debug("Interactions loaded in", benchmark.elapsed());
 
   } catch (e: any) {
