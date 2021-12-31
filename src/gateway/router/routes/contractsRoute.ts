@@ -22,15 +22,18 @@ export async function contractsRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT contract_id                                                             AS contract,
-                 count(interaction)                                                      AS interactions,
-                 count(case when confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
-                 count(case when confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
-                 max(block_height)                                                       AS last_interaction_height,
-                 count(*) OVER ()                                                        AS total
-          FROM interactions
-          WHERE contract_id != ''
-          GROUP BY contract_id
+          SELECT i.contract_id                                                             AS contract,
+                 c.owner                                                                   AS owner,                                                                       
+                 count(i.interaction)                                                      AS interactions,
+                 count(case when i.confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
+                 count(case when i.confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
+                 max(i.block_height)                                                       AS last_interaction_height,
+                 count(*) OVER ()                                                          AS total
+          FROM interactions i
+          LEFT JOIN contracts c
+          ON c.contract_id = i.contract_id
+          WHERE i.contract_id != ''
+          GROUP BY i.contract_id, c.owner
           ORDER BY last_interaction_height DESC, interactions DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
