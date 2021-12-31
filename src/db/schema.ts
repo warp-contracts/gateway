@@ -35,6 +35,7 @@ export async function initGatewayDb(db: Knex) {
       table.string("confirmations");
       table.index(['contract_id', 'confirmation_status', 'block_height'], 'contract_id_block_height_confirmations_status_index');
       table.index(['contract_id', 'block_height'], 'contract_id_block_height_index');
+      table.index(['block_height desc', 'interaction_id desc'], 'block_height_interaction_id_index');
     });
   }
 
