@@ -41,7 +41,11 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT interaction, confirmation_status, confirming_peer, confirmations, count(*) OVER () AS total
+          SELECT interaction,
+                 confirmation_status,
+                 confirming_peer,
+                 confirmations,
+                 count(*) OVER () AS total
           FROM interactions
           WHERE contract_id = ? ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
           ORDER BY block_height DESC, interaction_id DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
@@ -50,10 +54,10 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
     const totalInteractions: any = totalCount == 'true' && await gatewayDb.raw(
       `
-          SELECT count(case when confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
-                count(case when confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
-                count(case when confirmation_status = 'not_processed' then 1 else null end) AS not_processed,
-                count(case when confirmation_status = 'forked' then 1 else null end) AS forked
+          SELECT count(case when confirmation_status = 'corrupted' then 1 else null end)     AS corrupted,
+                 count(case when confirmation_status = 'confirmed' then 1 else null end)     AS confirmed,
+                 count(case when confirmation_status = 'not_processed' then 1 else null end) AS not_processed,
+                 count(case when confirmation_status = 'forked' then 1 else null end)        AS forked
           FROM interactions
           WHERE contract_id = ?;
       `, contractId
