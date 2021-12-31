@@ -197,6 +197,8 @@ Response:
       // amount of confirmed interactions
       "contract": "NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s",
       // contract tx id
+      "owner": "DymtKHHegWz-HWrNnOL12Rxz_7dLrY2R3wVwTFE8788",
+      // contract owner address
       "interactions": "10763",
       // total amount of interactions
       "last_interaction_height": 835229,
