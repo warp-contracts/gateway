@@ -67,7 +67,7 @@ async function loadFromRedstoneGateway(
   toBlockHeight?: string
 ) {
   const loader = new RedstoneGatewayInteractionsLoader(
-    "https://d1o5nlqr4okus2.cloudfront.net"
+    "https://gateway.redstone.finance"
   );
 
   const benchmark = Benchmark.measure();
