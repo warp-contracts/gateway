@@ -7,7 +7,7 @@ export async function statsRoute(ctx: Router.RouterContext) {
   const {phrase} = ctx.params;
 
   if (phrase?.length < 3) {
-    ctx.body = [];
+    ctx.body = {};
     return;
   }
 
