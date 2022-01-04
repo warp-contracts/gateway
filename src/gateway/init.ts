@@ -60,7 +60,11 @@ export interface GatewayContext {
   app.context.logger = logger;
   app.context.arweave = arweave;
 
-  app.use(cors());
+  app.use(cors({
+    async origin() {
+      return '*';
+    },
+  }));
   app.use(bodyParser());
 
   app.use(gatewayRouter.routes());
