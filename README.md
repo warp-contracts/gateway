@@ -7,19 +7,19 @@ load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) t
 2. reliable - built-in protection against forks and corrupted transactions
 
 - [RedStone SmartWeave Gateway](#redstone-smartweave-gateway)
-    + [Reasoning](#reasoning)
-    + [Our solution](#our-solution)
-    + [Benchmarks](#benchmarks)
-    + [Corrupted transactions](#corrupted-transactions)
-    + [Public access](#public-access)
-    + [RedStone SmartContracts SDK integration](#redstone-smart-contracts-sdk-integration)
-    + [Installation](#installation)
-    + [Running](#running)
-    + [Running (Docker)](#running--docker-)
-    + [HTTP API Reference](#http-api-reference)
-        - [Contracts endpoint](#contracts-endpoint)
-        - [Interactions endpoint](#interactions-endpoint)
-    + [Further development](#further-development)
+  - [Reasoning](#reasoning)
+  - [Our solution](#our-solution)
+  - [Benchmarks](#benchmarks)
+  - [Corrupted transactions](#corrupted-transactions)
+  - [Public access](#public-access)
+  - [RedStone SmartContracts SDK integration](#redstone-smart-contracts-sdk-integration)
+  - [Installation](#installation)
+  - [Running](#running)
+  - [Running (Docker)](#running--docker-)
+  - [HTTP API Reference](#http-api-reference)
+    - [Contracts endpoint](#contracts-endpoint)
+    - [Interactions endpoint](#interactions-endpoint)
+  - [Further development](#further-development)
 
 ### Reasoning
 
@@ -36,7 +36,7 @@ The current available solution ("general-purpose" Arweave gateway) has some flaw
    The interactions can be loaded using the GQL endpoint, which can return only 100 interactions in a single
    batch/query. At the time of writing, each query takes from ~300ms to ~5 seconds.  
    For our [loot contract](https://github.com/redstone-finance/smartweave-loot) (that has 9821 interactions) it means
-   that loading all the interactions takes around 1 minute.   
+   that loading all the interactions takes around 1 minute.  
    There are contracts with much more interactions - the biggest one has over 280K interactions - loading all the
    interactions for this contract takes ~3 hours. This clearly shows that the current solution scales poorly and is a
    first big obstacle for a wider SmartWeave contracts adoption.
@@ -68,20 +68,21 @@ The RedStone Gateway consists of three main tasks:
    from the newly mined blocks
 3. Confirm Interactions Task - the most complicated task, responsible for confirming transactions.
 
-    - It takes the first PARALLEL_REQUESTS, non-confirmed transactions with block height lower than current -
-      MIN_CONFIRMATIONS.
-    - For each set of the selected 'interactionsToCheck' transactions it makes TX_CONFIRMATION_SUCCESSFUL_ROUNDS query
-      rounds (to randomly selected at each round peers).
-    - Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS AND response for the given
-      transaction is the same for all the successful rounds
+   - It takes the first PARALLEL_REQUESTS, non-confirmed transactions with block height lower than current -
+     MIN_CONFIRMATIONS.
+   - For each set of the selected 'interactionsToCheck' transactions it makes TX_CONFIRMATION_SUCCESSFUL_ROUNDS query
+     rounds (to randomly selected at each round peers).
+   - Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS AND response for the given
+     transaction is the same for all the successful rounds
 
-    * the "confirmation" info for a given transaction is updated in the database.
+   * the "confirmation" info for a given transaction is updated in the database.
 
 ![confirmm interactions task](./docs/conf_task.png)
 
 ### Benchmarks
 
-Tested for block height range: 0 - 831901. Benchmarks source can be found [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark.ts)
+Tested for block height range: 0 - 831901. Benchmarks source can be
+found [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark.ts)
 and [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark-comparison.ts).
 
 | Contract                                               |     Project     | <sub>Interactions</sub> |   <sub>Arweave GW</sub> | <sub>RedStone GW</sub> | <sub>RedStone GW(cache)</sub> |
@@ -104,35 +105,39 @@ and [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway
 List of first 15 contracts with the highest number of corrupted transactions. Corrupted transactions are transactions
 that are not part of any block - but they are still returned by the Arweave GQL endpoint. This creates a huge problem
 when evaluating the state - especially in the case of PSTs and `transfer` interactions.  
-You can read more about these issues [here](https://discord.com/channels/357957786904166400/756557551234973696/827281270722527293), 
+You can read more about these
+issues [here](https://discord.com/channels/357957786904166400/756557551234973696/827281270722527293),
 [here](https://discord.com/channels/357957786904166400/756557551234973696/891254856638160917)
 and [here](https://discord.com/channels/357957786904166400/358038065974870018/903427357409439755).
 
-| Contract                                     |     Project     | Corrupted |
-| -------------------------------------------- | :-------------: | ------: |
-| Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY  | RedStone - loot |      25 |
-| -8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ  |   ArDrive PST   |       9 |
-| 1TFZeEewEgUpqT5i2dsZSIRKJq3h1C7ZVi-gE8G-W6U  |     EMD PST     |       8 |
-| usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A  |    Verto PST    |       8 |
-| wXotIq_fSPvYWR12h6IS-kfD18Y5jkr4UPPp15e0wo0  |       Koi       |       7 |
-| NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s  |       Koi       |       6 |
-| 3NQQlLebRbq32Rtdxf_xaiWCJcQZNmoLvmOxLclGRcU  |      Kyve       |       5 |
-| LppT1p3wri4FCKzW5buohsjWxpJHC58_rgIO-rYTMB8  |       Koi       |       5 |
-| QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8  |       Koi       |       4 |
-| gTT7\_-8nrB1HKyJrPoUiku8-5aL3_wva5BJEn8sUCl4 |       Koi       |       4 |
-| SJ3l7474UHh3Dw6dWVT1bzsJ-8JvOewtGoDdOecWIZo  |     Pianity     |       4 |
-| K9Lb5WzRHxGyQqZVKL-ckBcnwtEouEBOlphKNmLhHtY  |       Koi       |       4 |
-| k-3vYDcwrusBtnouFXh6QlRvwfH57lLvnG8jnf_q1EM  |       Koi       |       4 |
-| hFhD2XG0LNKQTo4WCMfhFbD2ssxMn1vOyzwZt0qiJI4  |       Koi       |       3 |
-| o-qJmQ4B0d6TnyA_awjhiBdiq0O4Vt_dNWU3pTnhTu8  |    Bones PST    |       2 |
+| Contract                                     | Corrupted |
+| -------------------------------------------- | --------: |
+| Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY  |        25 |
+| -8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ  |         9 |
+| 1TFZeEewEgUpqT5i2dsZSIRKJq3h1C7ZVi-gE8G-W6U  |         8 |
+| usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A  |         8 |
+| wXotIq_fSPvYWR12h6IS-kfD18Y5jkr4UPPp15e0wo0  |         7 |
+| NwaSMGCdz6Yu5vNjlMtCNBmfEkjYfT-dfYkbQQDGn5s  |         6 |
+| 3NQQlLebRbq32Rtdxf_xaiWCJcQZNmoLvmOxLclGRcU  |         5 |
+| LppT1p3wri4FCKzW5buohsjWxpJHC58_rgIO-rYTMB8  |         5 |
+| QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8  |         4 |
+| gTT7\_-8nrB1HKyJrPoUiku8-5aL3_wva5BJEn8sUCl4 |         4 |
+| SJ3l7474UHh3Dw6dWVT1bzsJ-8JvOewtGoDdOecWIZo  |         4 |
+| K9Lb5WzRHxGyQqZVKL-ckBcnwtEouEBOlphKNmLhHtY  |         4 |
+| k-3vYDcwrusBtnouFXh6QlRvwfH57lLvnG8jnf_q1EM  |         4 |
+| hFhD2XG0LNKQTo4WCMfhFbD2ssxMn1vOyzwZt0qiJI4  |         3 |
+| o-qJmQ4B0d6TnyA_awjhiBdiq0O4Vt_dNWU3pTnhTu8  |         2 |
 
-### Public access 
-RedStone SmartWeave Gateway is currently publicly available under [https://gateway.redstone.finance/](https://gateway.redstone.finance/).
+### Public access
+
+RedStone SmartWeave Gateway is currently publicly available
+under [https://gateway.redstone.finance/](https://gateway.redstone.finance/).
 
 ### RedStone SmartContracts SDK integration
+
 We've prepared a dedicated plugin for the RedStone SmartContracts SDK that allows to easily connect and load
-interactions from the RedStone SmartWeave Gateway.
-More details [here](https://github.com/redstone-finance/redstone-smartcontracts#using-the-redstone-gateway).
+interactions from the RedStone SmartWeave Gateway. More
+details [here](https://github.com/redstone-finance/redstone-smartcontracts#using-the-redstone-gateway).
 
 ### Installation
 
@@ -142,6 +147,7 @@ More details [here](https://github.com/redstone-finance/redstone-smartcontracts#
 ### Running
 
 To run gateway in production:
+
 1. Create a file `.secrets/.env` with a `DB_URL` property with PostgreSQL connections string,
    eg: `DB_URL=postgresql://<user>:<password>@<db-host>:<db-port>/<database-name>`
 
@@ -149,12 +155,12 @@ To run gateway in production:
    You can pass the `env_path` param with path to the `.env` file, eg:  
    `yarn start:prod --env_path .secrets/.env`
 
-
 To run gateway locally:
+
 1. Create a file `.secrets/local.env` with a `DB_URL` property with PostgreSQL connections string,
    eg: `DB_URL=postgresql://<user>:<password>@<db-host>:<db-port>/<database-name>`
 
-2. Run gateway with `yarn start:local`.  
+2. Run gateway with `yarn start:local`.
 
 ### Running (Docker)
 
@@ -231,10 +237,11 @@ Parameters:
 3. `limit` [optional] - amount of interactions per single page
 4. `confirmatinStatus` [optional], e.g.: `gateway/interactions?confirmationStatus=corrupted`. If not set, loads all the
    contract interactions.
-    1. `confimed` - loads only the `confirmed` contract interactions
-    2. `corrupted` - loads only the `corrupted` contract interactions
-    3. `not_corrupted` - loads both `confirmed` and `not processed` interactions
-5. `totalCount` [optional], e.g.: `gateway/interactions?totalCount=true`. If set to `true` endpoint returns interactions' count for each of confirmation statuses (confirmed | corrupted | forked | not_processed)
+   1. `confimed` - loads only the `confirmed` contract interactions
+   2. `corrupted` - loads only the `corrupted` contract interactions
+   3. `not_corrupted` - loads both `confirmed` and `not processed` interactions
+5. `totalCount` [optional], e.g.: `gateway/interactions?totalCount=true`. If set to `true` endpoint returns
+   interactions' count for each of confirmation statuses (confirmed | corrupted | forked | not_processed)
 
 Response:
 
@@ -256,7 +263,9 @@ Response:
   // summary of interactions count based on confirmation status of each interaction
   "total": {
     "confirmations": {
-      "confirmed: "56",
+      "confirmed: "
+      56
+      ",
       "corrupted": "2",
       "not_processed": "1",
       "forked": "0"
@@ -327,11 +336,11 @@ Examples:
 1. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY` -
    loads all contract interactions
 2. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2`
-    - loads all contract interactions, shows 2nd. page
+   - loads all contract interactions, shows 2nd. page
 3. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&page=2&confirmationStatus=confirmed`
-    - loads only confirmed contract interactions, shows 2nd. page
+   - loads only confirmed contract interactions, shows 2nd. page
 4. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=820000&to=831901`
-    - loads only confirmed contract interaction from block height 820000 to block height 831901
+   - loads only confirmed contract interaction from block height 820000 to block height 831901
 
 ### Further development
 
