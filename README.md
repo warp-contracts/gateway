@@ -20,7 +20,6 @@ load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) t
     - [Contracts endpoint](#contracts-endpoint)
     - [Interactions endpoint](#interactions-endpoint)
   - [Further development](#further-development)
-
 ### Reasoning
 
 SmartWeave is an Arweave-based protocol for lazy-evaluated smart contracts. Each interaction with a contract is saved as
@@ -176,8 +175,11 @@ Result is ordered by `[last_interaction_height DESC, count(interaction) DESC]`
 
 Parameters:
 
-1. `page` [optional] - page, e.g.: `gateway/contracts?page=3`. If not set, first page is returned by default.
-2. `limit` [optional] - amount of interactions per single page
+1. `type` [optional] - filter records by contract type. If not set, all types of contracts are returned.
+   1. `pst`
+   2. `other`
+2. `page` [optional] - page, e.g.: `gateway/contracts?page=3`. If not set, first page is returned by default.
+3. `limit` [optional] - amount of interactions per single page
 
 Response:
 
@@ -205,6 +207,8 @@ Response:
       // contract tx id
       "owner": "DymtKHHegWz-HWrNnOL12Rxz_7dLrY2R3wVwTFE8788",
       // contract owner address
+      "type": "pst",
+      // contract type (pst/other)
       "interactions": "10763",
       // total amount of interactions
       "last_interaction_height": 835229,

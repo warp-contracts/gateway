@@ -6,15 +6,16 @@ const MAX_CONTRACTS_PER_PAGE = 100;
 export async function contractsRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb} = ctx;
 
-  const {page, limit} = ctx.query;
+  const {type, page, limit} = ctx.query;
 
-  logger.debug("Contracts route", {page, limit});
+  logger.debug("Contracts route", {type, page, limit});
 
   const parsedPage = page ? parseInt(page as string) : 1;
   const parsedLimit = limit ? Math.min(parseInt(limit as string), MAX_CONTRACTS_PER_PAGE) : MAX_CONTRACTS_PER_PAGE;
   const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
   const bindings: any[] = [];
+  type && bindings.push(type);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -24,6 +25,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
       `
           SELECT i.contract_id                                                             AS contract,
                  c.owner                                                                   AS owner,
+                 c.type                                                                    AS type,
                  count(*)                                                                  AS interactions,
                  count(case when i.confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
                  count(case when i.confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
@@ -32,8 +34,8 @@ export async function contractsRoute(ctx: Router.RouterContext) {
           FROM interactions i
                    LEFT JOIN contracts c
                              ON c.contract_id = i.contract_id
-          WHERE i.contract_id != ''
-          GROUP BY i.contract_id, c.owner
+          WHERE i.contract_id != '' ${type ? 'AND c.type = ?' : ''}
+          GROUP BY i.contract_id, c.owner, c.type
           ORDER BY last_interaction_height DESC, interactions DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
