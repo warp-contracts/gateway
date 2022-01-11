@@ -2,8 +2,10 @@ import Router from "@koa/router";
 import {contractsRoute} from "./routes/contractsRoute";
 import {interactionsRoute} from "./routes/interactionsRoute";
 import {searchRoute} from "./routes/searchRoute";
-import {statsRoute} from "./routes/statsRoute";
-import {statsTxPerDayRoute} from "./routes/statsTxPerDayRoute";
+import {statsTotalInteractionsRoute} from "./routes/stats/statsTotalInteractionsRoute";
+import {statsTxPerDayRoute} from "./routes/stats/statsTxPerDayRoute";
+import {statsContractsPerMonthRoute} from "./routes/stats/statsContractsPerMonth";
+import {statsTagsRoute} from "./routes/stats/statsTagsRoute";
 import {contractRoute} from "./routes/contractRoute";
 import {interactionRoute} from "./routes/interactionRoute";
 
@@ -14,7 +16,9 @@ gatewayRouter.get("/contracts/:id", contractRoute);
 gatewayRouter.get("/search/:phrase", searchRoute);
 gatewayRouter.get("/interactions", interactionsRoute);
 gatewayRouter.get("/interactions/:id", interactionRoute);
-gatewayRouter.get("/stats", statsRoute);
-gatewayRouter.get("/stats/per-day", statsTxPerDayRoute);
+gatewayRouter.get("/stats/total", statsTotalInteractionsRoute);
+gatewayRouter.get("/stats/tx-per-day", statsTxPerDayRoute);
+gatewayRouter.get("/stats/contracts-per-month", statsContractsPerMonthRoute);
+gatewayRouter.get("/stats/tags", statsTagsRoute);
 
 export default gatewayRouter;

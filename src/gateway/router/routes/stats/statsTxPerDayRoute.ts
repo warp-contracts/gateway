@@ -4,13 +4,6 @@ import {Benchmark} from "redstone-smartweave";
 export async function statsTxPerDayRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb} = ctx;
 
-  const {phrase} = ctx.params;
-
-  if (phrase?.length < 3) {
-    ctx.body = [];
-    return;
-  }
-
   try {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
