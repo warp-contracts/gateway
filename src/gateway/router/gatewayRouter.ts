@@ -6,11 +6,13 @@ import {statsRoute} from "./routes/statsRoute";
 import {statsTxPerDayRoute} from "./routes/statsTxPerDayRoute";
 import {contractRoute} from "./routes/contractRoute";
 import {interactionRoute} from "./routes/interactionRoute";
+import {safeContractsRoute} from "./routes/safeContractsRoute";
 
 const gatewayRouter = new Router({prefix: '/gateway'});
 
 gatewayRouter.get("/contracts", contractsRoute);
 gatewayRouter.get("/contracts/:id", contractRoute);
+gatewayRouter.get("/contracts-safe", safeContractsRoute);
 gatewayRouter.get("/search/:phrase", searchRoute);
 gatewayRouter.get("/interactions", interactionsRoute);
 gatewayRouter.get("/interactions/:id", interactionRoute);
