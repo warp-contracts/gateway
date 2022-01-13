@@ -131,6 +131,7 @@ and [here](https://discord.com/channels/357957786904166400/358038065974870018/90
 
 RedStone SmartWeave Gateway is currently publicly available
 under [https://gateway.redstone.finance/](https://gateway.redstone.finance/).
+The contracts scanner web app is available under [https://scanner.redstone.tools/](https://scanner.redstone.tools/).
 
 ### RedStone SmartContracts SDK integration
 
