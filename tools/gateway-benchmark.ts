@@ -50,7 +50,9 @@ async function gatewayBenchmark() {
   const loader =
     gateway == "arweave"
       ? new ArweaveGatewayInteractionsLoader(arweave)
-      : new RedstoneGatewayInteractionsLoader("gateway.redstone.finance");
+      : new RedstoneGatewayInteractionsLoader(
+          "https://gateway.redstone.finance"
+        );
 
   const options = gateway == "arweave" ? new DefaultEvaluationOptions() : null;
 
@@ -74,6 +76,8 @@ async function gatewayBenchmark() {
       timeSpent.toString(),
     ].map((el) => colors.blue(el))
   );
+
+  console.log(table.toString());
 }
 
 gatewayBenchmark().catch((e) => console.error(e));

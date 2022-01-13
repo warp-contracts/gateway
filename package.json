@@ -12,25 +12,25 @@
   "license": "MIT",
   "author": "Redstone Team <dev@redstone.finance>",
   "dependencies": {
-    "@koa/cors": "^3.1.0",
+    "@koa/cors": "3.1.0",
     "@koa/router": "10.1.1",
-    "@types/yargs": "^17.0.7",
+    "@types/yargs": "17.0.7",
     "arweave": "1.10.18",
     "axios": "0.24.0",
     "dotenv": "10.0.0",
     "knex": "0.95.14",
     "koa": "2.13.4",
     "koa-bodyparser": "4.3.0",
-    "koa-compress": "^5.1.0",
+    "koa-compress": "5.1.0",
     "node-fetch": "3.1.0",
-    "pg": "^8.7.1",
-    "redstone-smartweave": "^0.4.10",
-    "yargs": "^17.3.0"
+    "pg": "8.7.1",
+    "redstone-smartweave": "0.4.10",
+    "yargs": "17.3.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.3",
-    "@types/cli-table": "^0.3.0",
-    "@types/koa-bodyparser": "^4.3.4",
+    "@types/jest": "27.0.3",
+    "@types/cli-table": "0.3.0",
+    "@types/koa-bodyparser": "4.3.4",
     "@types/koa__router": "8.0.11",
     "@types/node-fetch": "3.0.3",
     "@types/object-hash": "2.2.1",
@@ -41,9 +41,9 @@
     "prettier": "2.5.0",
     "ts-node-dev": "1.1.8",
     "typescript": "4.5.2",
-    "jest": "^27.4.5",
-    "cli-table": "^0.3.11",
-    "colors": "^1.4.0",
-    "ts-jest": "^27.1.2"
+    "jest": "27.4.5",
+    "cli-table": "0.3.11",
+    "colors": "1.4.0",
+    "ts-jest": "27.1.2"
   }
 }
