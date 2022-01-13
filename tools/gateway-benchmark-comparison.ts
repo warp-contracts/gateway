@@ -59,6 +59,8 @@ async function gatewayComparisonBenchmark() {
       `${timeSpentRedstone.toString()}ms`,
     ].map((el) => colors.blue(el))
   );
+
+  console.log(table.toString());
 }
 
 async function loadFromRedstoneGateway(
@@ -78,6 +80,7 @@ async function loadFromRedstoneGateway(
       parseInt(toBlockHeight as string)
     );
   }
+
   return (
     Math.round(parseInt(benchmark.elapsed().toString().replace("ms", ""))) / 3
   );
