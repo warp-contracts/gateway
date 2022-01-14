@@ -67,8 +67,8 @@ The RedStone Gateway consists of three main tasks:
    from the newly mined blocks
 3. Confirm Interactions Task - the most complicated task, responsible for confirming transactions.
 
-   - It takes the first PARALLEL_REQUESTS, non-confirmed transactions with block height lower than current -
-     MIN_CONFIRMATIONS.
+   - It takes the first PARALLEL_REQUESTS, non-confirmed transactions with block height lower than (current_network_height -
+     MIN_CONFIRMATIONS).
    - For each set of the selected 'interactionsToCheck' transactions it makes TX_CONFIRMATION_SUCCESSFUL_ROUNDS query
      rounds (to randomly selected at each round peers).
    - Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS AND response for the given
