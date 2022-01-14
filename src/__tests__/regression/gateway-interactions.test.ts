@@ -64,12 +64,12 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
       contractTxId,
       0,
-      8301901
+      850190
     );
     const responseArweaveInteractionsLoader: GQLEdgeInterface[] = await arweaveInteractionsLoader.load(
       contractTxId,
       0,
-      8301901,
+      850190,
       new DefaultEvaluationOptions()
     );
 
