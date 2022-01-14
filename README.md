@@ -72,9 +72,7 @@ The RedStone Gateway consists of three main tasks:
    - For each set of the selected 'interactionsToCheck' transactions it makes TX_CONFIRMATION_SUCCESSFUL_ROUNDS query
      rounds (to randomly selected at each round peers).
    - Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS AND response for the given
-     transaction is the same for all the successful rounds
-
-   * the "confirmation" info for a given transaction is updated in the database.
+     transaction is the same for all the successful rounds - the "confirmation" info for a given transaction is updated in the database.
 
 ![confirmm interactions task](./docs/conf_task.png)
 
