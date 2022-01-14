@@ -20,6 +20,7 @@ load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) t
     - [Contracts endpoint](#contracts-endpoint)
     - [Interactions endpoint](#interactions-endpoint)
   - [Further development](#further-development)
+
 ### Reasoning
 
 SmartWeave is an Arweave-based protocol for lazy-evaluated smart contracts. Each interaction with a contract is saved as
@@ -208,6 +209,8 @@ Response:
       // contract owner address
       "type": "pst",
       // contract type (pst/other)
+      "token": "KOI",
+      // contract token symbol
       "interactions": "10763",
       // total amount of interactions
       "last_interaction_height": 835229,
