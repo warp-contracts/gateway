@@ -75,7 +75,6 @@ export interface GatewayContext {
 
   app.listen(port);
   logger.info(`Listening on port ${port}`);
-
   if (!fs.existsSync('gateway.lock')) {
     try {
       logger.debug(`Creating lock file for ${cluster.worker?.id}`);

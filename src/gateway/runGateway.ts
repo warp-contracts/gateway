@@ -4,6 +4,7 @@ import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransac
 import {runSyncTransactionsTask} from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
 import {runContractsMetadataTask} from "./tasks/contractsMetadata";
+import {runStatsTask} from "./tasks/stats";
 
 
 /**
@@ -29,6 +30,9 @@ import {runContractsMetadataTask} from "./tasks/contractsMetadata";
  * re-check the interaction won't be recognized as corrupted - it is returned to the "not processed" pool.
  *
  * 5. contracts metadata task - loads the contracts metadata (src, init state, owner, etc.)
+ * 
+ * 6. stats task - loads all the contracts (including all data types, with or without interacions) for statistical purposes,
+ * runs every 3 hours. Similair logic applied as for blocks sync task - task listens for new blocks and loads new contracts.
  *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
@@ -42,4 +46,6 @@ export async function runGateway(context: GatewayContext) {
   await runVerifyCorruptedTransactionsTask(context);
 
   await runContractsMetadataTask(context);
+
+  await runStatsTask(context);
 }

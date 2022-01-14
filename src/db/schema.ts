@@ -62,4 +62,23 @@ export async function initGatewayDb(db: Knex) {
       table.string("project", 64).index();
     });
   }
+
+  if (!(await db.schema.hasTable("stats_contracts"))) {
+    await db.schema.createTable("stats_contracts", (table) => {
+      table.string("contract_id", 64).primary();
+      table.string("owner", 64).index();
+      table.bigInteger("block_height").notNullable().index();      
+      table.string("block_id").notNullable();
+      table.string("timestamp").index();
+      table.jsonb("fee");
+    });
+  }
+
+  if (!(await db.schema.hasTable("stats_tags"))) {
+    await db.schema.createTable("stats_tags", (table) => {
+      table.string("contract_id", 64).notNullable().primary();
+      table.string("name").notNullable().index();
+      table.text("value").notNullable().index();
+    });
+  }
 }
