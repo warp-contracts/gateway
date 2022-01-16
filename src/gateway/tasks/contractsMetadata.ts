@@ -36,7 +36,8 @@ async function loadContractsMetadata(context: GatewayContext) {
   for (const row of result) {
     logger.debug(`Loading ${row.contract} definition.`);
     try {
-      const definition = await definitionLoader.load(row.contract.trim());
+      const definition: any = await definitionLoader.load(row.contract.trim());
+      const type = evalType(definition.initState);
       await gatewayDb("contracts")
         .insert({
           contract_id: definition.txId,
@@ -44,7 +45,9 @@ async function loadContractsMetadata(context: GatewayContext) {
           src: definition.src,
           init_state: definition.initState,
           owner: definition.owner,
-          type: evalType(definition.initState)
+          type: evalType(definition.initState),
+          pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
+          pst_name: type == 'pst' ? definition.initState?.name : null
         })
         .onConflict("contract_id")
         .merge();
