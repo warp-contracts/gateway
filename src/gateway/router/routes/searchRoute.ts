@@ -26,10 +26,10 @@ export async function searchRoute(ctx: Router.RouterContext) {
           UNION ALL
           SELECT contract_id, 'pst_contract' as type, '{}'::jsonb as interaction, '' as confirmation_status
           FROM contracts
-          WHERE init_state->>'ticker' ILIKE ?
+          WHERE pst_ticker ILIKE ? OR pst_name ILIKE ?
           ORDER BY type
           LIMIT 30;
-      `, [`${phrase}%`, `${phrase}%`, `${phrase}%`]
+      `, [`${phrase}%`, `${phrase}%`, `${phrase}%`, `${phrase}%`]
     );
     ctx.body = result?.rows;
     logger.debug("Contracts loaded in", benchmark.elapsed());
