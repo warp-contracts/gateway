@@ -19,6 +19,7 @@ load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) t
   - [HTTP API Reference](#http-api-reference)
     - [Contracts endpoint](#contracts-endpoint)
     - [Interactions endpoint](#interactions-endpoint)
+  - [Missing features](#missing-features)
   - [Further development](#further-development)
 
 ### Reasoning
@@ -347,6 +348,10 @@ Examples:
    - loads only confirmed contract interactions, shows 2nd. page
 4. `https://gateway.redstone.finance/gateway/interactions?contractId=Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY&confirmationStatus=confirmed&from=820000&to=831901`
    - loads only confirmed contract interaction from block height 820000 to block height 831901
+
+### Missing features
+1. Support for interactions with multiple "Contract"/"Input" tags - https://github.com/redstone-finance/redstone-sw-gateway/issues/17
+2. Support for internal writes - https://github.com/redstone-finance/redstone-sw-gateway/issues/15
 
 ### Further development
 
