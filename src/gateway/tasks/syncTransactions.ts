@@ -2,7 +2,7 @@ import {
   Benchmark,
   GQLEdgeInterface,
   GQLResultInterface,
-  GQLTransactionsResultInterface,
+  GQLTransactionsResultInterface, RedStoneLogger,
   SmartWeaveTags,
   TagsParser
 } from "redstone-smartweave";
@@ -155,10 +155,10 @@ async function syncTransactions(context: GatewayContext) {
   for (let i = 0; i < gqlInteractions.length; i++) {
     const interaction = gqlInteractions[i];
     const blockId = interaction.node.block.id;
-    let functionName;
 
     const contractId = tagsParser.getContractTag(interaction);
     const input = tagsParser.getInputTag(interaction, contractId)?.value;
+    const functionName = parseFunctionName(input, logger);
 
     // Eyes Pop - Skin Explodes - Everybody Dead
     if (contractId === undefined || input === undefined) {
@@ -167,15 +167,6 @@ async function syncTransactions(context: GatewayContext) {
       // TODO: probably would be wise to save such stuff in a separate table?
     }
 
-    try {
-      functionName = JSON.parse(input).function;
-    } catch (e) {
-      logger.error("Could not parse function name", {
-        id: interaction.node.id,
-        input: input,
-      });
-      functionName = "[Error during parsing function name]";
-    }
 
     // now this one is really fucked-up - if the interaction contains the same tag X-times,
     // the default GQL endpoint will return this interaction X-times...
@@ -334,5 +325,16 @@ async function load(
     const data: GQLResultInterface = response.data;
 
     return data.data.transactions;
+  }
+}
+
+export function parseFunctionName(input: string, logger: RedStoneLogger) {
+  try {
+    return JSON.parse(input).function;
+  } catch (e) {
+    logger.error("Could not parse function name", {
+      input: input,
+    });
+    return "[Error during parsing function name]";
   }
 }

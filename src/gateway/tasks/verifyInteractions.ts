@@ -83,6 +83,7 @@ async function verifyInteractions(context: GatewayContext) {
             WHERE block_height < (SELECT max(block_height) FROM interactions) - ?
               AND block_height > ?
               AND confirmation_status = 'not_processed'
+              AND source = 'arweave'
               AND contract_id NOT IN (
                                       'LkfzZvdl_vfjRXZOPjnov18cGnnK3aDKj0qSQCgkCX8', /* kyve  */
                                       'l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c', /* kyve  */

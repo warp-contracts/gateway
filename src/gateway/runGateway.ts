@@ -4,6 +4,7 @@ import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransac
 import {runSyncTransactionsTask} from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
 import {runContractsMetadataTask} from "./tasks/contractsMetadata";
+import {runBundlrCheck} from "../bundlr/connect";
 
 
 /**
@@ -33,6 +34,8 @@ import {runContractsMetadataTask} from "./tasks/contractsMetadata";
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
 export async function runGateway(context: GatewayContext) {
+  //await runBundlrCheck(context);
+
   await runLoadPeersTask(context);
 
   await runSyncTransactionsTask(context);
