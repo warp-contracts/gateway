@@ -210,8 +210,10 @@ Response:
       // contract owner address
       "type": "pst",
       // contract type (pst/other)
-      "token": "KOI",
-      // contract token symbol
+      "pst_ticker": "KOI",
+      // pst contract ticker,
+      "pst_name": "KOI",
+      // pst contract name
       "interactions": "10763",
       // total amount of interactions
       "last_interaction_height": 835229,
@@ -350,6 +352,7 @@ Examples:
    - loads only confirmed contract interaction from block height 820000 to block height 831901
 
 ### Missing features
+
 1. Support for interactions with multiple "Contract"/"Input" tags - https://github.com/redstone-finance/redstone-sw-gateway/issues/17
 2. Support for internal writes - https://github.com/redstone-finance/redstone-sw-gateway/issues/15
 
