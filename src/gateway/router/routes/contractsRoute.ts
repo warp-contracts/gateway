@@ -26,7 +26,8 @@ export async function contractsRoute(ctx: Router.RouterContext) {
           SELECT i.contract_id                                                             AS contract,
                  c.owner                                                                   AS owner,
                  c.type                                                                    AS type,
-                 c.pst_ticker                                                              AS token,
+                 c.pst_ticker                                                              AS pst_ticker,
+                 c.pst_name                                                                AS pst_name,
                  count(*)                                                                  AS interactions,
                  count(case when i.confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
                  count(case when i.confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
@@ -37,7 +38,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
                              ON c.contract_id = i.contract_id
           WHERE i.contract_id != ''
             AND c.type != 'error' ${type ? 'AND c.type = ?' : ''}
-          GROUP BY i.contract_id, c.owner, c.type, c.pst_ticker
+          GROUP BY i.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name
           ORDER BY last_interaction_height DESC, interactions DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );

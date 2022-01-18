@@ -19,7 +19,9 @@ export async function contractRoute(ctx: Router.RouterContext) {
                  src_tx_id as "srcTxId",
                  src as src,
                  init_state as "initState",
-                 owner as owner
+                 owner as owner, 
+                 pst_ticker as "pstTicker",
+                 pst_name as "pstName"
           FROM contracts
           WHERE contract_id = ?;
       `, [id]
