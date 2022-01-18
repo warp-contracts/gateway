@@ -14,6 +14,8 @@ import {initGatewayDb} from "../db/schema";
 import * as fs from "fs";
 import cluster from 'cluster';
 import welcomeRouter from "./router/welcomeRouter";
+import Bundlr from "@bundlr-network/client";
+import {initBundlr} from "../bundlr/connect";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -24,6 +26,7 @@ export interface GatewayContext {
   gatewayDb: Knex;
   logger: RedStoneLogger;
   arweave: Arweave;
+  bundlr: Bundlr
 }
 
 (async () => {
@@ -47,18 +50,19 @@ export interface GatewayContext {
   LoggerFactory.use(new TsLogFactory());
   LoggerFactory.INST.logLevel("info");
   LoggerFactory.INST.logLevel("debug", "gateway");
-
-  const arweave = initArweave();
   const logger = LoggerFactory.INST.create("gateway");
 
-  const gatewayDb = connect();
+  const arweave = initArweave();
+  const bundlr = initBundlr(logger);
 
+  const gatewayDb = connect();
   await initGatewayDb(gatewayDb);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
   app.context.gatewayDb = gatewayDb;
   app.context.logger = logger;
   app.context.arweave = arweave;
+  app.context.bundlr = bundlr;
 
   app.use(cors({
     async origin() {

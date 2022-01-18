@@ -3,7 +3,8 @@
     "strict": true,
     "outDir": "dist",
     "esModuleInterop": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "skipLibCheck": true
   },
   "ts-node": {
     "files": true
