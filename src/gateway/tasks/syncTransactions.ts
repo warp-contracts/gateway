@@ -111,10 +111,10 @@ async function syncTransactions(context: GatewayContext) {
     lastProcessedBlockHeight,
   });
 
-  const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
+  const heightFrom = 845000;//lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
   let heightTo = currentNetworkHeight;
-  if (heightTo > heightFrom + 5000) {
-    heightTo = heightFrom + 5000;
+  if (heightTo > heightFrom + 20000) {
+    heightTo = heightFrom + 20000;
   }
 
   logger.debug("Loading interactions for blocks", {
