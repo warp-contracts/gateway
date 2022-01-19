@@ -59,17 +59,20 @@ describe.each([750000, 775000, 800000, 825000, 850000])('testing for block heigh
 
 describe.each(testCases)('testing contractId %s', (contractTxId) => {
   it('returns same interactions ids for RedstoneGatewayLoader and ArweaveGatewayInteractionsLoader', async () => {
+    const arweaveNetworkInfo = await arweave.network.getInfo();
+    // testing for the more current block height to detect possible gw desynchronize issues
+    const blockHeight = arweaveNetworkInfo.height - 20;
     const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance');
     const arweaveInteractionsLoader = new ArweaveGatewayInteractionsLoader(arweave);
     const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
       contractTxId,
       0,
-      850190
+      blockHeight
     );
     const responseArweaveInteractionsLoader: GQLEdgeInterface[] = await arweaveInteractionsLoader.load(
       contractTxId,
       0,
-      850190,
+      blockHeight,
       new DefaultEvaluationOptions()
     );
 
