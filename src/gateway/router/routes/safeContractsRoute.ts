@@ -13,7 +13,7 @@ export async function safeContractsRoute(ctx: Router.RouterContext) {
                    JOIN interactions i ON i.contract_id = c.contract_id
           WHERE c.src NOT LIKE '%readContractState%' AND c.src NOT LIKE '%unsafeClient%'
           GROUP BY i.contract_id
-          HAVING count(i) < 20000 AND count(i) >= 10
+          HAVING count(i) < 20000 AND count(i) >= 1
           ORDER BY count(i) DESC;
       `
     );
