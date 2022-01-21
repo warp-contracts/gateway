@@ -1,0 +1,49 @@
+import Router from "@koa/router";
+import {Benchmark} from "redstone-smartweave";
+import {stringify} from "JSONStream";
+
+export async function interactionsStreamRoute(ctx: Router.RouterContext) {
+  const {logger, gatewayDb} = ctx;
+
+  const {contractId, confirmationStatus, from, to} = ctx.query;
+
+  logger.debug("Interactions stream route", {
+    contractId,
+    confirmationStatus,
+    from,
+    to,
+  });
+
+  const parsedConfirmationStatus = confirmationStatus
+    ? confirmationStatus == "not_corrupted"
+      ? ['confirmed', 'not_processed'] : [confirmationStatus]
+    : undefined;
+
+  const bindings: any[] = [];
+  bindings.push(contractId);
+  from && bindings.push(from as string);
+  to && bindings.push(to as string);
+
+  try {
+    const benchmark = Benchmark.measure();
+    const result: any = gatewayDb.raw(
+      `
+          SELECT interaction
+          FROM interactions
+          WHERE contract_id = ? ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
+          ORDER BY block_height ASC, interaction_id ASC;
+      `, bindings
+    )
+      .stream() // note: https://www.npmjs.com/package/pg-query-stream is required for stream to work
+      .pipe(stringify());
+
+    ctx.set('Content-Type', 'application/json; charset=utf-8');
+    ctx.set('Transfer-Encoding', 'chunked');
+
+    ctx.body = result;
+  } catch (e: any) {
+    ctx.logger.error(e);
+    ctx.status = 500;
+    ctx.body = {message: e};
+  }
+}

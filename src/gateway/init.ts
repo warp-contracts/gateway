@@ -98,7 +98,7 @@ export interface GatewayContext {
 
       // note: only one worker in cluster runs the gateway tasks
       // all workers in cluster run the http server
-      await runGateway(app.context);
+      //await runGateway(app.context);
     } catch (e: any) {
       logger.error('Error from gateway', e);
     }

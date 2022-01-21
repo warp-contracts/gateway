@@ -8,6 +8,7 @@ import {contractRoute} from "./routes/contractRoute";
 import {interactionRoute} from "./routes/interactionRoute";
 import {safeContractsRoute} from "./routes/safeContractsRoute";
 import {sequencerRoute} from "./routes/sequencerRoute";
+import {interactionsStreamRoute} from "./routes/interactionsStreamRoute";
 
 const gatewayRouter = new Router({prefix: '/gateway'});
 
@@ -16,6 +17,7 @@ gatewayRouter.get("/contracts/:id", contractRoute);
 gatewayRouter.get("/contracts-safe", safeContractsRoute);
 gatewayRouter.get("/search/:phrase", searchRoute);
 gatewayRouter.get("/interactions", interactionsRoute);
+gatewayRouter.get("/interactions-stream", interactionsStreamRoute);
 gatewayRouter.get("/interactions/:id", interactionRoute);
 gatewayRouter.get("/stats", statsRoute);
 gatewayRouter.get("/stats/per-day", statsTxPerDayRoute);
