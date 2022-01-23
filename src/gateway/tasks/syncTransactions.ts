@@ -111,7 +111,10 @@ async function syncTransactions(context: GatewayContext) {
     lastProcessedBlockHeight,
   });
 
-  const heightFrom = 845000;//lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
+  //855618
+
+  // 858609 - 15163 @ viewblock
+  const heightFrom = 859902;//lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
   let heightTo = currentNetworkHeight;
   if (heightTo > heightFrom + 20000) {
     heightTo = heightFrom + 20000;
@@ -218,7 +221,7 @@ async function syncTransactions(context: GatewayContext) {
           await gatewayDb("interactions")
             .insert(interactionsInserts)
             .onConflict("interaction_id")
-            .merge();
+            .ignore();
 
         logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
         interactionsInserts = [];
@@ -239,7 +242,7 @@ async function syncTransactions(context: GatewayContext) {
       const interactionsInsertResult: any = await gatewayDb("interactions")
         .insert(interactionsInserts)
         .onConflict("interaction_id")
-        .merge();
+        .ignore();
       logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
     } catch (e) {
       logger.error(e);

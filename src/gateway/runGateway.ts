@@ -33,13 +33,13 @@ import {runContractsMetadataTask} from "./tasks/contractsMetadata";
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
 export async function runGateway(context: GatewayContext) {
-  await runLoadPeersTask(context);
+  //await runLoadPeersTask(context);
 
   await runSyncTransactionsTask(context);
 
-  await runVerifyInteractionsTask(context)
+  //await runVerifyInteractionsTask(context)
 
-  await runVerifyCorruptedTransactionsTask(context);
+  //await runVerifyCorruptedTransactionsTask(context);
 
-  await runContractsMetadataTask(context);
+  //await runContractsMetadataTask(context);
 }
