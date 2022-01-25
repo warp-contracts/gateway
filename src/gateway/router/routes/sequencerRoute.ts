@@ -1,18 +1,13 @@
 import Router from "@koa/router";
-import {
-  Benchmark,
-  GQLEdgeInterface,
-  GQLNodeInterface, GQLTagInterface,
-  LexicographicalInteractionsSorter,
-  TagsParser
-} from "redstone-smartweave";
 import Transaction from "arweave/node/lib/transaction";
-import {Knex} from "knex";
 import {parseFunctionName} from "../../tasks/syncTransactions";
 import {BlockData} from "arweave/node/blocks";
+import Arweave from "arweave";
+import {JWKInterface} from "arweave/node/lib/wallet";
+import {arrayToHex, GQLTagInterface} from "redstone-smartweave";
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr} = ctx;
+  const {logger, gatewayDb, arweave, bundlr, jwk} = ctx;
 
   const transaction: Transaction = new Transaction({...ctx.request.body});
 
@@ -22,14 +17,12 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const originalOwner = transaction.owner;
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
 
-  const sorter = new LexicographicalInteractionsSorter(arweave);
-
   const networkInfo = await arweave.network.getInfo();
   const blockInfo: BlockData = await arweave.blocks.get(networkInfo.current);
 
   const currentHeight = networkInfo.height;
   const currentBlockId = networkInfo.current;
-  const sortKey = await sorter.createSortKey(currentBlockId, transaction.id, currentHeight);
+  const sortKey = await createSortKey(arweave, jwk, currentBlockId, transaction.id, currentHeight);
 
   let contractTag: string = '', inputTag: string = '';
 
@@ -60,15 +53,15 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     ...decodedTags
   ];
 
+  // TODO: add fallback to 2nd bundlr node.
   const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
 
   await bTx.sign();
   const bundlrResponse = await bTx.upload();
   logger.debug("Bundlr response id", bundlrResponse.data.id);
 
-  logger.debug("Inserting into sequencer table");
-
   try {
+    logger.debug("Inserting into sequencer table");
     await gatewayDb("sequencer")
       .insert({
         original_sig: originalSignature,
@@ -77,6 +70,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sequence_block_id: currentBlockId,
         sequence_block_height: currentHeight,
         sequence_transaction_id: transaction.id,
+        sequence_sort_key: sortKey,
         bundler_tx_id: bTx.id,
         bundler_response: JSON.stringify(bundlrResponse.data)
       });
@@ -129,5 +123,22 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     ctx.body = {message: e};
   }
 
+
+  async function createSortKey(
+    arweave: Arweave,
+    jwk: JWKInterface,
+    blockId: string,
+    transactionId: string,
+    blockHeight: number) {
+
+    const blockHashBytes = arweave.utils.b64UrlToBuffer(blockId);
+    const txIdBytes = arweave.utils.b64UrlToBuffer(transactionId);
+    const jwkDBytes = arweave.utils.b64UrlToBuffer(jwk.d as string);
+    const concatenated = arweave.utils.concatBuffers([blockHashBytes, txIdBytes, jwkDBytes]);
+    const hashed = arrayToHex(await arweave.crypto.hash(concatenated));
+    const blockHeightString = `${blockHeight}`.padStart(12, '0');
+
+    return `${blockHeightString},${hashed}`;
+  }
 
 }

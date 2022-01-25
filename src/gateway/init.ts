@@ -16,6 +16,7 @@ import cluster from 'cluster';
 import welcomeRouter from "./router/welcomeRouter";
 import Bundlr from "@bundlr-network/client";
 import {initBundlr} from "../bundlr/connect";
+import {JWKInterface} from "arweave/node/lib/wallet";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -26,7 +27,8 @@ export interface GatewayContext {
   gatewayDb: Knex;
   logger: RedStoneLogger;
   arweave: Arweave;
-  bundlr: Bundlr
+  bundlr: Bundlr;
+  jwk: JWKInterface
 }
 
 (async () => {
@@ -53,7 +55,7 @@ export interface GatewayContext {
   const logger = LoggerFactory.INST.create("gateway");
 
   const arweave = initArweave();
-  const bundlr = initBundlr(logger);
+  const {bundlr, jwk} = initBundlr(logger);
 
   const gatewayDb = connect();
   await initGatewayDb(gatewayDb);
@@ -63,6 +65,7 @@ export interface GatewayContext {
   app.context.logger = logger;
   app.context.arweave = arweave;
   app.context.bundlr = bundlr;
+  app.context.jwk = jwk;
 
   app.use(cors({
     async origin() {
@@ -85,7 +88,7 @@ export interface GatewayContext {
       logger.debug(`Creating lock file for ${cluster.worker?.id}`);
       // note: if another process in cluster have already created the file - writing here
       // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
-      fs.writeFileSync('gateway.lock', "" + cluster.worker?.id, { flag: 'wx' });
+      fs.writeFileSync('gateway.lock', "" + cluster.worker?.id, {flag: 'wx'});
       removeLock = true;
 
       // note: only one worker in cluster runs the gateway tasks

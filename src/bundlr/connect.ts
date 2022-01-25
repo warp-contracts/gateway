@@ -3,6 +3,7 @@ import Bundlr from "@bundlr-network/client";
 import fs from "fs";
 import {TaskRunner} from "../gateway/tasks/TaskRunner";
 import {GatewayContext} from "../gateway/init";
+import {JWKInterface} from "arweave/node/lib/wallet";
 
 const BUNDLR_CHECK_INTERVAL = 3600000;
 
@@ -12,7 +13,7 @@ export async function runBundlrCheck(context: GatewayContext) {
     .runSyncEvery(BUNDLR_CHECK_INTERVAL, true);
 }
 
-export function initBundlr(logger: RedStoneLogger): Bundlr {
+export function initBundlr(logger: RedStoneLogger): { bundlr: Bundlr, jwk: JWKInterface } {
   const jwk = JSON.parse(fs.readFileSync(".secrets/redstone-jwk.json").toString());
   const bundlr = new Bundlr("https://node1.bundlr.network/", "arweave", jwk);
   logger.info("Running bundlr on", {
@@ -20,7 +21,7 @@ export function initBundlr(logger: RedStoneLogger): Bundlr {
     currency: bundlr.currency
   });
 
-  return bundlr;
+  return {bundlr, jwk};
 }
 
 async function checkBalance(context: GatewayContext) {
