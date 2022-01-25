@@ -16,6 +16,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
   const transaction: Transaction = new Transaction({...ctx.request.body});
 
+  logger.info("New sequencer tx", transaction.id);
+
   const originalSignature = transaction.signature;
   const originalOwner = transaction.owner;
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
@@ -55,8 +57,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     {name: "Sequencer-Tx-Id", value: transaction.id},
     {name: "Sequencer-Block-Height", value: "" + currentHeight},
     {name: "Sequencer-Block-Id", value: currentBlockId},
-    {name: "Contract", value: contractTag},
-    {name: "Input", value: inputTag},
+    ...decodedTags
   ];
 
   const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
@@ -68,7 +69,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   logger.debug("Inserting into sequencer table");
 
   try {
-    const sequencerInsertResult = await gatewayDb("sequencer")
+    await gatewayDb("sequencer")
       .insert({
         original_sig: originalSignature,
         original_owner: originalOwner,
@@ -76,54 +77,57 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sequence_block_id: currentBlockId,
         sequence_block_height: currentHeight,
         sequence_transaction_id: transaction.id,
-        bundled_tx_id: bTx.id,
+        bundler_tx_id: bTx.id,
         bundler_response: JSON.stringify(bundlrResponse.data)
       });
-    logger.debug(`Inserted ${sequencerInsertResult.rowCount}`);
-  } catch (e) {
-    logger.error(e);
-  }
 
-  const interaction: any = {
-    id: transaction.id,
-    owner: {address: transaction.owner},
-    recipient: transaction.target,
-    tags: decodedTags,
-    block: {
-      height: currentHeight,
-      id: currentBlockId,
-      timestamp: blockInfo.timestamp
-    },
-    fee: {
-      winston: transaction.reward
-    },
-    quantity: {
-      winston: transaction.quantity
-    },
-    parent: {
-      id: bTx.id
-    },
-    bundledIn: {
-      id: bTx.id
-    },
-    sortKey: sortKey
-  }
+    const interaction: any = {
+      id: transaction.id,
+      owner: {address: transaction.owner},
+      recipient: transaction.target,
+      tags: decodedTags,
+      block: {
+        height: currentHeight,
+        id: currentBlockId,
+        timestamp: blockInfo.timestamp
+      },
+      fee: {
+        winston: transaction.reward
+      },
+      quantity: {
+        winston: transaction.quantity
+      },
+      sortKey: sortKey
+    }
 
-  logger.debug("Inserting into interactions table");
-  await gatewayDb("interactions")
-    .insert({
-      interaction_id: transaction.id, //hmm, or bundlr tx id?
-      interaction: JSON.stringify(interaction),
-      block_height: currentHeight,
-      block_id: currentBlockId,
-      contract_id: contractTag,
-      function: parseFunctionName(inputTag, logger),
-      input: inputTag,
-      confirmation_status: "confirmed",
-      confirming_peer: "https://node1.bundlr.network",
-      source: "redstone-sequencer",
-      bundled_in: bTx.id
+    logger.debug("Inserting into interactions table");
+    await gatewayDb("interactions")
+      .insert({
+        interaction_id: transaction.id, //hmm, or bundlr tx id?
+        interaction: JSON.stringify(interaction),
+        block_height: currentHeight,
+        block_id: currentBlockId,
+        contract_id: contractTag,
+        function: parseFunctionName(inputTag, logger),
+        input: inputTag,
+        confirmation_status: "confirmed",
+        confirming_peer: "https://node1.bundlr.network",
+        source: "redstone-sequencer",
+        bundler_tx_id: bTx.id
+      });
+
+    logger.info("Transaction successfully bundled", {
+      id: transaction.id,
+      bundled_tx_id: bTx.id
     });
 
-  ctx.body = bundlrResponse.data;
+    ctx.body = bundlrResponse.data;
+  } catch (e) {
+    logger.error("Error while inserting bundled transaction", bundlrResponse.data.id);
+    logger.error(e);
+    ctx.status = 500;
+    ctx.body = {message: e};
+  }
+
+
 }
