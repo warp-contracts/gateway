@@ -5933,10 +5933,10 @@ redstone-node@^0.4.21:
     yahoo-finance "^0.3.7"
     yargs "^16.2.0"
 
-redstone-smartweave@0.4.23:
-  version "0.4.23"
-  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.23.tgz#4f526fb9a8b4c00db14ba44c1ec0b548d7bb0689"
-  integrity sha512-h0KaHycE/neQv8OLZ0PXbg9fCgwcKQj5J/Fst+Mz7NVIfHGUiwd/LN4O7wZOac4c8GgnjiCiYTzLaRFCmtz2RA==
+redstone-smartweave@0.4.26:
+  version "0.4.26"
+  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.26.tgz#ec8cc820e36e8341da72fd959910309be67644a8"
+  integrity sha512-m2HQTbOG6ex4iK66Fk39wRT1JNVvf+Q/HAO5GmkMOFrdySnbKwmi3/Ys4FXHoVYvUGNgMqaUkHR1A7dcOe/HMA==
   dependencies:
     "@weavery/clarity" "^0.1.5"
     arweave "^1.10.16"

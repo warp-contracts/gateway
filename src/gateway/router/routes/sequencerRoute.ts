@@ -20,9 +20,11 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const networkInfo = await arweave.network.getInfo();
   const blockInfo: BlockData = await arweave.blocks.get(networkInfo.current);
 
+  const millis = Date.now();
+
   const currentHeight = networkInfo.height;
   const currentBlockId = networkInfo.current;
-  const sortKey = await createSortKey(arweave, jwk, currentBlockId, transaction.id, currentHeight);
+  const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
   let contractTag: string = '', inputTag: string = '';
 
@@ -46,6 +48,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const tags = [
     {name: "Sequencer", value: "RedStone"},
     {name: "Sequencer-Owner", value: originalAddress},
+    {name: "Sequencer-Mills", value: "" + millis},
     {name: "Sequencer-Sort-Key", value: sortKey},
     {name: "Sequencer-Tx-Id", value: transaction.id},
     {name: "Sequencer-Block-Height", value: "" + currentHeight},
@@ -124,22 +127,22 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     ctx.body = {message: e};
   }
 
+}
 
-  async function createSortKey(
-    arweave: Arweave,
-    jwk: JWKInterface,
-    blockId: string,
-    transactionId: string,
-    blockHeight: number) {
+export async function createSortKey(
+  arweave: Arweave,
+  jwk: JWKInterface,
+  blockId: string,
+  mills: number,
+  transactionId: string,
+  blockHeight: number) {
 
-    const blockHashBytes = arweave.utils.b64UrlToBuffer(blockId);
-    const txIdBytes = arweave.utils.b64UrlToBuffer(transactionId);
-    const jwkDBytes = arweave.utils.b64UrlToBuffer(jwk.d as string);
-    const concatenated = arweave.utils.concatBuffers([blockHashBytes, txIdBytes, jwkDBytes]);
-    const hashed = arrayToHex(await arweave.crypto.hash(concatenated));
-    const blockHeightString = `${blockHeight}`.padStart(12, '0');
+  const blockHashBytes = arweave.utils.b64UrlToBuffer(blockId);
+  const txIdBytes = arweave.utils.b64UrlToBuffer(transactionId);
+  const jwkDBytes = arweave.utils.b64UrlToBuffer(jwk.d as string);
+  const concatenated = arweave.utils.concatBuffers([blockHashBytes, txIdBytes, jwkDBytes]);
+  const hashed = arrayToHex(await arweave.crypto.hash(concatenated));
+  const blockHeightString = `${blockHeight}`.padStart(12, '0');
 
-    return `${blockHeightString},${hashed}`;
-  }
-
+  return `${blockHeightString},${mills},${hashed}`;
 }
