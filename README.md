@@ -251,6 +251,9 @@ Parameters:
    3. `not_corrupted` - loads both `confirmed` and `not processed` interactions
 5. `totalCount` [optional], e.g.: `gateway/interactions?totalCount=true`. If set to `true` endpoint returns
    interactions' count for each of confirmation statuses (confirmed | corrupted | forked | not_processed)
+6. `source` [optional] - loads contract interactions based on their origin. If not set, interactions from all sources will be loaded
+   1. `arweave`
+   2. `redstone-sequencer`
 
 Response:
 
