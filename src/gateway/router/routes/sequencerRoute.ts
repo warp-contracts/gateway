@@ -91,7 +91,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       quantity: {
         winston: transaction.quantity
       },
-      sortKey: sortKey
+      sortKey: sortKey,
+      source: "redstone-sequencer"
     }
 
     logger.debug("Inserting into interactions table");
