@@ -6,7 +6,7 @@ const MAX_INTERACTIONS_PER_PAGE = 5000;
 export async function interactionsRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb} = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount} = ctx.query;
+  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source} = ctx.query;
 
   logger.debug("Interactions route", {
     contractId,
@@ -15,7 +15,8 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     limit,
     from,
     to,
-    totalCount
+    totalCount,
+    source
   });
 
   const parsedPage = page ? parseInt(page as string) : 1;
@@ -34,6 +35,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   // parsedConfirmationStatus && bindings.push(parsedConfirmationStatus)
   from && bindings.push(from as string);
   to && bindings.push(to as string);
+  source && bindings.push(source as string);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -47,7 +49,11 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
                  confirmations,
                  count(*) OVER () AS total
           FROM interactions
-          WHERE contract_id = ? ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
+          WHERE contract_id = ? 
+          ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} 
+          ${from ? ' AND block_height >= ?' : ''} 
+          ${to ? ' AND block_height <= ?' : ''} 
+          ${source ? `AND source = ?` : ''} 
           ORDER BY block_height DESC, interaction_id DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
