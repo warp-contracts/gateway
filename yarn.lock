@@ -5894,6 +5894,13 @@ redstone-api@^0.4.6:
     pako "^2.0.3"
     redstone-node "^0.4.21"
 
+redstone-isomorphic@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/redstone-isomorphic/-/redstone-isomorphic-1.0.2.tgz#d1cfccca24c860212d3a3d8d76103da0e9445a24"
+  integrity sha512-UK4oxxJmb4nowAM3p47CNwkiKFA0Ewn1i7LMU8ix7fdCefSNoMetar3LATyBYoCdGSNJKa8tLLvbnWfSfwwO5w==
+  dependencies:
+    undici "^4.12.2"
+
 redstone-node@^0.4.21:
   version "0.4.22"
   resolved "https://registry.yarnpkg.com/redstone-node/-/redstone-node-0.4.22.tgz#6bdf98e78cb84bfc88fbe185c5ca50544a4f4aa2"
@@ -5926,21 +5933,22 @@ redstone-node@^0.4.21:
     yahoo-finance "^0.3.7"
     yargs "^16.2.0"
 
-redstone-smartweave@0.4.12:
-  version "0.4.12"
-  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.12.tgz#61f5987c68181d81eb747f9f7b4458593ba831b1"
-  integrity sha512-moai79aKLRal/YE80MMjLb78p5n5xUHnf2o+vWtEZ6tRLDlqoCO8Rio20P+DVVNagffJipfTK9u5ocwgCiMd3A==
+redstone-smartweave@0.4.23:
+  version "0.4.23"
+  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.23.tgz#4f526fb9a8b4c00db14ba44c1ec0b548d7bb0689"
+  integrity sha512-h0KaHycE/neQv8OLZ0PXbg9fCgwcKQj5J/Fst+Mz7NVIfHGUiwd/LN4O7wZOac4c8GgnjiCiYTzLaRFCmtz2RA==
   dependencies:
     "@weavery/clarity" "^0.1.5"
     arweave "^1.10.16"
     arweave-multihost "^0.1.0"
     axios "^0.21.4"
     bignumber.js "^9.0.1"
-    isomorphic-fetch "^3.0.0"
     json-beautify "^1.1.1"
     knex "^0.95.14"
     lodash "^4.17.21"
+    redstone-isomorphic "^1.0.2"
     tslog "^3.2.2"
+    undici "^4.12.1"
 
 redstone-smartweave@^0.3.10-alpha.1:
   version "0.3.10-alpha.19"
@@ -7003,6 +7011,11 @@ underscore@^1.12.0:
   version "1.13.2"
   resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.13.2.tgz#276cea1e8b9722a8dbed0100a407dda572125881"
   integrity sha512-ekY1NhRzq0B08g4bGuX4wd2jZx5GnKz6mKSqFL4nqBlfyMGiG10gDFhDTMEfYmDL6Jy0FUIZp7wiRB+0BP7J2g==
+
+undici@^4.12.1, undici@^4.12.2:
+  version "4.12.2"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-4.12.2.tgz#f2fc50ca77a774ed8c0e7067c9361ee18a2f422b"
+  integrity sha512-RZj6SbkQFs5O/pJCboGEo6l5DTCe3Zg4r/8Z/0/2qnIv08+s6zL4akohOPMYWKc3mzwv15WTvsfMWaafZcvYoQ==
 
 universalify@^0.1.2:
   version "0.1.2"

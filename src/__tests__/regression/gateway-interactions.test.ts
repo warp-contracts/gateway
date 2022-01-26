@@ -7,7 +7,8 @@ import {
   RedstoneGatewayInteractionsLoader,
   ArweaveGatewayInteractionsLoader,
   DefaultEvaluationOptions,
-  GQLEdgeInterface
+  GQLEdgeInterface,
+  SourceType
 } from 'redstone-smartweave';
 
 /* 
@@ -39,7 +40,7 @@ const testCases: string[] = JSON.parse(
 describe.each([750000, 775000, 800000, 825000, 850000])('testing for block height %d', (toBlockHeight) => {
   it('returns same amount of interactions for the same block height', async () => {
     console.log('toBlockHeight', toBlockHeight);
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance/');
+    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance/', {}, SourceType.ARWEAVE);
     const arweaveInteractionsLoader = new ArweaveGatewayInteractionsLoader(arweave);
     const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
       'Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY',
@@ -62,7 +63,7 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     const arweaveNetworkInfo = await arweave.network.getInfo();
     // testing for the more current block height to detect possible gw desynchronize issues
     const blockHeight = arweaveNetworkInfo.height - 20;
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance');
+    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance', {}, SourceType.ARWEAVE);
     const arweaveInteractionsLoader = new ArweaveGatewayInteractionsLoader(arweave);
     const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
       contractTxId,
