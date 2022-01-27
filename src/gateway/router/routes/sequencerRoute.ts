@@ -81,7 +81,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const interaction: any = {
       id: transaction.id,
-      owner: {address: transaction.owner},
+      owner: {address: originalAddress},
       recipient: transaction.target,
       tags: decodedTags,
       block: {
