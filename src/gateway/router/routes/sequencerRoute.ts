@@ -73,6 +73,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sequence_block_id: currentBlockId,
         sequence_block_height: currentHeight,
         sequence_transaction_id: transaction.id,
+        sequence_millis: "" + millis,
         sequence_sort_key: sortKey,
         bundler_tx_id: bTx.id,
         bundler_response: JSON.stringify(bundlrResponse.data)
