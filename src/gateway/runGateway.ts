@@ -1,7 +1,11 @@
 import {runLoadPeersTask} from "./tasks/loadPeers";
 import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
 import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransactions";
-import {runSyncTransactionsTask} from "./tasks/syncTransactions";
+import {
+  runSyncLastDayTransactionsTask,
+  runSyncLastHourTransactionsTask,
+  runSyncRecentTransactionsTask
+} from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
 import {runContractsMetadataTask} from "./tasks/contractsMetadata";
 import {runBundlrCheck} from "../bundlr/connect";
@@ -38,7 +42,11 @@ export async function runGateway(context: GatewayContext) {
 
   await runLoadPeersTask(context);
 
-  await runSyncTransactionsTask(context);
+  await runSyncRecentTransactionsTask(context);
+
+  await runSyncLastHourTransactionsTask(context);
+
+  await runSyncLastDayTransactionsTask(context);
 
   await runVerifyInteractionsTask(context)
 

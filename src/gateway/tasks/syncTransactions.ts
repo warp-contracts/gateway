@@ -10,14 +10,7 @@ import {sleep} from "../../utils";
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
 import {INTERACTIONS_TABLE} from "../../db/schema";
-
-// in theory avg. block time on Arweave is 120s (?)
-const BLOCKS_INTERVAL_MS = 60 * 1000;
-const LOAD_PAST_BLOCKS = 10;
-const MAX_GQL_REQUEST = 100;
-const GQL_RETRY_MS = 30 * 1000;
-// that was a limit for sqlite, but let's leave it for now...
-const MAX_BATCH_INSERT = 500;
+import Arweave from "arweave";
 
 const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -41,6 +34,7 @@ const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilte
           fee { winston }
           quantity { winston }
           parent { id }
+          bundledIn { id }
         }
         cursor
       }
@@ -66,13 +60,60 @@ interface ReqVariables {
 
 const tagsParser = new TagsParser();
 
-export async function runSyncTransactionsTask(context: GatewayContext) {
+// in theory avg. block time on Arweave is 120s (?)
+// in fact, it varies from ~20s to minutes...
+const BLOCKS_INTERVAL_MS = 30 * 1000;
+const LOAD_PAST_BLOCKS = 50; // smartweave interaction are currently somewhat rare...
+const MAX_GQL_REQUEST = 100;
+const GQL_RETRY_MS = 30 * 1000;
+// that was a limit for sqlite, but let's leave it for now...
+const MAX_BATCH_INSERT = 500;
+
+const AVG_BLOCK_TIME_SECONDS = 60;
+const AVG_BLOCKS_PER_HOUR = (60 * 60) / AVG_BLOCK_TIME_SECONDS + 10;
+const AVG_BLOCKS_PER_DAY = (60 * 60 * 24) / AVG_BLOCK_TIME_SECONDS + 60;
+
+const HOUR_INTERVAL_MS = 60 * 60 * 1000;
+const DAY_INTERVAL_MS = HOUR_INTERVAL_MS * 24;
+
+
+export async function runSyncRecentTransactionsTask(context: GatewayContext) {
   await TaskRunner
-    .from("[sync transactions]", syncTransactions, context)
+    .from("[sync latest transactions]", syncLastTransactions, context)
     .runSyncEvery(BLOCKS_INTERVAL_MS);
 }
 
-async function syncTransactions(context: GatewayContext) {
+
+export async function runSyncLastHourTransactionsTask(context: GatewayContext) {
+  await TaskRunner
+    .from("[sync last hour transactions]", syncLastHourTransactions, context)
+    .runAsyncEvery(HOUR_INTERVAL_MS);
+}
+
+
+export async function runSyncLastDayTransactionsTask(context: GatewayContext) {
+  await TaskRunner
+    .from("[sync last day transactions]", syncLastDayTransactions, context)
+    .runAsyncEvery(DAY_INTERVAL_MS);
+}
+
+
+function syncLastTransactions(context: GatewayContext) {
+  return syncTransactions(context, LOAD_PAST_BLOCKS);
+}
+
+
+function syncLastHourTransactions(context: GatewayContext) {
+  return syncTransactions(context, AVG_BLOCKS_PER_HOUR);
+}
+
+
+function syncLastDayTransactions(context: GatewayContext) {
+  return syncTransactions(context, AVG_BLOCKS_PER_DAY);
+}
+
+
+async function syncTransactions(context: GatewayContext, pastBlocksAmount: number) {
   const {gatewayDb, arweave, logger} = context;
   logger.info("Syncing blocks");
 
@@ -111,7 +152,7 @@ async function syncTransactions(context: GatewayContext) {
     lastProcessedBlockHeight,
   });
 
-  const heightFrom = lastProcessedBlockHeight - LOAD_PAST_BLOCKS;
+  const heightFrom = lastProcessedBlockHeight - pastBlocksAmount;
   let heightTo = currentNetworkHeight;
   if (heightTo > heightFrom + 5000) {
     heightTo = heightFrom + 5000;
@@ -209,7 +250,7 @@ async function syncTransactions(context: GatewayContext) {
           await gatewayDb("interactions")
             .insert(interactionsInserts)
             .onConflict("interaction_id")
-            .merge();
+            .ignore();
 
         logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
         interactionsInserts = [];
@@ -230,7 +271,7 @@ async function syncTransactions(context: GatewayContext) {
       const interactionsInsertResult: any = await gatewayDb("interactions")
         .insert(interactionsInserts)
         .onConflict("interaction_id")
-        .merge();
+        .ignore();
       logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
     } catch (e) {
       logger.error(e);
@@ -268,7 +309,7 @@ async function load(
     let transactions = await getNextPage(context, variables);
 
     const txInfos: GQLEdgeInterface[] = transactions.edges.filter(
-      (tx) => !tx.node.parent || !tx.node.parent.id
+      (tx) => !tx.node.parent?.id && !tx.node.bundledIn?.id
     );
 
     while (transactions.pageInfo.hasNextPage) {
@@ -283,7 +324,7 @@ async function load(
 
       txInfos.push(
         ...transactions.edges.filter(
-          (tx) => !tx.node.parent || !tx.node.parent.id || !tx.node.bundledIn || !tx.node.bundledIn.id)
+          (tx) => !tx.node.parent?.id && !tx.node.bundledIn?.id)
       );
     }
     return txInfos;
