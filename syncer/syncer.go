@@ -7,17 +7,32 @@ import (
 	"github.com/everFinance/goar/utils"
 	"github.com/redstone-finance/redstone-sw-gateway/syncer/db"
 	"github.com/redstone-finance/redstone-sw-gateway/syncer/sw_types"
+	"os"
+	"strconv"
 )
 
 var log = arsyncer.NewLog("syncer")
 
 func main() {
+	propertiesPath := os.Args[1]
+	props, err := db.ReadPropertiesFile(propertiesPath)
+	if err != nil {
+		log.Error("Cannot read properties file", err)
+		return
+	}
+
+	port, err := strconv.Atoi(props["DB_PORT"])
+	if err != nil {
+		log.Error("Cannot parse db port", err)
+		return
+	}
+
 	db := db.New(db.ConnectionParams{
-		Host:     "localhost",
-		Port:     5432,
-		User:     "postgres",
-		Password: "",
-		Dbname:   "smartweave",
+		Host:     props["DB_HOST"],
+		Port:     port,
+		User:     props["DB_USER"],
+		Password: props["DB_PASSWORD"],
+		Dbname:   props["DB_NAME"],
 	})
 	defer db.Close()
 
