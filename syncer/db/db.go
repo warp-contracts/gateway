@@ -1,11 +1,13 @@
 package db
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"github.com/everFinance/arsyncer"
 	_ "github.com/lib/pq"
 	"github.com/redstone-finance/redstone-sw-gateway/syncer/sw_types"
+	"os"
 	"strings"
 )
 
@@ -23,6 +25,8 @@ type ConnectionParams struct {
 	Password string
 	Dbname   string
 }
+
+type AppConfigProperties map[string]string
 
 func New(connectionParams ConnectionParams) *Db {
 	return &Db{
@@ -115,4 +119,39 @@ func connectDb(params ConnectionParams) *sql.DB {
 
 	log.Info("Successfully connected!")
 	return db
+}
+
+func ReadPropertiesFile(filename string) (AppConfigProperties, error) {
+	config := AppConfigProperties{}
+
+	if len(filename) == 0 {
+		return config, nil
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Error("Cannot open file", filename, err)
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if equal := strings.Index(line, "="); equal >= 0 {
+			if key := strings.TrimSpace(line[:equal]); len(key) > 0 {
+				value := ""
+				if len(line) > equal {
+					value = strings.TrimSpace(line[equal+1:])
+				}
+				config[key] = value
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Error("Cannot parse file", err)
+		return nil, err
+	}
+
+	return config, nil
 }
