@@ -62,7 +62,7 @@ const tagsParser = new TagsParser();
 
 // in theory avg. block time on Arweave is 120s (?)
 // in fact, it varies from ~20s to minutes...
-const BLOCKS_INTERVAL_MS = 30 * 1000;
+export const BLOCKS_INTERVAL_MS = 30 * 1000;
 const LOAD_PAST_BLOCKS = 50; // smartweave interaction are currently somewhat rare...
 const MAX_GQL_REQUEST = 100;
 const GQL_RETRY_MS = 30 * 1000;

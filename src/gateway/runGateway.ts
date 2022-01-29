@@ -9,6 +9,7 @@ import {
 import {GatewayContext} from "./init";
 import {runContractsMetadataTask} from "./tasks/contractsMetadata";
 import {runBundlrCheck} from "../bundlr/connect";
+import {runNetworkInfoCacheTask} from "./tasks/networkInfoCache";
 
 
 /**
