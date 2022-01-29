@@ -1,34 +1,52 @@
 import Router from "@koa/router";
 import Transaction from "arweave/node/lib/transaction";
 import {parseFunctionName} from "../../tasks/syncTransactions";
-import {BlockData} from "arweave/node/blocks";
 import Arweave from "arweave";
 import {JWKInterface} from "arweave/node/lib/wallet";
-import {arrayToHex, GQLTagInterface} from "redstone-smartweave";
+import {arrayToHex, Benchmark, GQLTagInterface} from "redstone-smartweave";
+import {cachedBlockInfo, cachedNetworkInfo} from "../../tasks/networkInfoCache";
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr, jwk} = ctx;
 
+  const benchmark = Benchmark.measure();
+
   const transaction: Transaction = new Transaction({...ctx.request.body});
 
-  logger.info("New sequencer tx", transaction.id);
+  logger.debug("New sequencer tx", transaction.id);
 
   const originalSignature = transaction.signature;
   const originalOwner = transaction.owner;
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
 
-  const networkInfo = await arweave.network.getInfo();
-  const blockInfo: BlockData = await arweave.blocks.get(networkInfo.current);
+  const networkInfoBenchmark = Benchmark.measure();
+
+  const networkInfo = cachedNetworkInfo
+    ? cachedNetworkInfo
+    : await arweave.network.getInfo()
+
+  const blockInfo = cachedBlockInfo
+    ? cachedBlockInfo
+    : await arweave.blocks.get(networkInfo.current)
+
+  logger.debug("Network info:", networkInfoBenchmark.elapsed());
 
   const millis = Date.now();
 
   const currentHeight = networkInfo.height;
   const currentBlockId = networkInfo.current;
+
+  const sortKeyBench = Benchmark.measure();
+
   const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
+
+  logger.debug("Sort Key generation", sortKeyBench.elapsed());
 
   let contractTag: string = '', inputTag: string = '';
 
   const decodedTags: GQLTagInterface[] = [];
+
+  const tagsBenchmark = Benchmark.measure();
 
   transaction.tags.forEach(tag => {
     const key = tag.get('name', {decode: true, string: true});
@@ -56,28 +74,18 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     ...decodedTags
   ];
 
-  // TODO: add fallback to 2nd bundlr node.
-  const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
-
-  await bTx.sign();
-  const bundlrResponse = await bTx.upload();
-  logger.debug("Bundlr response id", bundlrResponse.data.id);
+  logger.debug("Sequencer Tags generation", tagsBenchmark.elapsed());
 
   try {
-    logger.debug("Inserting into sequencer table");
-    await gatewayDb("sequencer")
-      .insert({
-        original_sig: originalSignature,
-        original_owner: originalOwner,
-        original_address: originalAddress,
-        sequence_block_id: currentBlockId,
-        sequence_block_height: currentHeight,
-        sequence_transaction_id: transaction.id,
-        sequence_millis: "" + millis,
-        sequence_sort_key: sortKey,
-        bundler_tx_id: bTx.id,
-        bundler_response: JSON.stringify(bundlrResponse.data)
-      });
+    // TODO: add fallback to other bundlr nodes.
+    const uploadBenchmark = Benchmark.measure();
+    const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
+    await bTx.sign();
+
+    // TODO: move uploading to a separate Worker, to increase TPS
+    const bundlrResponse = await bTx.upload();
+    logger.debug("Uploading to bundlr", uploadBenchmark.elapsed());
+    logger.debug("Bundlr response id", bundlrResponse.data.id);
 
     const interaction: any = {
       id: transaction.id,
@@ -99,30 +107,50 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       source: "redstone-sequencer"
     }
 
-    logger.debug("Inserting into interactions table");
-    await gatewayDb("interactions")
-      .insert({
-        interaction_id: transaction.id, //hmm, or bundlr tx id?
-        interaction: JSON.stringify(interaction),
-        block_height: currentHeight,
-        block_id: currentBlockId,
-        contract_id: contractTag,
-        function: parseFunctionName(inputTag, logger),
-        input: inputTag,
-        confirmation_status: "confirmed",
-        confirming_peer: "https://node1.bundlr.network",
-        source: "redstone-sequencer",
-        bundler_tx_id: bTx.id
-      });
+    const insertBench = Benchmark.measure();
 
-    logger.info("Transaction successfully bundled", {
+    await Promise.allSettled([
+      gatewayDb("sequencer")
+        .insert({
+          original_sig: originalSignature,
+          original_owner: originalOwner,
+          original_address: originalAddress,
+          sequence_block_id: currentBlockId,
+          sequence_block_height: currentHeight,
+          sequence_transaction_id: transaction.id,
+          sequence_millis: "" + millis,
+          sequence_sort_key: sortKey,
+          bundler_tx_id: bTx.id,
+          bundler_response: JSON.stringify(bundlrResponse.data)
+        }),
+      gatewayDb("interactions")
+        .insert({
+          interaction_id: transaction.id,
+          interaction: JSON.stringify(interaction),
+          block_height: currentHeight,
+          block_id: currentBlockId,
+          contract_id: contractTag,
+          function: parseFunctionName(inputTag, logger),
+          input: inputTag,
+          confirmation_status: "confirmed",
+          confirming_peer: "https://node1.bundlr.network",
+          source: "redstone-sequencer",
+          bundler_tx_id: bTx.id
+        })
+    ]);
+
+
+    logger.debug("Inserting into tables", insertBench.elapsed());
+
+    logger.debug("Transaction successfully bundled", {
       id: transaction.id,
       bundled_tx_id: bTx.id
     });
 
     ctx.body = bundlrResponse.data;
+    logger.info("Total sequencer processing", benchmark.elapsed());
   } catch (e) {
-    logger.error("Error while inserting bundled transaction", bundlrResponse.data.id);
+    logger.error("Error while inserting bundled transaction");
     logger.error(e);
     ctx.status = 500;
     ctx.body = {message: e};
@@ -130,7 +158,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
 }
 
-export async function createSortKey(
+async function createSortKey(
   arweave: Arweave,
   jwk: JWKInterface,
   blockId: string,

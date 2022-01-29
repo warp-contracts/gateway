@@ -17,6 +17,7 @@ import welcomeRouter from "./router/welcomeRouter";
 import Bundlr from "@bundlr-network/client";
 import {initBundlr} from "../bundlr/connect";
 import {JWKInterface} from "arweave/node/lib/wallet";
+import {runNetworkInfoCacheTask} from "./tasks/networkInfoCache";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -82,6 +83,8 @@ export interface GatewayContext {
 
   app.listen(port);
   logger.info(`Listening on port ${port}`);
+
+  await runNetworkInfoCacheTask(app.context);
 
   if (!fs.existsSync('gateway.lock')) {
     try {
