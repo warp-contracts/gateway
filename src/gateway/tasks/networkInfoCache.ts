@@ -13,9 +13,15 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
   await TaskRunner
     .from("[Arweave network info]", async () => {
       logger.debug("Loading network info");
-      cachedNetworkInfo = await arweave.network.getInfo();
-      cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current);
-      logger.debug("New network height", cachedNetworkInfo.height);
+      try {
+        cachedNetworkInfo = await arweave.network.getInfo();
+        cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current);
+        logger.debug("New network height", cachedNetworkInfo.height);
+      } catch (e) {
+        logger.error("Error while loading network info", e);
+        cachedNetworkInfo = null;
+        cachedBlockInfo = null;
+      }
     }, context)
     .runSyncEvery(BLOCKS_INTERVAL_MS, true);
 }
