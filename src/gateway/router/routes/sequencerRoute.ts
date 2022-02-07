@@ -21,62 +21,69 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
   const networkInfoBenchmark = Benchmark.measure();
 
-  const networkInfo = cachedNetworkInfo
-    ? cachedNetworkInfo
-    : await arweave.network.getInfo()
-
-  const blockInfo = cachedBlockInfo
-    ? cachedBlockInfo
-    : await arweave.blocks.get(networkInfo.current)
-
-  logger.debug("Network info:", networkInfoBenchmark.elapsed());
-
-  const millis = Date.now();
-
-  const currentHeight = networkInfo.height;
-  const currentBlockId = networkInfo.current;
-
-  const sortKeyBench = Benchmark.measure();
-
-  const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
-
-  logger.debug("Sort Key generation", sortKeyBench.elapsed());
-
-  let contractTag: string = '', inputTag: string = '';
-
-  const decodedTags: GQLTagInterface[] = [];
-
-  const tagsBenchmark = Benchmark.measure();
-
-  transaction.tags.forEach(tag => {
-    const key = tag.get('name', {decode: true, string: true});
-    const value = tag.get('value', {decode: true, string: true});
-    if (key == 'Contract') {
-      contractTag = value;
-    }
-    if (key == 'Input') {
-      inputTag = value;
-    }
-    decodedTags.push({
-      name: key,
-      value: value // TODO: handle array-ish values
-    });
-  });
-
-  const tags = [
-    {name: "Sequencer", value: "RedStone"},
-    {name: "Sequencer-Owner", value: originalAddress},
-    {name: "Sequencer-Mills", value: "" + millis},
-    {name: "Sequencer-Sort-Key", value: sortKey},
-    {name: "Sequencer-Tx-Id", value: transaction.id},
-    {name: "Sequencer-Block-Height", value: "" + currentHeight},
-    {name: "Sequencer-Block-Id", value: currentBlockId},
-    ...decodedTags
-  ];
-
-  logger.debug("Sequencer Tags generation", tagsBenchmark.elapsed());
-
   try {
+    const networkInfo = cachedNetworkInfo
+      ? cachedNetworkInfo
+      : await arweave.network.getInfo()
+
+    const blockInfo = cachedBlockInfo
+      ? cachedBlockInfo
+      : await arweave.blocks.get(networkInfo.current)
+
+    logger.debug("Network info:", networkInfoBenchmark.elapsed());
+
+    const millis = Date.now();
+
+    const currentHeight = networkInfo.height;
+    if (!currentHeight) {
+      throw new Error("Current height not set");
+    }
+
+    const currentBlockId = networkInfo.current;
+    if (!currentBlockId) {
+      throw new Error("Current block not set");
+    }
+
+    const sortKeyBench = Benchmark.measure();
+
+    const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
+
+    logger.debug("Sort Key generation", sortKeyBench.elapsed());
+
+    let contractTag: string = '', inputTag: string = '';
+
+    const decodedTags: GQLTagInterface[] = [];
+
+    const tagsBenchmark = Benchmark.measure();
+
+    transaction.tags.forEach(tag => {
+      const key = tag.get('name', {decode: true, string: true});
+      const value = tag.get('value', {decode: true, string: true});
+      if (key == 'Contract') {
+        contractTag = value;
+      }
+      if (key == 'Input') {
+        inputTag = value;
+      }
+      decodedTags.push({
+        name: key,
+        value: value // TODO: handle array-ish values
+      });
+    });
+
+    const tags = [
+      {name: "Sequencer", value: "RedStone"},
+      {name: "Sequencer-Owner", value: originalAddress},
+      {name: "Sequencer-Mills", value: "" + millis},
+      {name: "Sequencer-Sort-Key", value: sortKey},
+      {name: "Sequencer-Tx-Id", value: transaction.id},
+      {name: "Sequencer-Block-Height", value: "" + currentHeight},
+      {name: "Sequencer-Block-Id", value: currentBlockId},
+      ...decodedTags
+    ];
+
+    logger.debug("Sequencer Tags generation", tagsBenchmark.elapsed());
+
     // TODO: add fallback to other bundlr nodes.
     const uploadBenchmark = Benchmark.measure();
     const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
