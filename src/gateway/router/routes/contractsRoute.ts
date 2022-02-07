@@ -23,7 +23,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT i.contract_id                                                             AS contract,
+          SELECT c.contract_id                                                             AS contract,
                  c.owner                                                                   AS owner,
                  c.type                                                                    AS type,
                  c.pst_ticker                                                              AS pst_ticker,
@@ -36,7 +36,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
           FROM interactions i
                    LEFT JOIN contracts c
                              ON c.contract_id = i.contract_id
-          WHERE i.contract_id != ''
+          WHERE c.contract_id != ''
             AND c.type != 'error' ${type ? 'AND c.type = ?' : ''}
           GROUP BY i.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name
           ORDER BY last_interaction_height DESC, interactions DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};

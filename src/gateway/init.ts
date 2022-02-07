@@ -3,7 +3,7 @@ import {hideBin} from 'yargs/helpers'
 import {Knex} from "knex";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
-import {LoggerFactory, RedStoneLogger} from "redstone-smartweave";
+import {ArweaveWrapper, LoggerFactory, RedStoneLogger} from "redstone-smartweave";
 import {TsLogFactory} from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
 import {connect} from "../db/connect";
 import Arweave from "arweave";
@@ -30,6 +30,7 @@ export interface GatewayContext {
   arweave: Arweave;
   bundlr: Bundlr;
   jwk: JWKInterface
+  arweaveWrapper: ArweaveWrapper
 }
 
 (async () => {
@@ -67,6 +68,7 @@ export interface GatewayContext {
   app.context.arweave = arweave;
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
+  app.context.arweaveWrapper = new ArweaveWrapper(arweave);
 
   app.use(cors({
     async origin() {

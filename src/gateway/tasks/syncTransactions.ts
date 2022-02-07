@@ -11,8 +11,9 @@ import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
 import {INTERACTIONS_TABLE} from "../../db/schema";
 import Arweave from "arweave";
+import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 
-const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
+const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
       pageInfo {
         hasNextPage
@@ -41,31 +42,12 @@ const QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilte
     }
   }`;
 
-interface TagFilter {
-  name: string;
-  values: string[];
-}
-
-interface BlockFilter {
-  min?: number;
-  max: number;
-}
-
-interface ReqVariables {
-  tags: TagFilter[];
-  blockFilter: BlockFilter;
-  first: number;
-  after?: string;
-}
-
 const tagsParser = new TagsParser();
 
 // in theory avg. block time on Arweave is 120s (?)
 // in fact, it varies from ~20s to minutes...
 export const BLOCKS_INTERVAL_MS = 30 * 1000;
 const LOAD_PAST_BLOCKS = 50; // smartweave interaction are currently somewhat rare...
-const MAX_GQL_REQUEST = 100;
-const GQL_RETRY_MS = 30 * 1000;
 // that was a limit for sqlite, but let's leave it for now...
 const MAX_BATCH_INSERT = 500;
 
@@ -300,73 +282,7 @@ async function load(
     first: MAX_GQL_REQUEST,
   };
 
-  return await loadPages(context, mainTransactionsVariables);
-
-  async function loadPages(
-    context: GatewayContext,
-    variables: ReqVariables
-  ) {
-    let transactions = await getNextPage(context, variables);
-
-    const txInfos: GQLEdgeInterface[] = transactions.edges.filter(
-      (tx) => !tx.node.parent?.id && !tx.node.bundledIn?.id
-    );
-
-    while (transactions.pageInfo.hasNextPage) {
-      const cursor = transactions.edges[MAX_GQL_REQUEST - 1].cursor;
-
-      variables = {
-        ...variables,
-        after: cursor,
-      };
-
-      transactions = await getNextPage(context, variables);
-
-      txInfos.push(
-        ...transactions.edges.filter(
-          (tx) => !tx.node.parent?.id && !tx.node.bundledIn?.id)
-      );
-    }
-    return txInfos;
-  }
-
-  async function getNextPage(
-    context: GatewayContext,
-    variables: ReqVariables
-  ): Promise<GQLTransactionsResultInterface> {
-    const {arweave, logger} = context;
-
-    const benchmark = Benchmark.measure();
-    let response = await arweave.api.post("graphql", {
-      query: QUERY,
-      variables,
-    });
-    logger.debug("GQL page load:", benchmark.elapsed());
-
-    while (response.status === 403) {
-      logger.warn(`GQL rate limiting, waiting ${GQL_RETRY_MS}ms before next try.`);
-
-      await sleep(GQL_RETRY_MS);
-
-      response = await arweave.api.post("graphql", {
-        query: QUERY,
-        variables,
-      });
-    }
-
-    if (response.status !== 200) {
-      throw new Error(`Unable to retrieve transactions. Arweave gateway responded with status ${response.status}.`);
-    }
-
-    if (response.data.errors) {
-      logger.error(response.data.errors);
-      throw new Error("Error while loading interaction transactions");
-    }
-
-    const data: GQLResultInterface = response.data;
-
-    return data.data.transactions;
-  }
+  return await loadPages(context, INTERACTIONS_QUERY, mainTransactionsVariables);
 }
 
 export function parseFunctionName(input: string, logger: RedStoneLogger) {
