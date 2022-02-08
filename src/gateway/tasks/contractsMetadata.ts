@@ -1,13 +1,180 @@
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
-import {ContractDefinitionLoader} from "redstone-smartweave";
+import {ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags} from "redstone-smartweave";
+import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
+import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT} from "./syncTransactions";
+import {Knex} from "knex";
 
 const CONTRACTS_METADATA_INTERVAL_MS = 30000;
+
+const CONTRACTS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
+    transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
+      pageInfo {
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          tags {
+            name
+            value
+          }
+          block {
+            height
+          }
+        }
+        cursor
+      }
+    }
+  }`;
 
 export async function runContractsMetadataTask(context: GatewayContext) {
   await TaskRunner
     .from("[contracts metadata]", loadContractsMetadata, context)
     .runAsyncEvery(CONTRACTS_METADATA_INTERVAL_MS);
+}
+
+
+export async function runLoadContractsFromGqlTask(context: GatewayContext) {
+  await TaskRunner
+    .from("[contracts from gql]", loadContractsFromGql, context)
+    .runSyncEvery(CONTRACTS_METADATA_INTERVAL_MS);
+}
+
+
+async function loadContractsFromGql(context: GatewayContext) {
+  const {logger, gatewayDb, arweaveWrapper} = context;
+
+  let results: any[];
+  try {
+    results = await Promise.allSettled([
+      gatewayDb("contracts")
+        .select("block_height")
+        .whereNotNull("block_height")
+        .orderBy("block_height", "desc")
+        .limit(1)
+        .first(),
+      arweaveWrapper.info()
+    ]);
+  } catch (e: any) {
+    logger.error("Error while checking new blocks", e.message);
+    return;
+  }
+
+  const rejections = results.filter((r) => {
+    return r.status === "rejected";
+  });
+
+  if (rejections.length > 0) {
+    logger.error("Error while processing next block", rejections.map((r) => r.message));
+    return;
+  }
+
+  const currentNetworkHeight = results[1].value.height;
+  const lastProcessedBlockHeight = results[0].value?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
+
+  logger.debug("Load contracts params", {
+    from: lastProcessedBlockHeight - AVG_BLOCKS_PER_HOUR,
+    to: currentNetworkHeight
+  });
+
+  let transactions: GQLEdgeInterface[]
+  try {
+    transactions = await load(
+      context,
+      lastProcessedBlockHeight - AVG_BLOCKS_PER_HOUR,
+      currentNetworkHeight
+    );
+  } catch (e: any) {
+    logger.error("Error while loading contracts", e.message);
+    return;
+  }
+
+  if (transactions.length === 0) {
+    logger.info("Now new contracts");
+    return;
+  }
+
+  logger.info(`Found ${transactions.length} contracts`);
+
+  let contractsInserts: any[] = [];
+
+  const contractsInsertsIds = new Set<string>();
+  for (let transaction of transactions) {
+    const contractId = transaction.node.id;
+    if (!contractsInsertsIds.has(contractId)) {
+      const contentType = getContentTypeTag(transaction);
+      if (!contentType) {
+        logger.warn(`Cannot determine contract content type for contract ${contractId}`);
+      }
+      contractsInserts.push({
+        contract_id: transaction.node.id,
+        block_height: transaction.node.block.height,
+        content_type: contentType || "unknown"
+      });
+      contractsInsertsIds.add(contractId);
+
+      if (contractsInserts.length === MAX_BATCH_INSERT) {
+        try {
+          logger.info(`Batch insert ${MAX_BATCH_INSERT} interactions.`);
+          await insertContracts(gatewayDb, contractsInserts);
+          contractsInserts = [];
+        } catch (e) {
+          logger.error(e);
+          return;
+        }
+      }
+    }
+  }
+
+  logger.info(`Saving last`, contractsInserts.length);
+
+  if (contractsInserts.length > 0) {
+    try {
+      await insertContracts(gatewayDb, contractsInserts);
+    } catch (e) {
+      logger.error(e);
+      return;
+    }
+  }
+
+  logger.info(`Inserted ${contractsInserts.length} contracts`);
+}
+
+
+async function insertContracts(gatewayDb: Knex<any, unknown[]>, contractsInserts: any[]) {
+  await gatewayDb("contracts")
+    .insert(contractsInserts)
+    .onConflict("contract_id")
+    .merge(['block_height', 'content_type']);
+}
+
+
+function getContentTypeTag(interactionTransaction: GQLEdgeInterface): string | undefined {
+  return interactionTransaction.node.tags.find((tag) => tag.name === SmartWeaveTags.CONTENT_TYPE)?.value;
+}
+
+
+async function load(
+  context: GatewayContext,
+  from: number,
+  to: number
+): Promise<GQLEdgeInterface[]> {
+  const variables: ReqVariables = {
+    tags: [
+      {
+        name: SmartWeaveTags.APP_NAME,
+        values: ["SmartWeaveContract"],
+      }
+    ],
+    blockFilter: {
+      min: from,
+      max: to,
+    },
+    first: MAX_GQL_REQUEST,
+  };
+
+  return await loadPages(context, CONTRACTS_QUERY, variables);
 }
 
 async function loadContractsMetadata(context: GatewayContext) {
@@ -17,11 +184,10 @@ async function loadContractsMetadata(context: GatewayContext) {
   const result: { contract: string }[] = (await gatewayDb.raw(
     `
         SELECT contract_id AS contract
-        FROM interactions
+        FROM contracts
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
-          AND trim(contract_id) NOT IN (SELECT contract_id FROM contracts)
-        GROUP BY contract_id;
+          AND src_tx_id IS NULL;
     `
   )).rows;
 
@@ -32,15 +198,14 @@ async function loadContractsMetadata(context: GatewayContext) {
     return;
   }
 
-
   for (const row of result) {
     logger.debug(`Loading ${row.contract} definition.`);
     try {
       const definition: any = await definitionLoader.load(row.contract.trim());
       const type = evalType(definition.initState);
       await gatewayDb("contracts")
-        .insert({
-          contract_id: definition.txId,
+        .where('contract_id', '=', definition.txId)
+        .update({
           src_tx_id: definition.srcTxId,
           src: definition.src,
           init_state: definition.initState,
@@ -48,18 +213,12 @@ async function loadContractsMetadata(context: GatewayContext) {
           type: evalType(definition.initState),
           pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
           pst_name: type == 'pst' ? definition.initState?.name : null
-        })
-        .onConflict("contract_id")
-        .merge();
+        });
     } catch (e) {
       logger.error("Error while loading contract definition", e);
       await gatewayDb("contracts")
-        .insert({
-          contract_id: row.contract.trim(),
-          src_tx_id: null,
-          src: null,
-          init_state: null,
-          owner: null,
+        .where('contract_id', '=', row.contract.trim())
+        .update({
           type: "error"
         });
     }

@@ -54,6 +54,5 @@ async function verifyCorruptedTransactions(context: GatewayContext) {
     }
   }
 
-
   logger.info("Corrupted transactions confirmation done.");
 }

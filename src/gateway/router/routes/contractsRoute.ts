@@ -28,18 +28,18 @@ export async function contractsRoute(ctx: Router.RouterContext) {
                  c.type                                                                    AS type,
                  c.pst_ticker                                                              AS pst_ticker,
                  c.pst_name                                                                AS pst_name,
-                 count(*)                                                                  AS interactions,
-                 count(case when i.confirmation_status = 'corrupted' then 1 else null end) AS corrupted,
-                 count(case when i.confirmation_status = 'confirmed' then 1 else null end) AS confirmed,
+                 count(i.contract_id)                                                                AS interactions,
+                 count(case when i.confirmation_status = 'corrupted' then 1 end) AS corrupted,
+                 count(case when i.confirmation_status = 'confirmed' then 1 end) AS confirmed,
                  max(i.block_height)                                                       AS last_interaction_height,
                  count(*) OVER ()                                                          AS total
-          FROM interactions i
-                   LEFT JOIN contracts c
+          FROM contracts c
+                   LEFT JOIN interactions i
                              ON c.contract_id = i.contract_id
           WHERE c.contract_id != ''
             AND c.type != 'error' ${type ? 'AND c.type = ?' : ''}
-          GROUP BY i.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name
-          ORDER BY last_interaction_height DESC, interactions DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
+          GROUP BY c.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name
+          ORDER BY last_interaction_height DESC NULLS LAST, interactions DESC NULLS LAST ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
 

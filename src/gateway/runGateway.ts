@@ -7,9 +7,7 @@ import {
   runSyncRecentTransactionsTask
 } from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
-import {runContractsMetadataTask} from "./tasks/contractsMetadata";
-import {runBundlrCheck} from "../bundlr/connect";
-import {runNetworkInfoCacheTask} from "./tasks/networkInfoCache";
+import {runContractsMetadataTask, runLoadContractsFromGqlTask} from "./tasks/contractsMetadata";
 
 
 /**
@@ -54,4 +52,8 @@ export async function runGateway(context: GatewayContext) {
   await runVerifyCorruptedTransactionsTask(context);
 
   await runContractsMetadataTask(context);
+
+  await runContractsMetadataTask(context);
+
+  await runLoadContractsFromGqlTask(context);
 }

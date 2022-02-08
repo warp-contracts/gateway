@@ -22,6 +22,10 @@ export interface ReqVariables {
   after?: string;
 }
 
+function filterBundles(tx: GQLEdgeInterface) {
+  return !tx.node.parent?.id && !tx.node.bundledIn?.id;
+}
+
 export async function loadPages(
   context: GatewayContext,
   query: string,
@@ -30,7 +34,7 @@ export async function loadPages(
   let transactions = await getNextPage(context, query, variables);
 
   const txInfos: GQLEdgeInterface[] = transactions.edges.filter(
-    (tx) => !tx.node.parent?.id && !tx.node.bundledIn?.id
+    (tx) => filterBundles(tx)
   );
 
   while (transactions.pageInfo.hasNextPage) {
@@ -45,7 +49,7 @@ export async function loadPages(
 
     txInfos.push(
       ...transactions.edges.filter(
-        (tx) => !tx.node.parent?.id && !tx.node.bundledIn?.id)
+        (tx) => filterBundles(tx))
     );
   }
   return txInfos;
