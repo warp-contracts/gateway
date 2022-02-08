@@ -11,7 +11,6 @@ export type INTERACTIONS_TABLE = {
   confirmation_status: string;
 };
 
-
 export async function initGatewayDb(db: Knex) {
   if (!(await db.schema.hasTable("interactions"))) {
     await db.schema.createTable("interactions", (table) => {

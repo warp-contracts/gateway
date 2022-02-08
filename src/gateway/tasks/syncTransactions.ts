@@ -12,6 +12,7 @@ import {GatewayContext} from "../init";
 import {INTERACTIONS_TABLE} from "../../db/schema";
 import Arweave from "arweave";
 import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
+import {Knex} from "knex";
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -47,12 +48,13 @@ const tagsParser = new TagsParser();
 // in theory avg. block time on Arweave is 120s (?)
 // in fact, it varies from ~20s to minutes...
 export const BLOCKS_INTERVAL_MS = 30 * 1000;
+export const FIRST_SW_TX_BLOCK_HEIGHT = 472810;
 const LOAD_PAST_BLOCKS = 50; // smartweave interaction are currently somewhat rare...
 // that was a limit for sqlite, but let's leave it for now...
-const MAX_BATCH_INSERT = 500;
+export const MAX_BATCH_INSERT = 500;
 
 const AVG_BLOCK_TIME_SECONDS = 60;
-const AVG_BLOCKS_PER_HOUR = (60 * 60) / AVG_BLOCK_TIME_SECONDS + 10;
+export const AVG_BLOCKS_PER_HOUR = (60 * 60) / AVG_BLOCK_TIME_SECONDS + 10;
 const AVG_BLOCKS_PER_DAY = (60 * 60 * 24) / AVG_BLOCK_TIME_SECONDS + 60;
 
 const HOUR_INTERVAL_MS = 60 * 60 * 1000;
@@ -96,7 +98,7 @@ function syncLastDayTransactions(context: GatewayContext) {
 
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number) {
-  const {gatewayDb, arweave, logger} = context;
+  const {gatewayDb, logger, arweaveWrapper} = context;
   logger.info("Syncing blocks");
 
   // 1. find last processed block height and current Arweave network height
@@ -108,7 +110,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         .orderBy("block_height", "desc")
         .limit(1)
         .first(),
-      arweave.network.getInfo(),
+      arweaveWrapper.info()
     ]);
   } catch (e: any) {
     logger.error("Error while checking new blocks", e.message);
@@ -126,8 +128,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   const currentNetworkHeight = results[1].value.height;
   // note: the first SW interaction was registered at 472810 block height
-  const lastProcessedBlockHeight = results[0].value?.block_height || 472810;
-  logger.debug(`Last processed block height: ${lastProcessedBlockHeight}`);
+  const lastProcessedBlockHeight = results[0].value?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
 
   logger.debug("Network info", {
     currentNetworkHeight,
@@ -228,11 +229,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
       try {
         logger.info(`Batch insert ${MAX_BATCH_INSERT} interactions.`);
-        const interactionsInsertResult: any =
-          await gatewayDb("interactions")
-            .insert(interactionsInserts)
-            .onConflict("interaction_id")
-            .ignore();
+        const interactionsInsertResult: any = await insertInteractions(gatewayDb, interactionsInserts);
 
         logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
         interactionsInserts = [];
@@ -250,16 +247,20 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (interactionsInserts.length > 0) {
     try {
-      const interactionsInsertResult: any = await gatewayDb("interactions")
-        .insert(interactionsInserts)
-        .onConflict("interaction_id")
-        .ignore();
+      const interactionsInsertResult: any = await insertInteractions(gatewayDb, interactionsInserts);
       logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
     } catch (e) {
       logger.error(e);
       return;
     }
   }
+}
+
+async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsInserts: INTERACTIONS_TABLE[]) {
+  return gatewayDb("interactions")
+    .insert(interactionsInserts)
+    .onConflict("interaction_id")
+    .ignore();
 }
 
 // TODO: verify internalWrites

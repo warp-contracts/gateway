@@ -7,7 +7,7 @@ import {arrayToHex, Benchmark, GQLTagInterface} from "redstone-smartweave";
 import {cachedBlockInfo, cachedNetworkInfo} from "../../tasks/networkInfoCache";
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr, jwk} = ctx;
+  const {logger, gatewayDb, arweave, bundlr, jwk, arweaveWrapper} = ctx;
 
   const benchmark = Benchmark.measure();
 
@@ -24,7 +24,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   try {
     const networkInfo = cachedNetworkInfo
       ? cachedNetworkInfo
-      : await arweave.network.getInfo()
+      : await arweaveWrapper.info()
 
     const blockInfo = cachedBlockInfo
       ? cachedBlockInfo

@@ -20,7 +20,7 @@ export async function searchRoute(ctx: Router.RouterContext) {
           WHERE pst_ticker ILIKE ? OR pst_name ILIKE ?
           UNION ALL
           SELECT 2 as sort_order, contract_id, 'contract' as type, '{}'::jsonb as interaction, '' as confirmation_status, '' as pst_ticker, '' as pst_name
-          FROM interactions
+          FROM contracts
           WHERE contract_id ILIKE ?
           GROUP BY contract_id, type
           UNION ALL

@@ -1,4 +1,3 @@
-import Application from "koa";
 import axios from "axios";
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
@@ -26,11 +25,11 @@ export async function runVerifyInteractionsTask(context: GatewayContext) {
 }
 
 async function verifyInteractions(context: GatewayContext) {
-  const {arweave, logger, gatewayDb} = context;
+  const {logger, gatewayDb, arweaveWrapper} = context;
 
   let currentNetworkHeight;
   try {
-    currentNetworkHeight = (await arweave.network.getInfo()).height;
+    currentNetworkHeight = (await arweaveWrapper.info()).height as number;
   } catch (e: any) {
     logger.error("Error from Arweave", e.message);
     return;
