@@ -3,8 +3,13 @@ import Transaction from "arweave/node/lib/transaction";
 import {parseFunctionName} from "../../tasks/syncTransactions";
 import Arweave from "arweave";
 import {JWKInterface} from "arweave/node/lib/wallet";
-import {arrayToHex, Benchmark, GQLTagInterface} from "redstone-smartweave";
+import {arrayToHex, ArweaveWrapper, Benchmark, GQLTagInterface, RedStoneLogger} from "redstone-smartweave";
 import {cachedBlockInfo, cachedNetworkInfo} from "../../tasks/networkInfoCache";
+import util from "util";
+import {gzip} from "zlib";
+import Bundlr from "@bundlr-network/client";
+import {BlockData} from "arweave/node/blocks";
+
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr, jwk, arweaveWrapper} = ctx;
@@ -12,27 +17,14 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const benchmark = Benchmark.measure();
 
   const transaction: Transaction = new Transaction({...ctx.request.body});
-
   logger.debug("New sequencer tx", transaction.id);
 
   const originalSignature = transaction.signature;
   const originalOwner = transaction.owner;
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
 
-  const networkInfoBenchmark = Benchmark.measure();
-
   try {
-    const networkInfo = cachedNetworkInfo
-      ? cachedNetworkInfo
-      : await arweaveWrapper.info()
-
-    const blockInfo = cachedBlockInfo
-      ? cachedBlockInfo
-      : await arweave.blocks.get(networkInfo.current)
-
-    logger.debug("Network info:", networkInfoBenchmark.elapsed());
-
-    const millis = Date.now();
+    const {networkInfo, blockInfo} = await loadNetworkInfo(arweaveWrapper, arweave, logger);
 
     const currentHeight = networkInfo.height;
     if (!currentHeight) {
@@ -44,75 +36,27 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       throw new Error("Current block not set");
     }
 
-    const sortKeyBench = Benchmark.measure();
-
+    const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
-    logger.debug("Sort Key generation", sortKeyBench.elapsed());
-
-    let contractTag: string = '', inputTag: string = '';
-
-    const decodedTags: GQLTagInterface[] = [];
-
-    const tagsBenchmark = Benchmark.measure();
-
-    transaction.tags.forEach(tag => {
-      const key = tag.get('name', {decode: true, string: true});
-      const value = tag.get('value', {decode: true, string: true});
-      if (key == 'Contract') {
-        contractTag = value;
-      }
-      if (key == 'Input') {
-        inputTag = value;
-      }
-      decodedTags.push({
-        name: key,
-        value: value // TODO: handle array-ish values
-      });
-    });
-
-    const tags = [
-      {name: "Sequencer", value: "RedStone"},
-      {name: "Sequencer-Owner", value: originalAddress},
-      {name: "Sequencer-Mills", value: "" + millis},
-      {name: "Sequencer-Sort-Key", value: sortKey},
-      {name: "Sequencer-Tx-Id", value: transaction.id},
-      {name: "Sequencer-Block-Height", value: "" + currentHeight},
-      {name: "Sequencer-Block-Id", value: currentBlockId},
-      ...decodedTags
-    ];
-
-    logger.debug("Sequencer Tags generation", tagsBenchmark.elapsed());
+    let {
+      contractTag,
+      inputTag,
+      decodedTags,
+      tags
+    } = prepareTags(transaction, originalAddress, millis, sortKey, currentHeight, currentBlockId);
 
     // TODO: add fallback to other bundlr nodes.
-    const uploadBenchmark = Benchmark.measure();
-    const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
-    await bTx.sign();
+    const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, logger);
 
-    // TODO: move uploading to a separate Worker, to increase TPS
-    const bundlrResponse = await bTx.upload();
-    logger.debug("Uploading to bundlr", uploadBenchmark.elapsed());
-    logger.debug("Bundlr response id", bundlrResponse.data.id);
-
-    const interaction: any = {
-      id: transaction.id,
-      owner: {address: originalAddress},
-      recipient: transaction.target,
-      tags: decodedTags,
-      block: {
-        height: currentHeight,
-        id: currentBlockId,
-        timestamp: blockInfo.timestamp
-      },
-      fee: {
-        winston: transaction.reward
-      },
-      quantity: {
-        winston: transaction.quantity
-      },
-      sortKey: sortKey,
-      source: "redstone-sequencer"
-    }
+    const interaction = createInteraction(
+      transaction,
+      originalAddress,
+      decodedTags,
+      currentHeight,
+      currentBlockId,
+      blockInfo,
+      sortKey);
 
     const insertBench = Benchmark.measure();
 
@@ -162,8 +106,129 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     ctx.status = 500;
     ctx.body = {message: e};
   }
-
 }
+
+function createInteraction(
+  transaction: Transaction,
+  originalAddress: string,
+  decodedTags: GQLTagInterface[],
+  currentHeight: number,
+  currentBlockId: string,
+  blockInfo: BlockData,
+  sortKey: string) {
+
+  const interaction: any = {
+    id: transaction.id,
+    owner: {address: originalAddress},
+    recipient: transaction.target,
+    tags: decodedTags,
+    block: {
+      height: currentHeight,
+      id: currentBlockId,
+      timestamp: blockInfo.timestamp
+    },
+    fee: {
+      winston: transaction.reward
+    },
+    quantity: {
+      winston: transaction.quantity
+    },
+    sortKey: sortKey,
+    source: "redstone-sequencer"
+  }
+
+  return interaction;
+}
+
+
+function prepareTags(
+  transaction: Transaction,
+  originalAddress: string,
+  millis: number,
+  sortKey: string,
+  currentHeight: number,
+  currentBlockId: string) {
+
+  let contractTag: string = '', inputTag: string = '';
+
+  const decodedTags: GQLTagInterface[] = [];
+
+  transaction.tags.forEach(tag => {
+    const key = tag.get('name', {decode: true, string: true});
+    const value = tag.get('value', {decode: true, string: true});
+    if (key == 'Contract') {
+      contractTag = value;
+    }
+    if (key == 'Input') {
+      inputTag = value;
+    }
+    decodedTags.push({
+      name: key,
+      value: value // TODO: handle array-ish values
+    });
+  });
+
+  const tags = [
+    {name: "Sequencer", value: "RedStone"},
+    {name: "Sequencer-Owner", value: originalAddress},
+    {name: "Sequencer-Mills", value: "" + millis},
+    {name: "Sequencer-Sort-Key", value: sortKey},
+    {name: "Sequencer-Tx-Id", value: transaction.id},
+    {name: "Sequencer-Block-Height", value: "" + currentHeight},
+    {name: "Sequencer-Block-Id", value: currentBlockId},
+    {name: "Sequencer-Compression", value: "gzip"},
+    ...decodedTags
+  ];
+
+  return {contractTag, inputTag, decodedTags, tags};
+}
+
+
+async function loadNetworkInfo(
+  arweaveWrapper: ArweaveWrapper, arweave: Arweave, logger: RedStoneLogger) {
+
+  const networkInfoBenchmark = Benchmark.measure();
+  const networkInfo = cachedNetworkInfo
+    ? cachedNetworkInfo
+    : await arweaveWrapper.info();
+
+  const blockInfo = cachedBlockInfo
+    ? cachedBlockInfo
+    : await arweave.blocks.get(networkInfo.current!);
+
+  logger.debug("Network info:", networkInfoBenchmark.elapsed());
+
+  return {networkInfo, blockInfo};
+}
+
+async function compress(transaction: Transaction) {
+  const stringifiedTx = JSON.stringify(transaction);
+  const gzipPromisified = util.promisify(gzip);
+  const gzippedData = await gzipPromisified(stringifiedTx);
+
+  return gzippedData;
+}
+
+async function uploadToBundlr(
+  transaction: Transaction,
+  bundlr: Bundlr,
+  tags: GQLTagInterface[],
+  logger: RedStoneLogger) {
+
+  const uploadBenchmark = Benchmark.measure();
+  const gzippedData = await compress(transaction);
+
+  const bTx = bundlr.createTransaction(gzippedData, {tags});
+  await bTx.sign();
+
+  // TODO: move uploading to a separate Worker, to increase TPS
+  const bundlrResponse = await bTx.upload();
+  logger.debug("Uploading to bundlr", uploadBenchmark.elapsed());
+  logger.debug("Bundlr response id", bundlrResponse.data.id);
+
+  return {bTx, bundlrResponse};
+}
+
 
 async function createSortKey(
   arweave: Arweave,
