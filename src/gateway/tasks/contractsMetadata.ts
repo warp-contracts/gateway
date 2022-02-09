@@ -31,7 +31,7 @@ const CONTRACTS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: 
 export async function runContractsMetadataTask(context: GatewayContext) {
   await TaskRunner
     .from("[contracts metadata]", loadContractsMetadata, context)
-    .runAsyncEvery(CONTRACTS_METADATA_INTERVAL_MS);
+    .runSyncEvery(CONTRACTS_METADATA_INTERVAL_MS);
 }
 
 
@@ -187,7 +187,8 @@ async function loadContractsMetadata(context: GatewayContext) {
         FROM contracts
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
-          AND src_tx_id IS NULL;
+          AND src_tx_id IS NULL
+        AND type != 'error';
     `
   )).rows;
 

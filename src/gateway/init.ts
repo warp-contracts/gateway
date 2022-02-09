@@ -110,7 +110,7 @@ function initArweave(): Arweave {
     host: "arweave.net",
     port: 443,
     protocol: "https",
-    timeout: 60000,
+    timeout: 20000,
     logging: false,
   });
 }
