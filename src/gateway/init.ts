@@ -57,7 +57,7 @@ export interface GatewayContext {
   const logger = LoggerFactory.INST.create("gateway");
 
   const arweave = initArweave();
-  const {bundlr, jwk} = initBundlr(logger);
+  //const {bundlr, jwk} = initBundlr(logger);
 
   const gatewayDb = connect();
   await initGatewayDb(gatewayDb);
@@ -66,8 +66,8 @@ export interface GatewayContext {
   app.context.gatewayDb = gatewayDb;
   app.context.logger = logger;
   app.context.arweave = arweave;
-  app.context.bundlr = bundlr;
-  app.context.jwk = jwk;
+  /*app.context.bundlr = bundlr;
+  app.context.jwk = jwk;*/
   app.context.arweaveWrapper = new ArweaveWrapper(arweave);
 
   app.use(cors({
@@ -107,7 +107,7 @@ export interface GatewayContext {
 
 function initArweave(): Arweave {
   return Arweave.init({
-    host: "arweave.net",
+    host: "testnet.redstone.tools",
     port: 443,
     protocol: "https",
     timeout: 20000,

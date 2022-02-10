@@ -47,7 +47,7 @@ const tagsParser = new TagsParser();
 
 // in theory avg. block time on Arweave is 120s (?)
 // in fact, it varies from ~20s to minutes...
-export const BLOCKS_INTERVAL_MS = 30 * 1000;
+export const BLOCKS_INTERVAL_MS = 10 * 1000;
 export const FIRST_SW_TX_BLOCK_HEIGHT = 472810;
 const LOAD_PAST_BLOCKS = 50; // smartweave interaction are currently somewhat rare...
 // that was a limit for sqlite, but let's leave it for now...
@@ -128,7 +128,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   const currentNetworkHeight = results[1].value.height;
   // note: the first SW interaction was registered at 472810 block height
-  const lastProcessedBlockHeight = results[0].value?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
+  const lastProcessedBlockHeight = results[0].value?.block_height || 0;
 
   logger.debug("Network info", {
     currentNetworkHeight,
@@ -137,9 +137,9 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   const heightFrom = lastProcessedBlockHeight - pastBlocksAmount;
   let heightTo = currentNetworkHeight;
-  if (heightTo > heightFrom + 5000) {
+  /*if (heightTo > heightFrom + 5000) {
     heightTo = heightFrom + 5000;
-  }
+  }*/
 
   logger.debug("Loading interactions for blocks", {
     heightFrom,

@@ -5,7 +5,7 @@ import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT} from "./syncTransactions";
 import {Knex} from "knex";
 
-const CONTRACTS_METADATA_INTERVAL_MS = 10000;
+const CONTRACTS_METADATA_INTERVAL_MS = 2000;
 
 const CONTRACTS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -71,7 +71,7 @@ async function loadContractsFromGql(context: GatewayContext) {
   }
 
   const currentNetworkHeight = results[1].value.height;
-  const lastProcessedBlockHeight = results[0].value?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
+  const lastProcessedBlockHeight = results[0].value?.block_height || 0;
 
   logger.debug("Load contracts params", {
     from: lastProcessedBlockHeight - AVG_BLOCKS_PER_HOUR,
