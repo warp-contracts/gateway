@@ -51,8 +51,6 @@ export async function runGateway(context: GatewayContext) {
 
   await runVerifyCorruptedTransactionsTask(context);
 
-  await runContractsMetadataTask(context);
-
   await runLoadContractsFromGqlTask(context);
 
   await runContractsMetadataTask(context);

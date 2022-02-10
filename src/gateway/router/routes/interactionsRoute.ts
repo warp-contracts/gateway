@@ -8,7 +8,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
   const {contractId, confirmationStatus, page, limit, from, to, totalCount, source} = ctx.query;
 
-  logger.debug("Interactions route", {
+  /*logger.debug("Interactions route", {
     contractId,
     confirmationStatus,
     page,
@@ -17,7 +17,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     to,
     totalCount,
     source
-  });
+  });*/
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -95,7 +95,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
       }))
     };
 
-    logger.debug("Interactions loaded in", benchmark.elapsed());
+    //logger.debug("Interactions loaded in", benchmark.elapsed());
 
   } catch (e: any) {
     ctx.logger.error(e);
