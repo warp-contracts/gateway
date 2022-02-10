@@ -23,8 +23,8 @@ export async function statsRoute(ctx: Router.RouterContext) {
       `
     );
     ctx.body = {
-      total_interactions: result?.rows[0].total,
-      total_contracts: result?.rows[1].total
+      total_contracts: result?.rows[0].total,
+      total_interactions: result?.rows[1].total
     }
 
     logger.debug("Stats loaded in", benchmark.elapsed());
