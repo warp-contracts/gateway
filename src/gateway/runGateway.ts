@@ -53,7 +53,7 @@ export async function runGateway(context: GatewayContext) {
 
   await runContractsMetadataTask(context);
 
-  await runContractsMetadataTask(context);
-
   await runLoadContractsFromGqlTask(context);
+
+  await runContractsMetadataTask(context);
 }

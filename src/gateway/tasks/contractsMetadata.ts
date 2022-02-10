@@ -188,7 +188,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
           AND src_tx_id IS NULL
-        AND type != 'error';
+        AND type IS NULL;
     `
   )).rows;
 
