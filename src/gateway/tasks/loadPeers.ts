@@ -11,7 +11,7 @@ const PEERS_CHECK_INTERVAL_MS = 1000 * 60 * 60;
 export async function runLoadPeersTask(context: GatewayContext) {
   const {logger} = context;
   const currentPeers: { peer: string }[] = await context.gatewayDb('peers').select('peer');
-  if (currentPeers.length < 500) {
+  if (currentPeers.length < 200) {
     logger.info("Pre-loading peers...");
     await loadPeers(context);
   }
