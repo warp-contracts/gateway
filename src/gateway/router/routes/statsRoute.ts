@@ -15,11 +15,12 @@ export async function statsRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT count(i.id) as total
+          SELECT 1 AS sort_order, count(i.id) AS total
           FROM interactions i
-          UNION ALL
-          SELECT count(c.contract_id) as total
-          FROM contracts c;
+          UNION
+          SELECT 2 AS sort_order, count(c.contract_id) AS total
+          FROM contracts c
+          ORDER BY sort_order;
       `
     );
     ctx.body = {
