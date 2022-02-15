@@ -213,19 +213,6 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       });
     }
 
-    // why using onConflict.merge()?
-    // because it happened once that GQL endpoint returned the exact same transactions
-    // twice - for different block heights (827991 and then 827993)
-    // For the record, these transactions were:
-    // INmaBb6pk0MATLrs3mCw5bjeRCbR2e-j-v4swpWHPTg
-    // QIbp0CwxNUwA8xQSS36Au2Lj1QEgnO8n-shQ2d3AWps
-    // UJhsjQLhSr1mL4C-t3XvotAhYGIN-P7EkkxNyRRIQ-w
-    // UZ1XnYr4waM7Zm77TZduZ4Tx8uS8y9PeyX6kKEPQh10
-    // cZHBNtzkSF_MtkZCz1RD8_D9lVjOOYAuEUk2xbdm7LA
-    // lwGTY3yEBfxTgPFO4DZMouHWVaXLJu7SxP-hpDb_S2M
-    // ouv9X3-ceGPhb2ALVaLq2qzj_ZDgbSmjGj9wz5k5qRo
-    // qT-ihh8K3J7Lek4774-GmFoAhU4pemWZPXv66B09xCI
-    // qUk-UuPAOaOkoqMP_btCJLYP-c-8kHRKjg_nefQVLgQ
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
       try {
         logger.info(`Batch insert ${MAX_BATCH_INSERT} interactions.`);
@@ -257,10 +244,26 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 }
 
 async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsInserts: INTERACTIONS_TABLE[]) {
+  // why using onConflict.merge()?
+  // because it happened once that GQL endpoint returned the exact same transactions
+  // twice - for different block heights (827991 and then 827993)
+  // For the record, these transactions were:
+  // INmaBb6pk0MATLrs3mCw5bjeRCbR2e-j-v4swpWHPTg
+  // QIbp0CwxNUwA8xQSS36Au2Lj1QEgnO8n-shQ2d3AWps
+  // UJhsjQLhSr1mL4C-t3XvotAhYGIN-P7EkkxNyRRIQ-w
+  // UZ1XnYr4waM7Zm77TZduZ4Tx8uS8y9PeyX6kKEPQh10
+  // cZHBNtzkSF_MtkZCz1RD8_D9lVjOOYAuEUk2xbdm7LA
+  // lwGTY3yEBfxTgPFO4DZMouHWVaXLJu7SxP-hpDb_S2M
+  // ouv9X3-ceGPhb2ALVaLq2qzj_ZDgbSmjGj9wz5k5qRo
+  // qT-ihh8K3J7Lek4774-GmFoAhU4pemWZPXv66B09xCI
+  // qUk-UuPAOaOkoqMP_btCJLYP-c-8kHRKjg_nefQVLgQ
+
+  // note: the same issue occurred recently for tx IoGSPjQ--LY2KRgCBioaX0GTlohCq64IYSFolayuEPg
+  // it was first returned for block 868561, and then moved to 868562 - probably due to fork
   return gatewayDb("interactions")
     .insert(interactionsInserts)
     .onConflict("interaction_id")
-    .ignore();
+    .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'interaction']);
 }
 
 // TODO: verify internalWrites

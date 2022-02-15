@@ -3,11 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import Arweave from 'arweave';
 import {
-  LoggerFactory,
-  RedstoneGatewayInteractionsLoader,
   ArweaveGatewayInteractionsLoader,
   DefaultEvaluationOptions,
   GQLEdgeInterface,
+  LoggerFactory,
+  RedstoneGatewayInteractionsLoader,
   SourceType
 } from 'redstone-smartweave';
 
@@ -79,14 +79,16 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
 
     expect(responseRedstoneInteractionsLoader.length).toEqual(responseArweaveInteractionsLoader.length);
 
-    let arr: boolean[] = [];
-    responseRedstoneInteractionsLoader.forEach((resRedstone) => {
-      arr.push(
-        responseArweaveInteractionsLoader.find((resArweave) => resArweave.node.id === resRedstone.node.id) !== undefined
-      );
+    responseRedstoneInteractionsLoader.forEach((resRedstone, index) => {
+      const arTx =
+        responseArweaveInteractionsLoader.find((resArweave) => resArweave.node.id === resRedstone.node.id);
+      if (arTx) {
+        // these props are only added for redstone gateway
+        arTx.node.bundledIn = resRedstone.node.bundledIn;
+        arTx.node.confirmationStatus = resRedstone.node.confirmationStatus;
+      }
+      expect(arTx?.node).toEqual(resRedstone.node);
     });
-    const result = arr.every((a) => a === true);
-
-    expect(result).toEqual(true);
   }, 600000);
 });
+
