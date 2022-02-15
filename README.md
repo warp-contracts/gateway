@@ -2,6 +2,7 @@
 
 RedStone SmartWeave Gateway - a fast and reliable way to
 load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) transactions.
+All the data indexed by our gateway can be viewed in [SonAR](https://sonar.redstone.tools/#/app/contracts).
 
 1. fast - load your contract interactions in seconds, not minutes!
 2. reliable - built-in protection against forks and corrupted transactions
@@ -369,4 +370,3 @@ Examples:
    with the help of the customized Vartex gateway).
 5. Even better protection against forks - analyzing blocks history
 6. As the amount of data being transferred is rather huge - consider moving from json to protobuf?
-7. A fully featured web app that will allow browsing and interacting with contracts
