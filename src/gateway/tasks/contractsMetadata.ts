@@ -204,17 +204,35 @@ async function loadContractsMetadata(context: GatewayContext) {
     try {
       const definition: any = await definitionLoader.load(row.contract.trim());
       const type = evalType(definition.initState);
+
+      let update: any = {
+        src_tx_id: definition.srcTxId,
+        init_state: definition.initState,
+        owner: definition.owner,
+        type: evalType(definition.initState),
+        pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
+        pst_name: type == 'pst' ? definition.initState?.name : null,
+        src_content_type: definition.contractType == 'js'
+          ? 'application/javascript'
+          : 'application/wasm'
+      };
+
+      if (definition.contractType == 'js') {
+        update = {
+          ...update,
+          src: definition.src
+        }
+      } else {
+        update = {
+          ...update,
+          src_binary: definition.src,
+          src_wasm_lang: definition.srcWasmLang
+        }
+      }
+
       await gatewayDb("contracts")
         .where('contract_id', '=', definition.txId)
-        .update({
-          src_tx_id: definition.srcTxId,
-          src: definition.src,
-          init_state: definition.initState,
-          owner: definition.owner,
-          type: evalType(definition.initState),
-          pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
-          pst_name: type == 'pst' ? definition.initState?.name : null
-        });
+        .update(update);
     } catch (e) {
       logger.error("Error while loading contract definition", e);
       await gatewayDb("contracts")
