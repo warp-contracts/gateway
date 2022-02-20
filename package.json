@@ -5,6 +5,8 @@
     "build": "tsc",
     "start:prod": "node dist/gateway/init.js",
     "start:local": "node dist/gateway/init.js --env_path .secrets/local.env",
+    "start:local:testnet": "node dist/gateway/init.js --env_path .secrets/local-testnet.env",
+    "start:prod:testnet": "node dist/gateway/init.js --env_path .secrets/prod-testnet.env",
     "format": "prettier --write .",
     "test": "jest",
     "test:regression": "node --expose-gc --max_old_space_size=6000 ./node_modules/.bin/jest ./src/__tests__/regression"
@@ -30,7 +32,7 @@
     "parse-json-stream": "^2.2.5",
     "pg": "8.7.1",
     "pg-query-stream": "^4.2.1",
-    "redstone-smartweave": "0.4.30",
+    "redstone-smartweave": "0.4.35",
     "yargs": "17.3.0"
   },
   "devDependencies": {
@@ -41,6 +43,7 @@
     "@types/object-hash": "2.2.1",
     "@typescript-eslint/eslint-plugin": "4.33.0",
     "@typescript-eslint/parser": "4.33.0",
+    "autocannon": "^7.6.0",
     "cli-table": "0.3.11",
     "colors": "1.4.0",
     "cross-env": "7.0.3",
@@ -49,7 +52,6 @@
     "prettier": "2.5.0",
     "ts-jest": "27.1.2",
     "ts-node-dev": "1.1.8",
-    "typescript": "4.5.2",
-    "autocannon": "^7.6.0"
+    "typescript": "4.5.2"
   }
 }
