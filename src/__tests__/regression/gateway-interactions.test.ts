@@ -106,6 +106,11 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
         arTx.node.confirmationStatus = resRedstone.node.confirmationStatus;
         arTx.node.bundlerTxId = resRedstone.node.bundlerTxId;
       }
+      if (resRedstone2) {
+        resRedstone2.node.bundledIn = resRedstone.node.bundledIn;
+        resRedstone2.node.parent = resRedstone.node.parent;
+        resRedstone2.node.confirmationStatus = resRedstone.node.confirmationStatus;
+      }
       expect(arTx?.node).toEqual(resRedstone.node);
       expect(resRedstone2?.node).toEqual(resRedstone.node);
     });

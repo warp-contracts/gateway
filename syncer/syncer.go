@@ -78,10 +78,11 @@ func main() {
 					}
 				}
 
+				ownerAddress, _ := utils.OwnerToAddress(tx.Owner)
 				swInteraction := sw_types.SwInteraction{
 					Id: tx.ID,
 					Owner: sw_types.SwOwner{
-						Address: tx.Owner,
+						Address: ownerAddress,
 					},
 					Recipient: tx.Target,
 					Tags:      decodedTags,
