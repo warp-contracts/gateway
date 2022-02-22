@@ -46,7 +46,7 @@ func main() {
 
 	arNode := "https://arweave.net"
 	concurrencyNumber := 50
-	s := arsyncer.New(startHeight, swcFilterParams, arNode, concurrencyNumber, 15)
+	s := arsyncer.New(startHeight, swcFilterParams, arNode, concurrencyNumber, 10)
 	s.Run()
 
 	for {
@@ -122,6 +122,8 @@ func main() {
 			if err == nil && highestBlockHeight != 0 {
 				log.Info("Updating last processed block height to ", highestBlockHeight)
 				db.UpdateLastProcessedInteractionHeight(highestBlockHeight)
+			} else {
+				panic(err)
 			}
 		}
 	}
