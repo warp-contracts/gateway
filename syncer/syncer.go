@@ -103,7 +103,7 @@ func main() {
 					log.Error("Error while marshalling interaction", err)
 					panic(err)
 				}
-				log.Debug("Interaction:", string(swInteractionJson))
+				//log.Debug("Interaction:", string(swInteractionJson))
 				highestBlockHeight = tx.BlockHeight
 
 				interactions = append(interactions, sw_types.DbInteraction{
@@ -120,7 +120,7 @@ func main() {
 
 			err := db.BatchInsertInteractions(interactions)
 			if err == nil && highestBlockHeight != 0 {
-				log.Info("Updating last processed block height to ", highestBlockHeight)
+				log.Info("Updating last processed block height to ", "highestBlockHeight", highestBlockHeight)
 				db.UpdateLastProcessedInteractionHeight(highestBlockHeight)
 			} else {
 				panic(err)

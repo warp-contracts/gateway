@@ -59,11 +59,15 @@ func (db *Db) LoadLatestSyncedBlock() int64 {
 }
 
 func (db *Db) BatchInsertInteractions(interactions []sw_types.DbInteraction) error {
-	var valueStrings []string
-	var valueArgs []interface{}
+	//valueStrings := []string{}
 	for _, interaction := range interactions {
-		valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?)")
+		log.Info("Interaction to insert", "interactionId", interaction.InteractionId)
+		smt := `
+INSERT INTO interactions (interaction_id, interaction, block_height, block_id, contract_id, function, input, confirmation_status) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (interaction_id) DO NOTHING;`
 
+		var valueArgs []interface{}
 		valueArgs = append(valueArgs, interaction.InteractionId)
 		valueArgs = append(valueArgs, interaction.Interaction)
 		valueArgs = append(valueArgs, interaction.BlockHeight)
@@ -73,21 +77,13 @@ func (db *Db) BatchInsertInteractions(interactions []sw_types.DbInteraction) err
 		valueArgs = append(valueArgs, interaction.Input)
 		valueArgs = append(valueArgs, interaction.ConfirmationStatus)
 
-		smt := `
-INSERT INTO interactions(
-interaction_id, interaction, block_height, block_id, contract_id, function, input, confirmation_status) 
-VALUES %s 
-ON CONFLICT (interaction_id) 
-DO NOTHING`
-		smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
-		log.Debug("smttt:", smt)
 		tx, _ := db.connection.Begin()
 		_, err := tx.Exec(smt, valueArgs...)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
-		return tx.Commit()
+		tx.Commit()
 	}
 
 	return nil
