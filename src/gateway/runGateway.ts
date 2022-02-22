@@ -41,11 +41,13 @@ export async function runGateway(context: GatewayContext) {
 
   await runLoadPeersTask(context);
 
+  /* transactions are synced with arsyncer with this version
   await runSyncRecentTransactionsTask(context);
 
   await runSyncLastHourTransactionsTask(context);
 
   await runSyncLastDayTransactionsTask(context);
+  */
 
   await runVerifyInteractionsTask(context)
 
