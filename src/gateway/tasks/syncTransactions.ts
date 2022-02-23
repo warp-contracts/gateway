@@ -209,7 +209,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         contract_id: contractId,
         function: functionName,
         input: input,
-        confirmation_status: "not_processed",
+        confirmation_status: "confirmed",
       });
     }
 
