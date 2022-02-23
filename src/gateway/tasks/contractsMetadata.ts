@@ -225,7 +225,7 @@ async function loadContractsMetadata(context: GatewayContext) {
       } else {
         update = {
           ...update,
-          src_binary: definition.src,
+          src_binary: definition.srcBinary,
           src_wasm_lang: definition.srcWasmLang
         }
       }
