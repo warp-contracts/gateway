@@ -114,6 +114,6 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
       expect(arTx?.node).toEqual(resRedstone.node);
       expect(resRedstone2?.node).toEqual(resRedstone.node);
     });
-  }, 600000);
+  }, 1200000);
 });
 
