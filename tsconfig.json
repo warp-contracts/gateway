@@ -4,7 +4,8 @@
     "outDir": "dist",
     "esModuleInterop": true,
     "downlevelIteration": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true
   },
   "ts-node": {
     "files": true
