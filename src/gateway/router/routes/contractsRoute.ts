@@ -6,16 +6,17 @@ const MAX_CONTRACTS_PER_PAGE = 100;
 export async function contractsRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb} = ctx;
 
-  const {type, page, limit} = ctx.query;
+  const {contractType, sourceType, page, limit} = ctx.query;
 
-  logger.debug("Contracts route", {type, page, limit});
+  logger.debug("Contracts route", {contractType, sourceType, page, limit});
 
   const parsedPage = page ? parseInt(page as string) : 1;
   const parsedLimit = limit ? Math.min(parseInt(limit as string), MAX_CONTRACTS_PER_PAGE) : MAX_CONTRACTS_PER_PAGE;
   const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
   const bindings: any[] = [];
-  type && bindings.push(type);
+  contractType && bindings.push(contractType);
+  sourceType && bindings.push(sourceType);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -23,21 +24,23 @@ export async function contractsRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT c.contract_id                                                             AS contract,
-                 c.owner                                                                   AS owner,
-                 c.type                                                                    AS type,
-                 c.pst_ticker                                                              AS pst_ticker,
-                 c.pst_name                                                                AS pst_name,
-                 count(i.contract_id)                                                                AS interactions,
-                 count(case when i.confirmation_status = 'corrupted' then 1 end) AS corrupted,
-                 count(case when i.confirmation_status = 'confirmed' then 1 end) AS confirmed,
-                 max(i.block_height)                                                       AS last_interaction_height,
-                 count(*) OVER ()                                                          AS total
+          SELECT c.contract_id                                                                     AS contract,
+                 c.owner                                                                           AS owner,
+                 c.type                                                                            AS contract_type,
+                 c.pst_ticker                                                                      AS pst_ticker,
+                 c.pst_name                                                                        AS pst_name,
+                 c.src_content_type                                                                AS src_content_type,
+                 c.src_wasm_lang                                                                   AS src_wasm_lang,
+                 count(i.contract_id)                                                              AS interactions,
+                 count(case when i.confirmation_status = 'corrupted' then 1 end)                   AS corrupted,
+                 count(case when i.confirmation_status = 'confirmed' then 1 end)                   AS confirmed,
+                 max(i.block_height)                                                               AS last_interaction_height,
+                 count(*) OVER ()                                                                  AS total
           FROM contracts c
                    LEFT JOIN interactions i
                              ON c.contract_id = i.contract_id
           WHERE c.contract_id != ''
-            AND c.type != 'error' ${type ? 'AND c.type = ?' : ''}
+            AND c.type != 'error' ${contractType ? 'AND c.type = ?' : ''} ${sourceType ? `AND c.src_content_type = ?` : ''}
           GROUP BY c.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name
           ORDER BY last_interaction_height DESC NULLS LAST, interactions DESC NULLS LAST ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings

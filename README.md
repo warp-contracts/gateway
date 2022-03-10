@@ -177,11 +177,14 @@ Result is ordered by `[last_interaction_height DESC, count(interaction) DESC]`
 
 Parameters:
 
-1. `type` [optional] - filter records by contract type. If not set, all types of contracts are returned.
+1. `contractType` [optional] - filter records by contract type. If not set, all types of contracts are returned.
    1. `pst`
    2. `other`
-2. `page` [optional] - page, e.g.: `gateway/contracts?page=3`. If not set, first page is returned by default.
-3. `limit` [optional] - amount of interactions per single page
+2. `sourceType` [optional] - filter records by contract source type. If not set, all contracts are returned.
+   1. `application/wasm`
+   2. `application/javascript`
+3. `page` [optional] - page, e.g.: `gateway/contracts?page=3`. If not set, first page is returned by default.
+4. `limit` [optional] - amount of interactions per single page
 
 Response:
 
@@ -209,12 +212,16 @@ Response:
       // contract tx id
       "owner": "DymtKHHegWz-HWrNnOL12Rxz_7dLrY2R3wVwTFE8788",
       // contract owner address
-      "type": "pst",
+      "contract_type": "pst",
       // contract type (pst/other)
       "pst_ticker": "KOI",
       // pst contract ticker,
       "pst_name": "KOI",
       // pst contract name
+      "src_content_type": "application/javascript",
+      // contract source type
+      "src_wasm_lang": null,
+      // wasm contract source language
       "interactions": "10763",
       // total amount of interactions
       "last_interaction_height": 835229,
