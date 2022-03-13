@@ -29,10 +29,10 @@
     "koa": "2.13.4",
     "koa-bodyparser": "4.3.0",
     "koa-compress": "5.1.0",
-    "parse-json-stream": "^2.2.5",
-    "pg": "8.7.1",
-    "pg-query-stream": "^4.2.1",
-    "redstone-smartweave": "0.4.35",
+    "parse-json-stream": "^2.4.0",
+    "pg": "8.7.3",
+    "pg-query-stream": "^4.2.3",
+    "redstone-smartweave": "0.4.43",
     "yargs": "17.3.0"
   },
   "devDependencies": {
