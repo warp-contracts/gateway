@@ -4942,16 +4942,7 @@ rechoir@0.7.0:
   dependencies:
     resolve "^1.9.0"
 
-redstone-isomorphic@1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/redstone-isomorphic/-/redstone-isomorphic-1.1.2.tgz#35422519e23f85198e5a4c9befbfb52e9a403dcb"
-  integrity sha512-t/06UGjT0VGrmwGbYtGEBMvK+nBhgoBFFYQv4DMCUf+pET8jzzqF9qraI8JrqEx6e6krCPF4dErb32eLPYn8Jw==
-  dependencies:
-    buffer "^6.0.3"
-    safe-buffer "^5.1.2"
-    undici "^4.12.2"
-
-redstone-isomorphic@^1.1.0:
+redstone-isomorphic@1.1.4, redstone-isomorphic@^1.1.0:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/redstone-isomorphic/-/redstone-isomorphic-1.1.4.tgz#3439ed5e14cbe0df5ad06da5bbf21089de282e71"
   integrity sha512-7K6zAQldh0SRkjxLSrtfMnMiVylWEVI1MHScJIYww6PfQePe9pe1jIkXncKswfKXtIWkZEdriiuQc8sCVTROtw==
@@ -4960,10 +4951,10 @@ redstone-isomorphic@^1.1.0:
     safe-buffer "^5.1.2"
     undici "^4.15.1"
 
-redstone-smartweave@0.4.41:
-  version "0.4.41"
-  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.41.tgz#61bfa77a516a4824201eadb092fd2a8ce1c51e65"
-  integrity sha512-DYu6wXIi22uqAdt0+fNGNmk/3Endk8UXCyA2+KRU7M77hAUlQQ5vHdgkSIlzozRyAwvifbcBNSvbZ4SIGi4jkw==
+redstone-smartweave@0.4.43:
+  version "0.4.43"
+  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.43.tgz#ea5c2b7af3d494d0013c83ae668224f9259b248e"
+  integrity sha512-dC4iDqEnuUDNMX6U8vAlsO8GUrKzO3tfnR4BaQ0OJW+/OTGXhYdhCAMfLyKIK11kXWZd6P3I3yHJe2grOHvwgQ==
   dependencies:
     "@assemblyscript/loader" "^0.19.23"
     "@weavery/clarity" "^0.1.5"
@@ -4973,11 +4964,10 @@ redstone-smartweave@0.4.41:
     json-beautify "^1.1.1"
     knex "^0.95.14"
     lodash "^4.17.21"
-    redstone-isomorphic "1.1.2"
+    redstone-isomorphic "1.1.4"
     redstone-wasm-metering "1.0.0"
     safe-stable-stringify "2.3.1"
     tslog "^3.2.2"
-    undici "^4.12.2"
 
 redstone-wasm-json-toolkit@1.0.0:
   version "1.0.0"
@@ -5722,11 +5712,6 @@ unbox-primitive@^1.0.1:
     has-bigints "^1.0.1"
     has-symbols "^1.0.2"
     which-boxed-primitive "^1.0.2"
-
-undici@^4.12.2:
-  version "4.12.2"
-  resolved "https://registry.yarnpkg.com/undici/-/undici-4.12.2.tgz#f2fc50ca77a774ed8c0e7067c9361ee18a2f422b"
-  integrity sha512-RZj6SbkQFs5O/pJCboGEo6l5DTCe3Zg4r/8Z/0/2qnIv08+s6zL4akohOPMYWKc3mzwv15WTvsfMWaafZcvYoQ==
 
 undici@^4.15.1:
   version "4.15.1"
