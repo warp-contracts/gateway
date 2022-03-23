@@ -9,3 +9,4 @@ gateway.lock
 .DS_Store
 gateway_dump
 yarn-error.log
+.yalc
