@@ -22,7 +22,7 @@
     "@koa/router": "10.1.1",
     "@types/yargs": "17.0.7",
     "JSONStream": "^1.3.5",
-    "arweave": "^1.10.23",
+    "arweave": "1.10.23",
     "axios": "0.24.0",
     "dotenv": "10.0.0",
     "knex": "0.95.14",
@@ -32,7 +32,7 @@
     "parse-json-stream": "^2.4.0",
     "pg": "8.7.3",
     "pg-query-stream": "^4.2.3",
-    "redstone-smartweave": "0.4.51",
+    "redstone-smartweave": "0.4.52",
     "yargs": "17.3.0"
   },
   "devDependencies": {
