@@ -178,7 +178,7 @@ async function load(
 }
 
 async function loadContractsMetadata(context: GatewayContext) {
-  const {arweave, logger, gatewayDb} = context;
+  const {arweave, logger, gatewayDb, arweaveWrapper} = context;
   const definitionLoader = new ContractDefinitionLoader(arweave);
 
   const result: { contract: string }[] = (await gatewayDb.raw(
@@ -223,9 +223,10 @@ async function loadContractsMetadata(context: GatewayContext) {
           src: definition.src
         }
       } else {
+        const rawTxData = await arweaveWrapper.txData(definition.srcTxId);
         update = {
           ...update,
-          src_binary: definition.srcBinary,
+          src_binary: rawTxData,
           src_wasm_lang: definition.srcWasmLang
         }
       }
