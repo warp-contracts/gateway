@@ -4,20 +4,9 @@ import {Benchmark} from "redstone-smartweave";
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const {gatewayDb} = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source} = ctx.query;
-
-  /*logger.debug("Interactions route", {
-    contractId,
-    confirmationStatus,
-    page,
-    limit,
-    from,
-    to,
-    totalCount,
-    source
-  });*/
+  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToTransactionId} = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -36,11 +25,11 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   from && bindings.push(from as string);
   to && bindings.push(to as string);
   source && bindings.push(source as string);
+  upToTransactionId && bindings.push(upToTransactionId as string);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
   try {
-    const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
           SELECT interaction,
@@ -49,11 +38,13 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
                  confirmations,
                  count(*) OVER () AS total
           FROM interactions
+          
           WHERE contract_id = ? 
           ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} 
           ${from ? ' AND block_height >= ?' : ''} 
           ${to ? ' AND block_height <= ?' : ''} 
           ${source ? `AND source = ?` : ''} 
+          ${upToTransactionId ? `AND id <= (SELECT id FROM interactions WHERE interaction_id = ?)` : ''} 
           ORDER BY block_height DESC, interaction_id DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
@@ -94,8 +85,6 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
         interaction: r.interaction
       }))
     };
-
-    //logger.debug("Interactions loaded in", benchmark.elapsed());
 
   } catch (e: any) {
     ctx.logger.error(e);
