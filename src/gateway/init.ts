@@ -51,7 +51,7 @@ export interface GatewayContext {
 
   const port = parseInt((process.env.PORT || 5666).toString());
 
-  LoggerFactory.use(new TsLogFactory());
+  //LoggerFactory.use(new TsLogFactory());
   LoggerFactory.INST.logLevel("info");
   LoggerFactory.INST.logLevel("debug", "gateway");
   const logger = LoggerFactory.INST.create("gateway");
