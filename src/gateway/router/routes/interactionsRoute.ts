@@ -1,5 +1,4 @@
 import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
@@ -36,6 +35,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
                  confirmation_status,
                  confirming_peer,
                  confirmations,
+                 bundler_tx_id,
                  count(*) OVER () AS total
           FROM interactions
           
@@ -82,7 +82,10 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
         status: r.confirmation_status,
         confirming_peers: r.confirming_peer,
         confirmations: r.confirmations,
-        interaction: r.interaction
+        interaction: {
+          ...r.interaction,
+          bundlerTxId: r.bundler_tx_id
+        },
       }))
     };
 
