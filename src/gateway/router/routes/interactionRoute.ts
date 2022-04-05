@@ -16,6 +16,7 @@ export async function interactionRoute(ctx: Router.RouterContext) {
     const result: any = await gatewayDb.raw(
       `
              SELECT interaction_id as interactionId,
+                    bundler_tx_id as bundlerTxId,
                     interaction as interaction,
                     block_height as blockHeight,
                     block_id as blockId,
