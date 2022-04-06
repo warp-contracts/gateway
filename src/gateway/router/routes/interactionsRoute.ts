@@ -5,7 +5,7 @@ const MAX_INTERACTIONS_PER_PAGE = 5000;
 export async function interactionsRoute(ctx: Router.RouterContext) {
   const {gatewayDb} = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToTransactionId} = ctx.query;
+  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToTransactionId, minimize} = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -16,6 +16,8 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     ? confirmationStatus == "not_corrupted"
       ? ['confirmed', 'not_processed'] : [confirmationStatus]
     : undefined;
+
+  const shouldMinimize = minimize === 'true';
 
   const bindings: any[] = [];
   bindings.push(contractId);
@@ -32,11 +34,9 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   try {
     const result: any = await gatewayDb.raw(
       `
-          SELECT interaction,
-                 confirmation_status,
-                 confirming_peer,
-                 confirmations,
-                 bundler_tx_id,
+          SELECT interaction, 
+                 confirmation_status, 
+                 ${shouldMinimize ? '': 'confirming_peer, confirmations, bundler_tx_id, '} 
                  count(*) OVER () AS total
           FROM interactions 
             WHERE contract_id = ? OR interact_write @> ARRAY[?] 
