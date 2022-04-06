@@ -3,13 +3,19 @@ import Transaction from "arweave/node/lib/transaction";
 import {parseFunctionName} from "../../tasks/syncTransactions";
 import Arweave from "arweave";
 import {JWKInterface} from "arweave/node/lib/wallet";
-import {arrayToHex, ArweaveWrapper, Benchmark, GQLTagInterface, RedStoneLogger} from "redstone-smartweave";
+import {
+  arrayToHex,
+  ArweaveWrapper,
+  Benchmark,
+  GQLTagInterface,
+  RedStoneLogger,
+  SmartWeaveTags
+} from "redstone-smartweave";
 import {cachedBlockInfo, cachedNetworkInfo} from "../../tasks/networkInfoCache";
 import util from "util";
 import {gzip} from "zlib";
 import Bundlr from "@bundlr-network/client";
 import {BlockData} from "arweave/node/blocks";
-
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr, jwk, arweaveWrapper} = ctx;
@@ -42,6 +48,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     let {
       contractTag,
       inputTag,
+      internalWrites,
       decodedTags,
       tags
     } = prepareTags(transaction, originalAddress, millis, sortKey, currentHeight, currentBlockId);
@@ -86,13 +93,12 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
           confirmation_status: "confirmed",
           confirming_peer: "https://node1.bundlr.network",
           source: "redstone-sequencer",
-          bundler_tx_id: bTx.id
+          bundler_tx_id: bTx.id,
+          interact_write: internalWrites
         })
     ]);
 
-
     logger.debug("Inserting into tables", insertBench.elapsed());
-
     logger.debug("Transaction successfully bundled", {
       id: transaction.id,
       bundled_tx_id: bTx.id
@@ -153,18 +159,23 @@ function prepareTags(
 
   const decodedTags: GQLTagInterface[] = [];
 
+  const internalWrites: string[] = [];
+
   transaction.tags.forEach(tag => {
     const key = tag.get('name', {decode: true, string: true});
     const value = tag.get('value', {decode: true, string: true});
-    if (key == 'Contract') {
+    if (key == SmartWeaveTags.CONTRACT_TX_ID) {
       contractTag = value;
     }
-    if (key == 'Input') {
+    if (key == SmartWeaveTags.INPUT) {
       inputTag = value;
+    }
+    if (key == SmartWeaveTags.INTERACT_WRITE) {
+      internalWrites.push(value);
     }
     decodedTags.push({
       name: key,
-      value: value // TODO: handle array-ish values
+      value: value
     });
   });
 
@@ -180,9 +191,8 @@ function prepareTags(
     ...decodedTags
   ];
 
-  return {contractTag, inputTag, decodedTags, tags};
+  return {contractTag, inputTag, internalWrites, decodedTags, tags};
 }
-
 
 async function loadNetworkInfo(
   arweaveWrapper: ArweaveWrapper, arweave: Arweave, logger: RedStoneLogger) {

@@ -4,7 +4,6 @@ import {Knex} from "knex";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
 import {ArweaveWrapper, LoggerFactory, RedStoneLogger} from "redstone-smartweave";
-import {TsLogFactory} from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
 import {connect} from "../db/connect";
 import Arweave from "arweave";
 import {runGateway} from "./runGateway";
