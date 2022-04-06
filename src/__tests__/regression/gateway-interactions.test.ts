@@ -59,7 +59,7 @@ describe.each([750000, 775000, 800000, 825000, 850000])('testing for block heigh
 });
 
 describe.each(testCases)('testing contractId %s', (contractTxId) => {
-  it('returns same interactions ids for RedstoneGatewayLoader and ArweaveGatewayInteractionsLoader', async () => {
+  it('returns same interactions data for RedstoneGatewayLoader and ArweaveGatewayInteractionsLoader', async () => {
     const arweaveNetworkInfo = await arweave.network.getInfo();
     // testing for the more current block height to detect possible gw desynchronize issues
     const blockHeight = arweaveNetworkInfo.height - 20;
@@ -86,6 +86,7 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
         // these props are only added for redstone gateway
         arTx.node.bundledIn = resRedstone.node.bundledIn;
         arTx.node.confirmationStatus = resRedstone.node.confirmationStatus;
+        arTx.node.bundlerTxId = resRedstone.node.bundlerTxId;
       }
       expect(arTx?.node).toEqual(resRedstone.node);
     });
