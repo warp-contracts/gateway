@@ -9,6 +9,7 @@ export type INTERACTIONS_TABLE = {
   function: string;
   input: string;
   confirmation_status: string;
+  interact_write: string[];
 };
 
 export async function initGatewayDb(db: Knex) {

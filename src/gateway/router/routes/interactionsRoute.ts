@@ -19,6 +19,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
   const bindings: any[] = [];
   bindings.push(contractId);
+  bindings.push(contractId);
   // cannot use IN with bindings https://github.com/knex/knex/issues/791
   // parsedConfirmationStatus && bindings.push(parsedConfirmationStatus)
   from && bindings.push(from as string);
@@ -37,9 +38,8 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
                  confirmations,
                  bundler_tx_id,
                  count(*) OVER () AS total
-          FROM interactions
-          
-          WHERE contract_id = ? 
+          FROM interactions 
+            WHERE contract_id = ? OR interact_write @> ARRAY[?] 
           ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} 
           ${from ? ' AND block_height >= ?' : ''} 
           ${to ? ' AND block_height <= ?' : ''} 
@@ -88,7 +88,6 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
         },
       }))
     };
-
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;

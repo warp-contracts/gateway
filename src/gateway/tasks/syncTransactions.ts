@@ -1,16 +1,7 @@
-import {
-  Benchmark,
-  GQLEdgeInterface,
-  GQLResultInterface,
-  GQLTransactionsResultInterface, RedStoneLogger,
-  SmartWeaveTags,
-  TagsParser
-} from "redstone-smartweave";
-import {sleep} from "../../utils";
+import {GQLEdgeInterface, RedStoneLogger, SmartWeaveTags, TagsParser} from "redstone-smartweave";
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
 import {INTERACTIONS_TABLE} from "../../db/schema";
-import Arweave from "arweave";
 import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 import {Knex} from "knex";
 
@@ -184,13 +175,12 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     const input = tagsParser.getInputTag(interaction, contractId)?.value;
     const functionName = parseFunctionName(input, logger);
 
-    // Eyes Pop - Skin Explodes - Everybody Dead
+    const internalWrites = tagsParser.getInteractWritesContracts(interaction);
+
     if (contractId === undefined || input === undefined) {
       logger.error("Contract or input tag not found for interaction", interaction);
       continue;
-      // TODO: probably would be wise to save such stuff in a separate table?
     }
-
 
     // now this one is really fucked-up - if the interaction contains the same tag X-times,
     // the default GQL endpoint will return this interaction X-times...
@@ -210,6 +200,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         function: functionName,
         input: input,
         confirmation_status: "not_processed",
+        interact_write: internalWrites
       });
     }
 
