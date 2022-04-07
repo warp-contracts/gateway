@@ -14,6 +14,7 @@ import (
 var log = arsyncer.NewLog("syncer")
 
 func main() {
+	log.Info("new version")
 	propertiesPath := os.Args[1]
 	props, err := db.ReadPropertiesFile(propertiesPath)
 	if err != nil {
@@ -53,7 +54,9 @@ func main() {
 		select {
 		case sTx := <-s.SubscribeTxCh():
 			interactions := make([]sw_types.DbInteraction, 0)
+			interactWrites := make([]string, 0)
 			var highestBlockHeight int64 = 0
+
 			for _, tx := range sTx {
 				decodedTags, _ := utils.TagsDecode(tx.Tags)
 				var contract, input, function = "", "", ""
@@ -72,9 +75,9 @@ func main() {
 							function = val.(string)
 						}
 					}
-
-					if contract != "" && input != "" {
-						break
+					if t.Name == "Interact-Write" {
+						log.Info("Found interact write")
+						interactWrites = append(interactWrites, t.Value)
 					}
 				}
 
@@ -104,7 +107,7 @@ func main() {
 					log.Error("Error while marshalling interaction", err)
 					panic(err)
 				}
-				//log.Debug("Interaction:", string(swInteractionJson))
+				log.Debug("Interaction:", string(swInteractionJson))
 				highestBlockHeight = tx.BlockHeight
 
 				interactions = append(interactions, sw_types.DbInteraction{
@@ -116,6 +119,7 @@ func main() {
 					Function:           function,
 					Input:              input,
 					ConfirmationStatus: "not_processed",
+					InteractWrite:      interactWrites,
 				})
 			}
 
@@ -124,6 +128,7 @@ func main() {
 				log.Info("Updating last processed block height to ", "highestBlockHeight", highestBlockHeight)
 				db.UpdateLastProcessedInteractionHeight(highestBlockHeight)
 			} else {
+				log.Error("error while inserting")
 				panic(err)
 			}
 		}
