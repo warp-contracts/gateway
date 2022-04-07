@@ -39,7 +39,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
                  ${shouldMinimize ? '': 'confirming_peer, confirmations, bundler_tx_id, '} 
                  count(*) OVER () AS total
           FROM interactions 
-            WHERE contract_id = ? OR interact_write @> ARRAY[?] 
+            WHERE (contract_id = ? OR interact_write @> ARRAY[?]) 
           ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} 
           ${from ? ' AND block_height >= ?' : ''} 
           ${to ? ' AND block_height <= ?' : ''} 
