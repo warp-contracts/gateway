@@ -1,7 +1,5 @@
 import fs from "fs";
 import {JWKInterface} from "arweave/node/lib/wallet";
-import {GatewayContext} from "./gateway/init";
-import {Benchmark, GQLEdgeInterface, GQLResultInterface, GQLTransactionsResultInterface} from "redstone-smartweave";
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

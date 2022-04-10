@@ -2,9 +2,9 @@
   "version": "v1",
   "packages": {
     "redstone-smartweave": {
-      "signature": "9c92d59f7c0a48acfb1ea6ca9364c913",
+      "signature": "1bc3761907e2b09ac5f74e5a898b2fc6",
       "file": true,
-      "replaced": "0.4.32"
+      "replaced": "0.4.61"
     }
   }
 }

@@ -23,7 +23,9 @@ export async function contractRoute(ctx: Router.RouterContext) {
                  owner                                                                           as "owner",
                  pst_ticker                                                                      as "pstTicker",
                  pst_name                                                                        as "pstName",
-                 src_wasm_lang                                                                   as "srcWasmLang"
+                 src_wasm_lang                                                                   as "srcWasmLang",
+                 contract_tx                                                                     as "contractTx",
+                 src_tx                                                                          as "srcTx"
           FROM contracts
           WHERE contract_id = ?;
       `, [id]
