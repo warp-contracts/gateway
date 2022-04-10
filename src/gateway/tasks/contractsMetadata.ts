@@ -214,7 +214,9 @@ async function loadContractsMetadata(context: GatewayContext) {
         pst_name: type == 'pst' ? definition.initState?.name : null,
         src_content_type: definition.contractType == 'js'
           ? 'application/javascript'
-          : 'application/wasm'
+          : 'application/wasm',
+        contract_tx: definition.contractTx.toJSON(),
+        src_tx: definition.srcTx.toJSON()
       };
 
       if (definition.contractType == 'js') {
@@ -231,11 +233,13 @@ async function loadContractsMetadata(context: GatewayContext) {
         }
       }
 
+      logger.debug(`Inserting ${row.contract} metadata into db`);
       await gatewayDb("contracts")
         .where('contract_id', '=', definition.txId)
         .update(update);
+      logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {
-      logger.error("Error while loading contract definition", e);
+      logger.error(`Error while loading contract ${row.contract} definition`, e);
       await gatewayDb("contracts")
         .where('contract_id', '=', row.contract.trim())
         .update({
@@ -246,7 +250,7 @@ async function loadContractsMetadata(context: GatewayContext) {
 
 }
 
-function evalType(initState: any): string {
+export function evalType(initState: any): string {
   if (initState.ticker && initState.balances) {
     return "pst";
   }
