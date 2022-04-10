@@ -39,7 +39,7 @@ import {runContractsMetadataTask, runLoadContractsFromGqlTask} from "./tasks/con
 export async function runGateway(context: GatewayContext) {
   //await runBundlrCheck(context);
 
-  await runLoadPeersTask(context);
+  /*await runLoadPeersTask(context);
 
   await runSyncRecentTransactionsTask(context);
 
@@ -49,7 +49,7 @@ export async function runGateway(context: GatewayContext) {
 
   await runVerifyInteractionsTask(context)
 
-  await runVerifyCorruptedTransactionsTask(context);
+  await runVerifyCorruptedTransactionsTask(context);*/
 
   await runLoadContractsFromGqlTask(context);
 
