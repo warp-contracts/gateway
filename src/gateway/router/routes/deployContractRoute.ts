@@ -65,7 +65,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
             WHERE src_tx_id = '${srcTxId}' LIMIT 1;
         `)).rows[0];
 
-      logger.debug("Loaded contract data", result);
+      // logger.debug("Loaded contract data", result);
 
       src = result.src;
       srcContentType = result.srcContentType;
@@ -118,12 +118,10 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_src_node: "https://node1.bundlr.network"
     };
 
-    logger.debug("New insert", insert);
+    // logger.debug("New insert", insert);
 
     await gatewayDb("contracts")
       .insert(insert);
-
-    logger.debug("Insert success");
 
     ctx.body = {
       contractId: contractTx.id,
