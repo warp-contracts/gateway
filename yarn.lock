@@ -5069,7 +5069,16 @@ rechoir@0.7.0:
   dependencies:
     resolve "^1.9.0"
 
-redstone-isomorphic@1.1.4, redstone-isomorphic@^1.1.0:
+redstone-isomorphic@1.1.6:
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/redstone-isomorphic/-/redstone-isomorphic-1.1.6.tgz#513eaf38a7ce14b7e1e84a973aa111066be43f9c"
+  integrity sha512-q9N6/B1KHFBxeRsaqMZUelLorp7BLh50R4fUTf9LNkZPTMZ+sRRVWVE0aZT7lyKbXTLiEdk8kSOHPY4yQu//7Q==
+  dependencies:
+    buffer "^6.0.3"
+    safe-buffer "^5.1.2"
+    undici "^4.16.0"
+
+redstone-isomorphic@^1.1.0:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/redstone-isomorphic/-/redstone-isomorphic-1.1.4.tgz#3439ed5e14cbe0df5ad06da5bbf21089de282e71"
   integrity sha512-7K6zAQldh0SRkjxLSrtfMnMiVylWEVI1MHScJIYww6PfQePe9pe1jIkXncKswfKXtIWkZEdriiuQc8sCVTROtw==
@@ -5078,10 +5087,10 @@ redstone-isomorphic@1.1.4, redstone-isomorphic@^1.1.0:
     safe-buffer "^5.1.2"
     undici "^4.15.1"
 
-redstone-smartweave@0.4.61:
-  version "0.4.61"
-  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.61.tgz#79fbc03585fead59a40b50d90e3aab9d4abd78e1"
-  integrity sha512-zIzwDG/wOC3LnSDs1VL+eHZFL05j90/ktZqbaB4Vimslldxn7kpNQU0U7xclWoiqXS6M7sb4ljt+ryHC4Dp2/g==
+redstone-smartweave@0.4.69:
+  version "0.4.69"
+  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.4.69.tgz#92f11ff57225d641a46e3999c27c067263ec0404"
+  integrity sha512-/Ksn3iJ3SH7tVT6jH3lN9jy0wyMnwtGlq2wqwQWcWX7gKGu++p944bVT+wbxTc+0d+FqL9Ji2kOL4KEjft+yVQ==
   dependencies:
     "@assemblyscript/loader" "^0.19.23"
     archiver "^5.3.0"
@@ -5090,7 +5099,7 @@ redstone-smartweave@0.4.61:
     fast-copy "^2.1.1"
     knex "^0.95.14"
     lodash "^4.17.21"
-    redstone-isomorphic "1.1.4"
+    redstone-isomorphic "1.1.6"
     redstone-wasm-metering "1.0.0"
     safe-stable-stringify "2.3.1"
     stream-buffers "^3.0.2"
@@ -5862,6 +5871,11 @@ undici@^4.15.1:
   version "4.15.1"
   resolved "https://registry.yarnpkg.com/undici/-/undici-4.15.1.tgz#c2c0e75f232178f0e6781f6b46c81ccc15065f6e"
   integrity sha512-h8LJybhMKD09IyQZoQadNtIR/GmugVhTOVREunJrpV6RStriKBFdSVoFzEzTihwXi/27DIBO+Z0OGF+Mzfi0lA==
+
+undici@^4.16.0:
+  version "4.16.0"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-4.16.0.tgz#469bb87b3b918818d3d7843d91a1d08da357d5ff"
+  integrity sha512-tkZSECUYi+/T1i4u+4+lwZmQgLXd4BLGlrc7KZPcLIW7Jpq99+Xpc30ONv7nS6F5UNOxp/HBZSSL9MafUrvJbw==
 
 universalify@^0.1.2:
   version "0.1.2"
