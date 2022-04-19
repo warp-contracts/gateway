@@ -18,6 +18,8 @@ gatewayRouter.get("/contracts/:id", contractRoute);
 gatewayRouter.post("/contracts/deploy", deployContractRoute);
 gatewayRouter.get("/contracts-safe", safeContractsRoute);
 gatewayRouter.get("/search/:phrase", searchRoute);
+// separate "transactionId" route to make caching in cloudfront possible
+gatewayRouter.get("/interactions/transactionId", interactionsRoute);
 gatewayRouter.get("/interactions", interactionsRoute);
 gatewayRouter.get("/interactions-stream", interactionsStreamRoute);
 gatewayRouter.get("/interactions/:id", interactionRoute);
