@@ -215,8 +215,8 @@ async function loadContractsMetadata(context: GatewayContext) {
         src_content_type: definition.contractType == 'js'
           ? 'application/javascript'
           : 'application/wasm',
-        contract_tx: definition.contractTx.toJSON(),
-        src_tx: definition.srcTx.toJSON()
+        contract_tx: definition.contractTx,
+        src_tx: definition.srcTx
       };
 
       if (definition.contractType == 'js') {
