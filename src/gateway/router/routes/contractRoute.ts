@@ -30,8 +30,14 @@ export async function contractRoute(ctx: Router.RouterContext) {
           WHERE contract_id = ?;
       `, [id]
     );
-    ctx.body = result?.rows[0];
-    logger.debug("Contract data loaded in", benchmark.elapsed());
+
+    if (result?.rows[0].src == null && result?.rows[0].srcBinary == null) {
+      ctx.status = 500;
+      ctx.body = {message: "Contract not properly indexed."};
+    } else {
+      ctx.body = result?.rows[0];
+      logger.debug("Contract data loaded in", benchmark.elapsed());
+    }
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
