@@ -118,6 +118,21 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_src_node: "https://node1.bundlr.network"
     };
 
+    let contracts_src_insert: any = {
+      src_tx_id: srcTxId,
+      src: src || null,
+      src_content_type: srcContentType,
+      src_binary: srcBinary || null,
+      src_wasm_lang: srcWasmLang || null,
+      bundler_src_tx_id: bundlerSrcTxId,
+      bundler_src_node: "https://node1.bundlr.network",
+      src_tx: {...srcTx.toJSON(), data: null},
+    }
+
+    await gatewayDb("contracts_src")
+      .insert(contracts_src_insert)
+      .onConflict("src_tx_id")
+      .ignore();
     // logger.debug("New insert", insert);
 
     await gatewayDb("contracts")
