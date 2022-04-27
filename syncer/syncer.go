@@ -14,6 +14,7 @@ import (
 var log = arsyncer.NewLog("syncer")
 
 func main() {
+	log.Info("new version")
 	propertiesPath := os.Args[1]
 	props, err := db.ReadPropertiesFile(propertiesPath)
 	if err != nil {
@@ -46,14 +47,16 @@ func main() {
 
 	arNode := "https://arweave.net"
 	concurrencyNumber := 50
-	s := arsyncer.New(startHeight, swcFilterParams, arNode, concurrencyNumber, 15)
+	s := arsyncer.New(startHeight, swcFilterParams, arNode, concurrencyNumber, 10)
 	s.Run()
 
 	for {
 		select {
 		case sTx := <-s.SubscribeTxCh():
 			interactions := make([]sw_types.DbInteraction, 0)
+			interactWrites := make([]string, 0)
 			var highestBlockHeight int64 = 0
+
 			for _, tx := range sTx {
 				decodedTags, _ := utils.TagsDecode(tx.Tags)
 				var contract, input, function = "", "", ""
@@ -72,16 +75,17 @@ func main() {
 							function = val.(string)
 						}
 					}
-
-					if contract != "" && input != "" {
-						break
+					if t.Name == "Interact-Write" {
+						log.Info("Found interact write")
+						interactWrites = append(interactWrites, t.Value)
 					}
 				}
 
+				ownerAddress, _ := utils.OwnerToAddress(tx.Owner)
 				swInteraction := sw_types.SwInteraction{
 					Id: tx.ID,
 					Owner: sw_types.SwOwner{
-						Address: tx.Owner,
+						Address: ownerAddress,
 					},
 					Recipient: tx.Target,
 					Tags:      decodedTags,
@@ -115,13 +119,17 @@ func main() {
 					Function:           function,
 					Input:              input,
 					ConfirmationStatus: "not_processed",
+					InteractWrite:      interactWrites,
 				})
 			}
 
 			err := db.BatchInsertInteractions(interactions)
 			if err == nil && highestBlockHeight != 0 {
-				log.Info("Updating last processed block height to ", highestBlockHeight)
+				log.Info("Updating last processed block height to ", "highestBlockHeight", highestBlockHeight)
 				db.UpdateLastProcessedInteractionHeight(highestBlockHeight)
+			} else {
+				log.Error("error while inserting")
+				panic(err)
 			}
 		}
 	}

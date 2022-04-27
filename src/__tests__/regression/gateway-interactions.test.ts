@@ -63,33 +63,57 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     const arweaveNetworkInfo = await arweave.network.getInfo();
     // testing for the more current block height to detect possible gw desynchronize issues
     const blockHeight = arweaveNetworkInfo.height - 20;
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance', {}, SourceType.ARWEAVE);
+
+    const redstoneNode1InteractionsLoader = new RedstoneGatewayInteractionsLoader(
+      'https://gateway.redstone.finance', {}, SourceType.ARWEAVE);
+    // the one with arsyncer instead of gql
+
+    const redstoneNode2InteractionsLoader = new RedstoneGatewayInteractionsLoader(
+      'http://ec2-16-170-224-226.eu-north-1.compute.amazonaws.com:5666', {}, SourceType.ARWEAVE);
+
     const arweaveInteractionsLoader = new ArweaveGatewayInteractionsLoader(arweave);
-    const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
+
+    const responseRedstoneNode1: GQLEdgeInterface[] = await redstoneNode1InteractionsLoader.load(
       contractTxId,
       0,
       blockHeight
     );
-    const responseArweaveInteractionsLoader: GQLEdgeInterface[] = await arweaveInteractionsLoader.load(
+    const responseRedstoneNode2: GQLEdgeInterface[] = await redstoneNode2InteractionsLoader.load(
+      contractTxId,
+      0,
+      blockHeight
+    );
+    const responseArweave: GQLEdgeInterface[] = await arweaveInteractionsLoader.load(
       contractTxId,
       0,
       blockHeight,
       new DefaultEvaluationOptions()
     );
 
-    expect(responseRedstoneInteractionsLoader.length).toEqual(responseArweaveInteractionsLoader.length);
+    expect(responseRedstoneNode1.length).toEqual(responseRedstoneNode2.length);
 
-    responseRedstoneInteractionsLoader.forEach((resRedstone, index) => {
+    expect(responseRedstoneNode1.length).toEqual(responseArweave.length);
+
+    responseRedstoneNode1.forEach((resRedstone, index) => {
       const arTx =
-        responseArweaveInteractionsLoader.find((resArweave) => resArweave.node.id === resRedstone.node.id);
+        responseArweave.find((resArweave) => resArweave.node.id === resRedstone.node.id);
+      const resRedstone2 =
+        responseRedstoneNode2.find((resRedstone2) => resRedstone2.node.id === resRedstone.node.id);
+
       if (arTx) {
         // these props are only added for redstone gateway
         arTx.node.bundledIn = resRedstone.node.bundledIn;
         arTx.node.confirmationStatus = resRedstone.node.confirmationStatus;
         arTx.node.bundlerTxId = resRedstone.node.bundlerTxId;
       }
+      if (resRedstone2) {
+        resRedstone2.node.bundledIn = resRedstone.node.bundledIn;
+        resRedstone2.node.parent = resRedstone.node.parent;
+        resRedstone2.node.confirmationStatus = resRedstone.node.confirmationStatus;
+      }
       expect(arTx?.node).toEqual(resRedstone.node);
+      expect(resRedstone2?.node).toEqual(resRedstone.node);
     });
-  }, 600000);
+  }, 1200000);
 });
 

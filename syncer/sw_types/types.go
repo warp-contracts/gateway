@@ -11,6 +11,7 @@ type DbInteraction struct {
 	Function           string
 	Input              string
 	ConfirmationStatus string
+	InteractWrite      []string
 }
 
 type SwOwner struct {
