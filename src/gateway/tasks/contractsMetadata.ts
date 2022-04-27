@@ -203,8 +203,6 @@ async function loadContractsMetadata(context: GatewayContext) {
     logger.debug(`Loading ${row.contract} definition.`);
     try {
       const definition: ContractDefinition<any> = await definitionLoader.load(row.contract.trim());
-      logger.debug("Contract definition", definition);
-
       const type = evalType(definition.initState);
 
       let update: any = {
@@ -220,8 +218,6 @@ async function loadContractsMetadata(context: GatewayContext) {
         contract_tx: definition.contractTx,
         src_tx: definition.srcTx
       };
-
-      logger.debug("Contract Update", update);
 
       let contracts_src_insert: any = {
         src_tx_id: definition.srcTxId,
