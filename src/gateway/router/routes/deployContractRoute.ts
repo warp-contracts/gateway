@@ -115,7 +115,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_contract_tx_id: bundlerContractTx.id,
       bundler_contract_node: "https://node1.bundlr.network",
       bundler_src_tx_id: bundlerSrcTxId,
-      bundler_src_node: "https://node1.bundlr.network"
+      bundler_src_node: bundlerSrcTxId ? "https://node1.bundlr.network" : null
     };
 
     let contracts_src_insert: any = {
