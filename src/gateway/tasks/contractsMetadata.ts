@@ -188,7 +188,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
           AND src_tx_id IS NULL
-        AND type IS NULL;
+          AND type IS NULL;
     `
   )).rows;
 
@@ -219,9 +219,22 @@ async function loadContractsMetadata(context: GatewayContext) {
         src_tx: definition.srcTx
       };
 
+      let contracts_src_insert: any = {
+        src_tx_id: definition.srcTxId,
+        src_content_type: definition.contractType == 'js'
+          ? 'application/javascript'
+          : 'application/wasm',
+        src_tx: definition.srcTx
+      }
+
       if (definition.contractType == 'js') {
         update = {
           ...update,
+          src: definition.src
+        }
+
+        contracts_src_insert = {
+          ...contracts_src_insert,
           src: definition.src
         }
       } else {
@@ -231,12 +244,31 @@ async function loadContractsMetadata(context: GatewayContext) {
           src_binary: rawTxData,
           src_wasm_lang: definition.srcWasmLang
         }
+
+        contracts_src_insert = {
+          ...contracts_src_insert,
+          src_binary: rawTxData,
+          src_wasm_lang: definition.srcWasmLang
+        }
       }
 
       logger.debug(`Inserting ${row.contract} metadata into db`);
       await gatewayDb("contracts")
         .where('contract_id', '=', definition.txId)
         .update(update);
+
+      await gatewayDb("contracts_src")
+        .insert(contracts_src_insert)
+        .onConflict("src_tx_id")
+        .merge([
+          'src',
+          'src_content_type',
+          'src_binary',
+          'src_wasm_lang',
+          'bundler_src_tx_id',
+          'bundler_src_node',
+          'src_tx']);
+
       logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {
       logger.error(`Error while loading contract ${row.contract} definition`, e);
@@ -247,7 +279,6 @@ async function loadContractsMetadata(context: GatewayContext) {
         });
     }
   }
-
 }
 
 export function evalType(initState: any): string {
