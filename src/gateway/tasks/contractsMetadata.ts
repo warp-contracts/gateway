@@ -1,6 +1,6 @@
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
-import {ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags} from "redstone-smartweave";
+import {ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags} from "redstone-smartweave";
 import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT} from "./syncTransactions";
 import {Knex} from "knex";
@@ -202,7 +202,9 @@ async function loadContractsMetadata(context: GatewayContext) {
   for (const row of result) {
     logger.debug(`Loading ${row.contract} definition.`);
     try {
-      const definition: any = await definitionLoader.load(row.contract.trim());
+      const definition: ContractDefinition<any> = await definitionLoader.load(row.contract.trim());
+      logger.debug("Contract definition", definition);
+
       const type = evalType(definition.initState);
 
       let update: any = {
@@ -219,7 +221,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         src_tx: definition.srcTx
       };
 
-      logger.debug("Update", update);
+      logger.debug("Contract Update", update);
 
       let contracts_src_insert: any = {
         src_tx_id: definition.srcTxId,
