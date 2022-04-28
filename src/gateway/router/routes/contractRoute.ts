@@ -40,7 +40,7 @@ export async function contractRoute(ctx: Router.RouterContext) {
       logger.debug("Contract data loaded in", benchmark.elapsed());
     }
   } catch (e: any) {
-    ctx.logger.error(e);
+    logger.error(e);
     ctx.status = 500;
     ctx.body = {message: e};
   }

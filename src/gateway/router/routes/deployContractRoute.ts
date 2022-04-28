@@ -9,7 +9,7 @@ import Bundlr from "@bundlr-network/client";
 import {evalType} from "../../tasks/contractsMetadata";
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr, arweaveWrapper} = ctx;
+  const {logger, gatewayDb, arweave, bundlr} = ctx;
 
   const contractTx: Transaction = new Transaction({...ctx.request.body.contractTx});
   let srcTx: Transaction | null = null;
@@ -44,43 +44,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       });
 
     } else {
-      logger.debug("Loading contract data from DB");
-
       srcTxId = tagValue(SmartWeaveTags.CONTRACT_SRC_TX_ID, contractTags);
-      // TODO: https://github.com/redstone-finance/redstone-sw-gateway/issues/57
-      const result: {
-        src: string,
-        srcContentType: string,
-        srcBinary: Buffer,
-        srcWasmLang: string
-        srcTx: any
-      } = (await gatewayDb.raw(
-        `
-            SELECT src              AS src,
-                   src_content_type AS "srcContentType",
-                   src_binary       AS "srcBinary",
-                   src_wasm_lang    AS "srcWasmLang",
-                   src_tx           AS "srcTx"
-            FROM contracts
-            WHERE src_tx_id = '${srcTxId}' LIMIT 1;
-        `)).rows[0];
-
-      // logger.debug("Loaded contract data", result);
-
-      src = result.src;
-      srcContentType = result.srcContentType;
-      srcWasmLang = result.srcWasmLang;
-      srcBinary = result.srcBinary;
-      srcTx = result.srcTx;
-      if (result.srcTx == null) {
-        srcTx = await arweaveWrapper.tx(srcTxId);
-      } else {
-        srcTx = new Transaction({...result.srcTx});
-      }
-    }
-
-    if (srcTx == null) {
-      throw new Error("Could not determine srcTx");
+      // maybe ad some sanity check here - whether the src is already indexed by the gateway?
     }
 
     const {bTx: bundlerContractTx} = await uploadToBundlr(contractTx, bundlr, contractTags);
@@ -99,7 +64,6 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     const insert = {
       contract_id: contractTx.id,
       src_tx_id: srcTxId,
-      src: src || null,
       init_state: initState,
       owner: originalAddress,
       type: type,
@@ -107,36 +71,33 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       pst_name: type == 'pst' ? initState?.name : null,
       block_height: cachedNetworkInfo?.height,
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
-      src_content_type: srcContentType,
-      src_binary: srcBinary || null,
-      src_wasm_lang: srcWasmLang || null,
       contract_tx: {...contractTx.toJSON(), data: null},
-      src_tx: {...srcTx.toJSON(), data: null},
       bundler_contract_tx_id: bundlerContractTx.id,
       bundler_contract_node: "https://node1.bundlr.network",
-      bundler_src_tx_id: bundlerSrcTxId,
-      bundler_src_node: bundlerSrcTxId ? "https://node1.bundlr.network" : null
     };
-
-    let contracts_src_insert: any = {
-      src_tx_id: srcTxId,
-      src: src || null,
-      src_content_type: srcContentType,
-      src_binary: srcBinary || null,
-      src_wasm_lang: srcWasmLang || null,
-      bundler_src_tx_id: bundlerSrcTxId,
-      bundler_src_node: "https://node1.bundlr.network",
-      src_tx: {...srcTx.toJSON(), data: null},
-    }
-
-    await gatewayDb("contracts_src")
-      .insert(contracts_src_insert)
-      .onConflict("src_tx_id")
-      .ignore();
-    // logger.debug("New insert", insert);
 
     await gatewayDb("contracts")
       .insert(insert);
+
+    if (srcTx) {
+      let contracts_src_insert: any = {
+        src_tx_id: srcTxId,
+        src: src || null,
+        src_content_type: srcContentType,
+        src_binary: srcBinary || null,
+        src_wasm_lang: srcWasmLang || null,
+        bundler_src_tx_id: bundlerSrcTxId,
+        bundler_src_node: "https://node1.bundlr.network",
+        src_tx: {...srcTx.toJSON(), data: null},
+      }
+
+      await gatewayDb("contracts_src")
+        .insert(contracts_src_insert)
+        .onConflict("src_tx_id")
+        .ignore();
+    }
+
+    logger.info("Contract successfully bundled.");
 
     ctx.body = {
       contractId: contractTx.id,

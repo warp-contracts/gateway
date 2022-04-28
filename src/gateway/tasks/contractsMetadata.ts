@@ -4,6 +4,7 @@ import {ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWea
 import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT} from "./syncTransactions";
 import {Knex} from "knex";
+import {cachedNetworkInfo} from "./networkInfoCache";
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -43,35 +44,24 @@ export async function runLoadContractsFromGqlTask(context: GatewayContext) {
 
 
 async function loadContractsFromGql(context: GatewayContext) {
-  const {logger, gatewayDb, arweaveWrapper} = context;
+  const {logger, gatewayDb} = context;
 
-  let results: any[];
+  let result: any;
   try {
-    results = await Promise.allSettled([
+    result = await
       gatewayDb("contracts")
         .select("block_height")
         .whereNotNull("block_height")
         .orderBy("block_height", "desc")
         .limit(1)
-        .first(),
-      arweaveWrapper.info()
-    ]);
+        .first();
   } catch (e: any) {
     logger.error("Error while checking new blocks", e.message);
     return;
   }
 
-  const rejections = results.filter((r) => {
-    return r.status === "rejected";
-  });
-
-  if (rejections.length > 0) {
-    logger.error("Error while processing next block", rejections.map((r) => r.message));
-    return;
-  }
-
-  const currentNetworkHeight = results[1].value.height;
-  const lastProcessedBlockHeight = results[0].value?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
+  const currentNetworkHeight = cachedNetworkInfo?.height!!;
+  const lastProcessedBlockHeight = result?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
 
   logger.debug("Load contracts params", {
     from: lastProcessedBlockHeight - AVG_BLOCKS_PER_HOUR,
@@ -212,11 +202,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         type: evalType(definition.initState),
         pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
         pst_name: type == 'pst' ? definition.initState?.name : null,
-        src_content_type: definition.contractType == 'js'
-          ? 'application/javascript'
-          : 'application/wasm',
         contract_tx: definition.contractTx,
-        src_tx: definition.srcTx
       };
 
       let contracts_src_insert: any = {
@@ -228,23 +214,12 @@ async function loadContractsMetadata(context: GatewayContext) {
       }
 
       if (definition.contractType == 'js') {
-        update = {
-          ...update,
-          src: definition.src
-        }
-
         contracts_src_insert = {
           ...contracts_src_insert,
           src: definition.src
         }
       } else {
         const rawTxData = await arweaveWrapper.txData(definition.srcTxId);
-        update = {
-          ...update,
-          src_binary: rawTxData,
-          src_wasm_lang: definition.srcWasmLang
-        }
-
         contracts_src_insert = {
           ...contracts_src_insert,
           src_binary: rawTxData,
