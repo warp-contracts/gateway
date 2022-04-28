@@ -24,24 +24,26 @@ export async function contractsRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT c.contract_id                                                                     AS contract,
-                 c.owner                                                                           AS owner,
-                 c.type                                                                            AS contract_type,
-                 c.pst_ticker                                                                      AS pst_ticker,
-                 c.pst_name                                                                        AS pst_name,
-                 c.src_content_type                                                                AS src_content_type,
-                 c.src_wasm_lang                                                                   AS src_wasm_lang,
-                 count(i.contract_id)                                                              AS interactions,
-                 count(case when i.confirmation_status = 'corrupted' then 1 end)                   AS corrupted,
-                 count(case when i.confirmation_status = 'confirmed' then 1 end)                   AS confirmed,
-                 max(i.block_height)                                                               AS last_interaction_height,
-                 count(*) OVER ()                                                                  AS total
+          SELECT c.contract_id                                                   AS contract,
+                 c.owner                                                         AS owner,
+                 c.type                                                          AS contract_type,
+                 c.pst_ticker                                                    AS pst_ticker,
+                 c.pst_name                                                      AS pst_name,
+                 s.src_content_type                                              AS src_content_type,
+                 s.src_wasm_lang                                                 AS src_wasm_lang,
+                 count(i.contract_id)                                            AS interactions,
+                 count(case when i.confirmation_status = 'corrupted' then 1 end) AS corrupted,
+                 count(case when i.confirmation_status = 'confirmed' then 1 end) AS confirmed,
+                 max(i.block_height)                                             AS last_interaction_height,
+                 count(*) OVER ()                                                AS total
           FROM contracts c
                    LEFT JOIN interactions i
                              ON c.contract_id = i.contract_id
+                   LEFT JOIN contracts_src s
+                             ON c.src_tx_id = s.src_tx_id
           WHERE c.contract_id != ''
             AND c.type != 'error' ${contractType ? 'AND c.type = ?' : ''} ${sourceType ? `AND c.src_content_type = ?` : ''}
-          GROUP BY c.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name
+          GROUP BY c.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name, s.src_content_type, s.src_wasm_lang
           ORDER BY last_interaction_height DESC NULLS LAST, interactions DESC NULLS LAST ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );

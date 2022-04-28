@@ -15,18 +15,19 @@ export async function contractRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          SELECT contract_id                                                                     as "txId",
-                 src_tx_id                                                                       as "srcTxId",
-                 (case when src_content_type = 'application/javascript' then src else null end)  as src,
-                 (case when src_content_type = 'application/wasm' then src_binary else null end) as "srcBinary",
-                 init_state                                                                      as "initState",
-                 owner                                                                           as "owner",
-                 pst_ticker                                                                      as "pstTicker",
-                 pst_name                                                                        as "pstName",
-                 src_wasm_lang                                                                   as "srcWasmLang",
-                 contract_tx                                                                     as "contractTx",
-                 src_tx                                                                          as "srcTx"
-          FROM contracts
+          SELECT c.contract_id                                                                     as "txId",
+                 c.src_tx_id                                                                       as "srcTxId",
+                 (case when s.src_content_type = 'application/javascript' then s.src else null end)  as src,
+                 (case when s.src_content_type = 'application/wasm' then s.src_binary else null end) as "srcBinary",
+                 c.init_state                                                                      as "initState",
+                 c.owner                                                                           as "owner",
+                 c.pst_ticker                                                                      as "pstTicker",
+                 c.pst_name                                                                        as "pstName",
+                 s.src_wasm_lang                                                                   as "srcWasmLang",
+                 c.contract_tx                                                                     as "contractTx",
+                 s.src_tx                                                                          as "srcTx"
+          FROM contracts c 
+          JOIN contracts_src s on c.src_tx_id = s.src_tx_id
           WHERE contract_id = ?;
       `, [id]
     );
