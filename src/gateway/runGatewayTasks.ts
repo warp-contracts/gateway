@@ -36,7 +36,7 @@ import {runContractsMetadataTask, runLoadContractsFromGqlTask} from "./tasks/con
  *
  * note: as there are very little fully synced nodes and they often timeout/504 - this process is a real pain...
  */
-export async function runGateway(context: GatewayContext) {
+export async function runGatewayTasks(context: GatewayContext) {
   //await runBundlrCheck(context);
 
   //await runLoadPeersTask(context);

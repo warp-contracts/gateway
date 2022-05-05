@@ -6,7 +6,7 @@ import bodyParser from "koa-bodyparser";
 import {ArweaveWrapper, LoggerFactory, RedStoneLogger} from "redstone-smartweave";
 import {connect} from "../db/connect";
 import Arweave from "arweave";
-import {runGateway} from "./runGateway";
+import {runGatewayTasks} from "./runGatewayTasks";
 import gatewayRouter from "./router/gatewayRouter";
 import Application from "koa";
 import {initGatewayDb} from "../db/schema";
@@ -85,8 +85,6 @@ export interface GatewayContext {
   app.listen(port);
   logger.info(`Listening on port ${port}`);
 
-  await runNetworkInfoCacheTask(app.context);
-
   if (!fs.existsSync('gateway.lock')) {
     try {
       logger.debug(`Creating lock file for ${cluster.worker?.id}`);
@@ -95,9 +93,10 @@ export interface GatewayContext {
       fs.writeFileSync('gateway.lock', "" + cluster.worker?.id, {flag: 'wx'});
       removeLock = true;
 
+      await runNetworkInfoCacheTask(app.context);
       // note: only one worker in cluster runs the gateway tasks
       // all workers in cluster run the http server
-      await runGateway(app.context);
+      await runGatewayTasks(app.context);
     } catch (e: any) {
       logger.error('Error from gateway', e);
     }
