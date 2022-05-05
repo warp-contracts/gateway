@@ -12,7 +12,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
 
   async function updateNetworkInfo() {
     try {
-      const newNetworkInfo = await arweaveWrapper.info() as NetworkInfoInterface; // TODO: remove "as" after SDK update
+      const newNetworkInfo = await arweaveWrapper.info();
       if (cachedNetworkInfo && newNetworkInfo && newNetworkInfo.height < cachedNetworkInfo.height) {
         logger.warn("New network height lower than current, skipping.", {
           currentHeight: cachedNetworkInfo.height,
