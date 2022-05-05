@@ -3,6 +3,7 @@ import {BlockData} from "arweave/node/blocks";
 import {GatewayContext} from "../init";
 import {TaskRunner} from "./TaskRunner";
 import {BLOCKS_INTERVAL_MS} from "./syncTransactions";
+import fs from "fs";
 
 export type NetworkCacheType = {
   cachedNetworkInfo: NetworkInfoInterface;
@@ -27,10 +28,15 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
 
       const cachedNetworkInfo = newNetworkInfo;
       const cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current as string);
+
+      (cachedBlockInfo as any).poa = {};
+      (cachedBlockInfo as any).txs = [];
+
       cache = {
         cachedNetworkInfo, cachedBlockInfo
       };
 
+      fs.writeFileSync('network-cache.json', JSON.stringify(cache), "utf-8");
       logger.debug("New network height", cache.cachedNetworkInfo.height);
     } catch (e) {
       logger.error("Error while loading network info", e);
@@ -54,5 +60,5 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
 
 
 export function getCachedNetworkData(): NetworkCacheType {
-  return JSON.parse(JSON.stringify(cache));
+  return JSON.parse(fs.readFileSync('network-cache.json', 'utf-8'));
 }

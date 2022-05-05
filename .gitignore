@@ -6,6 +6,7 @@ db*.sqlite
 .secrets/.env
 .secrets/local.env
 gateway.lock
+network-cache.json
 .DS_Store
 gateway_dump
 yarn-error.log
