@@ -4,8 +4,12 @@ import {GatewayContext} from "../init";
 import {TaskRunner} from "./TaskRunner";
 import {BLOCKS_INTERVAL_MS} from "./syncTransactions";
 
-export let cachedNetworkInfo: NetworkInfoInterface | null = null;
-export let cachedBlockInfo: BlockData | null = null;
+export type NetworkCacheType = {
+  cachedNetworkInfo: NetworkInfoInterface;
+  cachedBlockInfo: BlockData;
+}
+
+let cache: NetworkCacheType;
 
 export async function runNetworkInfoCacheTask(context: GatewayContext) {
   const {arweave, logger, arweaveWrapper} = context;
@@ -13,16 +17,21 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
   async function updateNetworkInfo() {
     try {
       const newNetworkInfo = await arweaveWrapper.info();
-      if (cachedNetworkInfo && newNetworkInfo && newNetworkInfo.height < cachedNetworkInfo.height) {
+      if (cache?.cachedNetworkInfo && newNetworkInfo && newNetworkInfo.height < cache.cachedNetworkInfo.height) {
         logger.warn("New network height lower than current, skipping.", {
-          currentHeight: cachedNetworkInfo.height,
+          currentHeight: cache?.cachedNetworkInfo.height,
           newHeight: newNetworkInfo.height
         });
         return;
       }
-      cachedNetworkInfo = newNetworkInfo;
-      cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current as string);
-      logger.debug("New network height", cachedNetworkInfo.height);
+
+      const cachedNetworkInfo = newNetworkInfo;
+      const cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current as string);
+      cache = {
+        cachedNetworkInfo, cachedBlockInfo
+      };
+
+      logger.debug("New network height", cache.cachedNetworkInfo.height);
     } catch (e) {
       logger.error("Error while loading network info", e);
     }
@@ -31,8 +40,8 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
   await TaskRunner
     .from("[Arweave network info]", async () => {
       logger.debug("Loading network info");
-      if (cachedNetworkInfo == null || cachedBlockInfo == null) {
-        while (cachedNetworkInfo == null || cachedBlockInfo == null) {
+      if (cache?.cachedNetworkInfo == null || cache?.cachedBlockInfo == null) {
+        while (cache?.cachedNetworkInfo == null || cache?.cachedBlockInfo == null) {
           await updateNetworkInfo();
         }
       } else {
@@ -41,4 +50,9 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
 
     }, context)
     .runSyncEvery(BLOCKS_INTERVAL_MS, true);
+}
+
+
+export function getCachedNetworkData(): NetworkCacheType {
+  return JSON.parse(JSON.stringify(cache));
 }

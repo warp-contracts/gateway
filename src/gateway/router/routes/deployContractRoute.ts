@@ -2,11 +2,11 @@ import Router from "@koa/router";
 import Transaction from "arweave/node/lib/transaction";
 import Arweave from "arweave";
 import {GQLTagInterface, SmartWeaveTags} from "redstone-smartweave";
-import {cachedNetworkInfo} from "../../tasks/networkInfoCache";
 import util from "util";
 import {gzip} from "zlib";
 import Bundlr from "@bundlr-network/client";
 import {evalType} from "../../tasks/contractsMetadata";
+import {getCachedNetworkData} from "../../tasks/networkInfoCache";
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr} = ctx;
@@ -69,7 +69,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       type: type,
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
-      block_height: cachedNetworkInfo?.height,
+      block_height: getCachedNetworkData().cachedNetworkInfo.height,
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
       contract_tx: {...contractTx.toJSON(), data: null},
       bundler_contract_tx_id: bundlerContractTx.id,
