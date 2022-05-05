@@ -18,7 +18,7 @@ import Bundlr from "@bundlr-network/client";
 import {BlockData} from "arweave/node/blocks";
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr, jwk, arweaveWrapper} = ctx;
+  const {logger, gatewayDb, arweave, bundlr, jwk} = ctx;
 
   const benchmark = Benchmark.measure();
 
@@ -30,16 +30,18 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
 
   try {
-    const {networkInfo, blockInfo} = await loadNetworkInfo(arweaveWrapper, arweave, logger);
+    if (cachedBlockInfo == null || cachedNetworkInfo == null) {
+      throw new Error("Network or block info not yet cached.");
+    }
 
-    const currentHeight = networkInfo.height;
+    const currentHeight = cachedNetworkInfo.height;
     logger.debug(`Sequencer: ${transaction.id}: ${currentHeight}`);
 
     if (!currentHeight) {
       throw new Error("Current height not set");
     }
 
-    const currentBlockId = networkInfo.current;
+    const currentBlockId = cachedNetworkInfo.current;
     if (!currentBlockId) {
       throw new Error("Current block not set");
     }
@@ -64,7 +66,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       decodedTags,
       currentHeight,
       currentBlockId,
-      blockInfo,
+      cachedBlockInfo,
       sortKey);
 
     const insertBench = Benchmark.measure();
@@ -194,23 +196,6 @@ function prepareTags(
   ];
 
   return {contractTag, inputTag, internalWrites, decodedTags, tags};
-}
-
-async function loadNetworkInfo(
-  arweaveWrapper: ArweaveWrapper, arweave: Arweave, logger: RedStoneLogger) {
-
-  const networkInfoBenchmark = Benchmark.measure();
-  const networkInfo = cachedNetworkInfo
-    ? cachedNetworkInfo
-    : await arweaveWrapper.info();
-
-  const blockInfo = cachedBlockInfo
-    ? cachedBlockInfo
-    : await arweave.blocks.get(networkInfo.current!);
-
-  logger.debug("Network info:", networkInfoBenchmark.elapsed());
-
-  return {networkInfo, blockInfo};
 }
 
 async function compress(transaction: Transaction) {
