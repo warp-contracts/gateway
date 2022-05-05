@@ -3,15 +3,8 @@ import Transaction from "arweave/node/lib/transaction";
 import {parseFunctionName} from "../../tasks/syncTransactions";
 import Arweave from "arweave";
 import {JWKInterface} from "arweave/node/lib/wallet";
-import {
-  arrayToHex,
-  ArweaveWrapper,
-  Benchmark,
-  GQLTagInterface,
-  RedStoneLogger,
-  SmartWeaveTags
-} from "redstone-smartweave";
-import {cachedBlockInfo, cachedNetworkInfo} from "../../tasks/networkInfoCache";
+import {arrayToHex, Benchmark, GQLTagInterface, RedStoneLogger, SmartWeaveTags} from "redstone-smartweave";
+import {getCachedNetworkData} from "../../tasks/networkInfoCache";
 import util from "util";
 import {gzip} from "zlib";
 import Bundlr from "@bundlr-network/client";
@@ -19,6 +12,8 @@ import {BlockData} from "arweave/node/blocks";
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr, jwk} = ctx;
+
+  const cachedNetworkData = getCachedNetworkData();
 
   const benchmark = Benchmark.measure();
 
@@ -30,18 +25,18 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
 
   try {
-    if (cachedBlockInfo == null || cachedNetworkInfo == null) {
+    if (cachedNetworkData == null) {
       throw new Error("Network or block info not yet cached.");
     }
 
-    const currentHeight = cachedNetworkInfo.height;
-    logger.debug(`Sequencer: ${transaction.id}: ${currentHeight}`);
+    const currentHeight = cachedNetworkData.cachedNetworkInfo.height;
+    logger.debug(`Sequencer height: ${transaction.id}: ${currentHeight}`);
 
     if (!currentHeight) {
       throw new Error("Current height not set");
     }
 
-    const currentBlockId = cachedNetworkInfo.current;
+    const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
     if (!currentBlockId) {
       throw new Error("Current block not set");
     }
@@ -66,7 +61,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       decodedTags,
       currentHeight,
       currentBlockId,
-      cachedBlockInfo,
+      cachedNetworkData.cachedBlockInfo,
       sortKey);
 
     const insertBench = Benchmark.measure();

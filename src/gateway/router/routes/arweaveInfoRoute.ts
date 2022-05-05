@@ -1,11 +1,10 @@
 import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
-import {cachedNetworkInfo} from "../../tasks/networkInfoCache";
+import {getCachedNetworkData} from "../../tasks/networkInfoCache";
 
 export async function arweaveInfoRoute(ctx: Router.RouterContext) {
   const {logger} = ctx;
 
-  const result = cachedNetworkInfo;
+  const result = getCachedNetworkData().cachedNetworkInfo;
   if (result == null) {
     logger.error("Network info not yet available.");
     ctx.status = 500;

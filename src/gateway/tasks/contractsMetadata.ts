@@ -4,7 +4,7 @@ import {ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWea
 import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT} from "./syncTransactions";
 import {Knex} from "knex";
-import {cachedNetworkInfo} from "./networkInfoCache";
+import {getCachedNetworkData} from "./networkInfoCache";
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -60,7 +60,7 @@ async function loadContractsFromGql(context: GatewayContext) {
     return;
   }
 
-  const currentNetworkHeight = cachedNetworkInfo?.height!!;
+  const currentNetworkHeight = getCachedNetworkData().cachedNetworkInfo.height;
   const lastProcessedBlockHeight = result?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
 
   logger.debug("Load contracts params", {
