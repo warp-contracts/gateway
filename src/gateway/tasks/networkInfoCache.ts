@@ -4,7 +4,7 @@ import {GatewayContext} from "../init";
 import {TaskRunner} from "./TaskRunner";
 import {BLOCKS_INTERVAL_MS} from "./syncTransactions";
 
-export let cachedNetworkInfo: Partial<NetworkInfoInterface> | null = null;
+export let cachedNetworkInfo: NetworkInfoInterface | null = null;
 export let cachedBlockInfo: BlockData | null = null;
 
 export async function runNetworkInfoCacheTask(context: GatewayContext) {
@@ -12,7 +12,15 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
 
   async function updateNetworkInfo() {
     try {
-      cachedNetworkInfo = await arweaveWrapper.info();
+      const newNetworkInfo = await arweaveWrapper.info() as NetworkInfoInterface; // TODO: remove "as" after SDK update
+      if (cachedNetworkInfo && newNetworkInfo && newNetworkInfo.height < cachedNetworkInfo.height) {
+        logger.warn("New network height lower than current, skipping.", {
+          currentHeight: cachedNetworkInfo.height,
+          newHeight: newNetworkInfo.height
+        });
+        return;
+      }
+      cachedNetworkInfo = newNetworkInfo;
       cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current as string);
       logger.debug("New network height", cachedNetworkInfo.height);
     } catch (e) {
