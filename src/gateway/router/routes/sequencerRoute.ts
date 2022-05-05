@@ -33,6 +33,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const {networkInfo, blockInfo} = await loadNetworkInfo(arweaveWrapper, arweave, logger);
 
     const currentHeight = networkInfo.height;
+    logger.debug(`Sequencer: ${transaction.id}: ${currentHeight}`);
+
     if (!currentHeight) {
       throw new Error("Current height not set");
     }

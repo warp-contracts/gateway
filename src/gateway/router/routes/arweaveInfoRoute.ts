@@ -11,6 +11,7 @@ export async function arweaveInfoRoute(ctx: Router.RouterContext) {
     ctx.status = 500;
     ctx.body = {message: "Network info not yet available."};
   } else {
+    logger.debug("Returning network info with height", result.height);
     ctx.body = {
       ...result
     }
