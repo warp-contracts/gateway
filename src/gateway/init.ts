@@ -20,6 +20,7 @@ import {runNetworkInfoCacheTask} from "./tasks/networkInfoCache";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
+const replica = argv.replica || false;
 
 const cors = require('@koa/cors');
 
@@ -55,6 +56,8 @@ export interface GatewayContext {
   LoggerFactory.INST.logLevel("debug", "gateway");
   const logger = LoggerFactory.INST.create("gateway");
 
+  logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode.`);
+
   const arweave = initArweave();
   const {bundlr, jwk} = initBundlr(logger);
 
@@ -85,20 +88,23 @@ export interface GatewayContext {
   app.listen(port);
   logger.info(`Listening on port ${port}`);
 
-  if (!fs.existsSync('gateway.lock')) {
-    try {
-      logger.debug(`Creating lock file for ${cluster.worker?.id}`);
-      // note: if another process in cluster have already created the file - writing here
-      // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
-      fs.writeFileSync('gateway.lock', "" + cluster.worker?.id, {flag: 'wx'});
-      removeLock = true;
+  // note: replica only serves "GET" requests and does not run any tasks
+  if (!replica) {
+    if (!fs.existsSync('gateway.lock')) {
+      try {
+        logger.debug(`Creating lock file for ${cluster.worker?.id}`);
+        // note: if another process in cluster have already created the file - writing here
+        // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
+        fs.writeFileSync('gateway.lock', "" + cluster.worker?.id, {flag: 'wx'});
+        removeLock = true;
 
-      await runNetworkInfoCacheTask(app.context);
-      // note: only one worker in cluster runs the gateway tasks
-      // all workers in cluster run the http server
-      await runGatewayTasks(app.context);
-    } catch (e: any) {
-      logger.error('Error from gateway', e);
+        await runNetworkInfoCacheTask(app.context);
+        // note: only one worker in cluster runs the gateway tasks
+        // all workers in cluster run the http server
+        await runGatewayTasks(app.context);
+      } catch (e: any) {
+        logger.error('Error from gateway', e);
+      }
     }
   }
 })();
