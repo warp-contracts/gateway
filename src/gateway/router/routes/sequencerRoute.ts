@@ -11,14 +11,14 @@ import Bundlr from "@bundlr-network/client";
 import {BlockData} from "arweave/node/blocks";
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr, jwk} = ctx;
+  const {sLogger, gatewayDb, arweave, bundlr, jwk} = ctx;
 
   const cachedNetworkData = getCachedNetworkData();
 
   const benchmark = Benchmark.measure();
 
   const transaction: Transaction = new Transaction({...ctx.request.body});
-  logger.debug("New sequencer tx", transaction.id);
+  sLogger.debug("New sequencer tx", transaction.id);
 
   const originalSignature = transaction.signature;
   const originalOwner = transaction.owner;
@@ -30,7 +30,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     }
 
     const currentHeight = cachedNetworkData.cachedNetworkInfo.height;
-    logger.debug(`Sequencer height: ${transaction.id}: ${currentHeight}`);
+    sLogger.debug(`Sequencer height: ${transaction.id}: ${currentHeight}`);
 
     if (!currentHeight) {
       throw new Error("Current height not set");
@@ -53,7 +53,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     } = prepareTags(transaction, originalAddress, millis, sortKey, currentHeight, currentBlockId);
 
     // TODO: add fallback to other bundlr nodes.
-    const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, logger);
+    const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, sLogger);
 
     const interaction = createInteraction(
       transaction,
@@ -87,7 +87,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
           block_height: currentHeight,
           block_id: currentBlockId,
           contract_id: contractTag,
-          function: parseFunctionName(inputTag, logger),
+          function: parseFunctionName(inputTag, sLogger),
           input: inputTag,
           confirmation_status: "confirmed",
           confirming_peer: "https://node1.bundlr.network",
@@ -97,17 +97,17 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         })
     ]);
 
-    logger.debug("Inserting into tables", insertBench.elapsed());
-    logger.debug("Transaction successfully bundled", {
+    sLogger.debug("Inserting into tables", insertBench.elapsed());
+    sLogger.debug("Transaction successfully bundled", {
       id: transaction.id,
       bundled_tx_id: bTx.id
     });
 
     ctx.body = bundlrResponse.data;
-    logger.info("Total sequencer processing", benchmark.elapsed());
+    sLogger.info("Total sequencer processing", benchmark.elapsed());
   } catch (e) {
-    logger.error("Error while inserting bundled transaction");
-    logger.error(e);
+    sLogger.error("Error while inserting bundled transaction");
+    sLogger.error(e);
     ctx.status = 500;
     ctx.body = {message: e};
   }
