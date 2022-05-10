@@ -27,6 +27,7 @@ const cors = require('@koa/cors');
 export interface GatewayContext {
   gatewayDb: Knex;
   logger: RedStoneLogger;
+  sLogger: RedStoneLogger;
   arweave: Arweave;
   bundlr: Bundlr;
   jwk: JWKInterface
@@ -51,10 +52,11 @@ export interface GatewayContext {
 
   const port = parseInt((process.env.PORT || 5666).toString());
 
-  //LoggerFactory.use(new TsLogFactory());
   LoggerFactory.INST.logLevel("info");
-  LoggerFactory.INST.logLevel("debug", "gateway");
+  LoggerFactory.INST.logLevel("error", "gateway");
+  LoggerFactory.INST.logLevel("debug", "sequencer");
   const logger = LoggerFactory.INST.create("gateway");
+  const sLogger = LoggerFactory.INST.create("sequencer");
 
   logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode.`);
 
@@ -67,6 +69,7 @@ export interface GatewayContext {
   const app = new Koa<Application.DefaultState, GatewayContext>();
   app.context.gatewayDb = gatewayDb;
   app.context.logger = logger;
+  app.context.sLogger = sLogger;
   app.context.arweave = arweave;
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
