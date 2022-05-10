@@ -53,7 +53,7 @@ export interface GatewayContext {
   const port = parseInt((process.env.PORT || 5666).toString());
 
   LoggerFactory.INST.logLevel("info");
-  LoggerFactory.INST.logLevel("error", "gateway");
+  LoggerFactory.INST.logLevel("info", "gateway");
   LoggerFactory.INST.logLevel("debug", "sequencer");
   const logger = LoggerFactory.INST.create("gateway");
   const sLogger = LoggerFactory.INST.create("sequencer");
