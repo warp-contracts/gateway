@@ -212,7 +212,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         confirmation_status: "confirmed",
       }
 
-      logger.info("Inserting interaction", interaction)
+      logger.info("Inserting interaction", interactionDb);
 
       interactionsInserts.push(interactionDb);
     }
