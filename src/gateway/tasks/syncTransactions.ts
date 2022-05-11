@@ -201,7 +201,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       logger.warn("Interaction already added", interaction.node.id);
     } else {
       interactionsInsertsIds.add(interaction.node.id)
-      interactionsInserts.push({
+      const interactionDb = {
         interaction_id: interaction.node.id,
         interaction: JSON.stringify(interaction.node),
         block_height: interaction.node.block.height,
@@ -210,7 +210,11 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         function: functionName,
         input: input,
         confirmation_status: "confirmed",
-      });
+      }
+
+      logger.info("Inserting interaction", interaction)
+
+      interactionsInserts.push(interactionDb);
     }
 
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
