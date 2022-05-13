@@ -2,13 +2,13 @@ import yargs from 'yargs'
 import {hideBin} from 'yargs/helpers'
 import {Knex} from "knex";
 import Koa from "koa";
+import Application from "koa";
 import bodyParser from "koa-bodyparser";
 import {ArweaveWrapper, LoggerFactory, RedStoneLogger} from "redstone-smartweave";
 import {connect} from "../db/connect";
 import Arweave from "arweave";
 import {runGatewayTasks} from "./runGatewayTasks";
 import gatewayRouter from "./router/gatewayRouter";
-import Application from "koa";
 import {initGatewayDb} from "../db/schema";
 import * as fs from "fs";
 import cluster from 'cluster';
@@ -21,8 +21,12 @@ import {runNetworkInfoCacheTask} from "./tasks/networkInfoCache";
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
 const replica = argv.replica || false;
+const elliptic = require('elliptic');
+const EC = new elliptic.ec('secp256k1');
 
 const cors = require('@koa/cors');
+
+export type VRF = { pubKeyHex: string, privKey: any, ec: any }
 
 export interface GatewayContext {
   gatewayDb: Knex;
@@ -31,7 +35,8 @@ export interface GatewayContext {
   arweave: Arweave;
   bundlr: Bundlr;
   jwk: JWKInterface
-  arweaveWrapper: ArweaveWrapper
+  arweaveWrapper: ArweaveWrapper,
+  vrf: VRF
 }
 
 (async () => {
@@ -93,6 +98,17 @@ export interface GatewayContext {
 
   // note: replica only serves "GET" requests and does not run any tasks
   if (!replica) {
+    app.context.vrf = {
+      pubKeyHex: fs.readFileSync('./vrf-pub-key.txt', "utf8"),
+      privKey: EC.keyFromPrivate(
+        fs.readFileSync('./.secrets/vrf-priv-key.txt', "utf8"),
+        "hex"
+       ).getPrivate(),
+      ec: EC
+    }
+
+    logger.info("vrf", app.context.vrf);
+
     if (!fs.existsSync('gateway.lock')) {
       try {
         logger.debug(`Creating lock file for ${cluster.worker?.id}`);

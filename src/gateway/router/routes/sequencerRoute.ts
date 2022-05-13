@@ -9,9 +9,19 @@ import util from "util";
 import {gzip} from "zlib";
 import Bundlr from "@bundlr-network/client";
 import {BlockData} from "arweave/node/blocks";
+import {VRF} from "../../init";
+
+const {Evaluate} = require('@idena/vrf-js');
+
+export type VrfData = {
+  index: string,
+  proof: string,
+  bigint: string,
+  pubkey: string
+}
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {sLogger, gatewayDb, arweave, bundlr, jwk} = ctx;
+  const {sLogger, gatewayDb, arweave, bundlr, jwk, vrf} = ctx;
 
   const cachedNetworkData = getCachedNetworkData();
 
@@ -49,8 +59,9 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       inputTag,
       internalWrites,
       decodedTags,
-      tags
-    } = prepareTags(transaction, originalAddress, millis, sortKey, currentHeight, currentBlockId);
+      tags,
+      vrfData
+    } = prepareTags(transaction, originalAddress, millis, sortKey, currentHeight, currentBlockId, vrf, arweave);
 
     // TODO: add fallback to other bundlr nodes.
     const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, sLogger);
@@ -62,7 +73,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       currentHeight,
       currentBlockId,
       cachedNetworkData.cachedBlockInfo,
-      sortKey);
+      sortKey,
+      vrfData);
 
     const insertBench = Benchmark.measure();
 
@@ -78,7 +90,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
           sequence_millis: "" + millis,
           sequence_sort_key: sortKey,
           bundler_tx_id: bTx.id,
-          bundler_response: JSON.stringify(bundlrResponse.data)
+          bundler_response: JSON.stringify(bundlrResponse.data),
         }),
       gatewayDb("interactions")
         .insert({
@@ -120,7 +132,8 @@ function createInteraction(
   currentHeight: number,
   currentBlockId: string,
   blockInfo: BlockData,
-  sortKey: string) {
+  sortKey: string,
+  vrfData: VrfData | null) {
 
   const interaction: any = {
     id: transaction.id,
@@ -139,12 +152,51 @@ function createInteraction(
       winston: transaction.quantity
     },
     sortKey: sortKey,
-    source: "redstone-sequencer"
+    source: "redstone-sequencer",
+    vrf: vrfData
   }
 
   return interaction;
 }
 
+
+function generateVrfTags(sortKey: string, vrf: VRF, arweave: Arweave) {
+  const privateKey = vrf.privKey.toArray();
+  const data = arweave.utils.stringToBuffer(sortKey);
+  const [index, proof] = Evaluate(privateKey, data);
+
+  const vrfData: VrfData = {
+    index: arweave.utils.bufferTob64Url(index),
+    proof: arweave.utils.bufferTob64Url(proof),
+    bigint: bufToBn(index).toString(),
+    pubkey: vrf.pubKeyHex
+  }
+
+  return {
+    vrfTags: [
+      {name: 'vrf-index', value: vrfData.index},
+      {name: 'vrf-proof', value: vrfData.proof},
+      {name: 'vrf-bigint', value: vrfData.bigint},
+      {name: 'vrf-pubkey', value: vrfData.pubkey}
+    ],
+    vrfData
+  };
+}
+
+function bufToBn(buf: Array<number>) {
+  const hex: string[] = [];
+  const u8 = Uint8Array.from(buf);
+
+  u8.forEach(function (i) {
+    let h = i.toString(16);
+    if (h.length % 2) {
+      h = '0' + h;
+    }
+    hex.push(h);
+  });
+
+  return BigInt('0x' + hex.join(''));
+}
 
 function prepareTags(
   transaction: Transaction,
@@ -152,9 +204,11 @@ function prepareTags(
   millis: number,
   sortKey: string,
   currentHeight: number,
-  currentBlockId: string) {
+  currentBlockId: string,
+  vrf: VRF,
+  arweave: Arweave) {
 
-  let contractTag: string = '', inputTag: string = '';
+  let contractTag: string = '', inputTag: string = '', requestVrfTag = '';
 
   const decodedTags: GQLTagInterface[] = [];
 
@@ -171,6 +225,9 @@ function prepareTags(
     }
     if (key == SmartWeaveTags.INTERACT_WRITE) {
       internalWrites.push(value);
+    }
+    if (key == SmartWeaveTags.REQUEST_VRF) {
+      requestVrfTag = value
     }
     decodedTags.push({
       name: key,
@@ -190,7 +247,14 @@ function prepareTags(
     ...decodedTags
   ];
 
-  return {contractTag, inputTag, internalWrites, decodedTags, tags};
+  let vrfData = null;
+  if (requestVrfTag !== '') {
+    const vrfGen = generateVrfTags(sortKey, vrf, arweave);
+    tags.push(...vrfGen.vrfTags);
+    vrfData = vrfGen.vrfData;
+  }
+
+  return {contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData};
 }
 
 async function compress(transaction: Transaction) {
