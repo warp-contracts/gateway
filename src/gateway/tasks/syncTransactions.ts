@@ -264,7 +264,7 @@ async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsI
   return gatewayDb("interactions")
     .insert(interactionsInserts)
     .onConflict("interaction_id")
-    .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'interaction']);
+    .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'interaction', 'sort_key']);
 }
 
 // TODO: verify internalWrites
