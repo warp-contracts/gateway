@@ -105,7 +105,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
           confirming_peer: "https://node1.bundlr.network",
           source: "redstone-sequencer",
           bundler_tx_id: bTx.id,
-          interact_write: internalWrites
+          interact_write: internalWrites,
+          sort_key: sortKey
         })
     ]);
 

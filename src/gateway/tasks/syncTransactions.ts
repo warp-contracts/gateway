@@ -1,4 +1,10 @@
-import {GQLEdgeInterface, RedStoneLogger, SmartWeaveTags, TagsParser} from "redstone-smartweave";
+import {
+  GQLEdgeInterface,
+  LexicographicalInteractionsSorter,
+  RedStoneLogger,
+  SmartWeaveTags,
+  TagsParser
+} from "redstone-smartweave";
 import {TaskRunner} from "./TaskRunner";
 import {GatewayContext} from "../init";
 import {INTERACTIONS_TABLE} from "../../db/schema";
@@ -89,7 +95,8 @@ function syncLastDayTransactions(context: GatewayContext) {
 
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number) {
-  const {gatewayDb, logger, arweaveWrapper} = context;
+  const {gatewayDb, logger, arweaveWrapper, sorter} = context;
+
   logger.info("Syncing blocks");
 
   // 1. find last processed block height and current Arweave network height
@@ -182,6 +189,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       continue;
     }
 
+    const sortKey = await sorter.createSortKey(blockId, interaction.node.id, interaction.node.block.height);
+
     // now this one is really fucked-up - if the interaction contains the same tag X-times,
     // the default GQL endpoint will return this interaction X-times...
     // this is causing "SQLITE_CONSTRAINT: UNIQUE constraint failed: interactions.id"
@@ -200,7 +209,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         function: functionName,
         input: input,
         confirmation_status: "not_processed",
-        interact_write: internalWrites
+        interact_write: internalWrites,
+        sort_key: sortKey
       });
     }
 

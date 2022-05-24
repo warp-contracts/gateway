@@ -4,7 +4,7 @@ import {Knex} from "knex";
 import Koa from "koa";
 import Application from "koa";
 import bodyParser from "koa-bodyparser";
-import {ArweaveWrapper, LoggerFactory, RedStoneLogger} from "redstone-smartweave";
+import {ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, RedStoneLogger} from "redstone-smartweave";
 import {connect} from "../db/connect";
 import Arweave from "arweave";
 import {runGatewayTasks} from "./runGatewayTasks";
@@ -36,7 +36,8 @@ export interface GatewayContext {
   bundlr: Bundlr;
   jwk: JWKInterface
   arweaveWrapper: ArweaveWrapper,
-  vrf: VRF
+  vrf: VRF,
+  sorter: LexicographicalInteractionsSorter
 }
 
 (async () => {
@@ -79,6 +80,7 @@ export interface GatewayContext {
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
   app.context.arweaveWrapper = new ArweaveWrapper(arweave);
+  app.context.sorter = new LexicographicalInteractionsSorter(arweave)
 
   app.use(cors({
     async origin() {
