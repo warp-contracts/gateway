@@ -1,5 +1,4 @@
 import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
 import {stringify} from "JSONStream";
 
 export async function interactionsStreamRoute(ctx: Router.RouterContext) {
@@ -25,13 +24,12 @@ export async function interactionsStreamRoute(ctx: Router.RouterContext) {
   to && bindings.push(to as string);
 
   try {
-    const benchmark = Benchmark.measure();
     const result: any = gatewayDb.raw(
       `
           SELECT interaction
           FROM interactions
           WHERE contract_id = ? ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
-          ORDER BY block_height ASC, interaction_id ASC;
+          ORDER BY sort_key ASC;
       `, bindings
     )
       .stream() // note: https://www.npmjs.com/package/pg-query-stream is required for stream to work
