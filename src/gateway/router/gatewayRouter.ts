@@ -11,6 +11,7 @@ import {sequencerRoute} from "./routes/sequencerRoute";
 import {interactionsStreamRoute} from "./routes/interactionsStreamRoute";
 import {deployContractRoute} from "./routes/deployContractRoute";
 import {arweaveInfoRoute} from "./routes/arweaveInfoRoute";
+import {interactionsSortKeyRoute} from "./routes/interactionsSortKeyRoute";
 
 const gatewayRouter = new Router({prefix: '/gateway'});
 
@@ -22,6 +23,8 @@ gatewayRouter.get("/search/:phrase", searchRoute);
 // separate "transactionId" route to make caching in cloudfront possible
 gatewayRouter.get("/interactions/transactionId", interactionsRoute);
 gatewayRouter.get("/interactions", interactionsRoute);
+// adding temporarily - https://github.com/redstone-finance/redstone-sw-gateway/pull/65#discussion_r880555807
+gatewayRouter.get("/interactions-sort-key", interactionsSortKeyRoute);
 gatewayRouter.get("/interactions-stream", interactionsStreamRoute);
 gatewayRouter.get("/interactions/:id", interactionRoute);
 gatewayRouter.get("/stats", statsRoute);
