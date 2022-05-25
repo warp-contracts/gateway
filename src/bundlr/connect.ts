@@ -14,8 +14,10 @@ export async function runBundlrCheck(context: GatewayContext) {
 }
 
 export function initBundlr(logger: RedStoneLogger): { bundlr: Bundlr, jwk: JWKInterface } {
-  const jwk = JSON.parse(fs.readFileSync(".secrets/redstone-jwk.json").toString());
-  const bundlr = new Bundlr("https://node1.bundlr.network/", "arweave", jwk);
+  const jwk = JSON.parse(fs.readFileSync(".secrets/warp-wallet-jwk.json").toString());
+  const bundlr = new Bundlr("https://node1.bundlr.network/", "arweave", jwk, {
+    timeout: 5000
+  });
   logger.info("Running bundlr on", {
     address: bundlr.address,
     currency: bundlr.currency
