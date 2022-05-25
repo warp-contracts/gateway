@@ -5,7 +5,7 @@ const MAX_INTERACTIONS_PER_PAGE = 5000;
 export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
   const {gatewayDb} = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToSortKey, minimize} = ctx.query;
+  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToTransactionId, minimize} = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -31,7 +31,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
   from && bindings.push(from as string);
   to && bindings.push(to as string);
   source && bindings.push(source as string);
-  upToSortKey && bindings.push(upToSortKey as string);
+  upToTransactionId && bindings.push(upToTransactionId as string);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -45,10 +45,10 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
           FROM interactions 
             WHERE (contract_id = ? OR interact_write @> ARRAY[?]) 
           ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} 
-          ${from ? ' AND block_height >= ?' : ''} 
+          ${from ?  ' AND block_height >= ?' : ''} 
           ${to ? ' AND block_height <= ?' : ''} 
           ${source ? `AND source = ?` : ''} 
-          ${upToSortKey ? ` AND sort_key <= ?` : ''} 
+          ${upToTransactionId ? ` AND sort_key <= (SELECT sort_key FROM interactions WHERE interaction_id = ? ` : ''} 
           ORDER BY sort_key ${shouldMinimize ? 'ASC' : 'DESC'} ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
