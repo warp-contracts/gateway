@@ -26,7 +26,8 @@ export async function interactionRoute(ctx: Router.RouterContext) {
                     confirmation_status as confirmationStatus,
                     confirming_peer as confirmingPeer,
                     confirmed_at_height as confirmedAtHeight,
-                    confirmations as confirmations
+                    confirmations as confirmations,
+                    sort_key as sortKey
              FROM interactions
              WHERE interaction_id = ?;
       `, [id]
