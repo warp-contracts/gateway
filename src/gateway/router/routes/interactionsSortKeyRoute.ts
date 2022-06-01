@@ -31,7 +31,6 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
   from && bindings.push(from as string);
   to && bindings.push(to as string);
   source && bindings.push(source as string);
-  upToTransactionId && bindings.push(upToTransactionId as string);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -45,10 +44,9 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
           FROM interactions 
             WHERE (contract_id = ? OR interact_write @> ARRAY[?]) 
           ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} 
-          ${from ?  ' AND block_height >= ?' : ''} 
-          ${to ? ' AND block_height <= ?' : ''} 
+          ${from ?  ' AND sort_key > ?' : ''} 
+          ${to ? ' AND sort_key <= ?' : ''} 
           ${source ? `AND source = ?` : ''} 
-          ${upToTransactionId ? ` AND sort_key <= (SELECT sort_key FROM interactions WHERE interaction_id = ? ` : ''} 
           ORDER BY sort_key ${shouldMinimize ? 'ASC' : 'DESC'} ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `, bindings
     );
