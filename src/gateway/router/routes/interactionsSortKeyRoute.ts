@@ -98,7 +98,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
       }))
     };
 
-    logger.debug("Mapping: ", benchmark.elapsed());
+    logger.info("Mapping interactions: ", benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
