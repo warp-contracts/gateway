@@ -1,4 +1,5 @@
 import Router from "@koa/router";
+import {Benchmark} from "redstone-smartweave";
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
@@ -39,6 +40,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
       `
           SELECT interaction, 
                  confirmation_status, 
+                 sort_key,
                  ${shouldMinimize ? '': 'confirming_peer, confirmations, bundler_tx_id, '} 
                  count(*) OVER () AS total
           FROM interactions 
@@ -49,8 +51,6 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
           ${source ? `AND source = ?` : ''} 
           ORDER BY sort_key ${shouldMinimize ? 'ASC' : 'DESC'} ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `
-
-    logger.info("query:", query);
 
     const result: any = await gatewayDb.raw(query, bindings);
 
@@ -67,6 +67,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
 
     const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
 
+    const benchmark = Benchmark.measure();
     ctx.body = {
       paging: {
         total,
@@ -83,16 +84,21 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
           forked: totalInteractions?.rows[0].forked
         }
       }),
+      // TODO: this mapping here is kinda dumb.
+
       interactions: result?.rows?.map((r: any) => ({
         status: r.confirmation_status,
         confirming_peers: r.confirming_peer,
         confirmations: r.confirmations,
         interaction: {
           ...r.interaction,
-          bundlerTxId: r.bundler_tx_id
+          bundlerTxId: r.bundler_tx_id,
+          sortKey: r.sort_key
         },
       }))
     };
+
+    logger.debug("Mapping: ", benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
