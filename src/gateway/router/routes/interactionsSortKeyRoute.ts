@@ -3,9 +3,9 @@ import Router from "@koa/router";
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
-  const {gatewayDb} = ctx;
+  const {gatewayDb, logger} = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToTransactionId, minimize} = ctx.query;
+  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, minimize} = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -35,7 +35,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
   parsedPage && bindings.push(offset);
 
   try {
-    const result: any = await gatewayDb.raw(
+    const query =
       `
           SELECT interaction, 
                  confirmation_status, 
@@ -48,8 +48,11 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
           ${to ? ' AND sort_key <= ?' : ''} 
           ${source ? `AND source = ?` : ''} 
           ORDER BY sort_key ${shouldMinimize ? 'ASC' : 'DESC'} ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
-      `, bindings
-    );
+      `
+
+    logger.info("query:", query);
+
+    const result: any = await gatewayDb.raw(query, bindings);
 
     const totalInteractions: any = totalCount == 'true' && await gatewayDb.raw(
       `
