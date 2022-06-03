@@ -10,7 +10,8 @@ export type INTERACTIONS_TABLE = {
   input: string;
   confirmation_status: string;
   interact_write: string[];
-  sort_key: string
+  sort_key: string;
+  evolve: string | null;
 };
 
 export async function initGatewayDb(db: Knex) {
