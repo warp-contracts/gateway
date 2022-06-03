@@ -4,10 +4,11 @@ import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransac
 import {
   runSyncLastDayTransactionsTask,
   runSyncLastHourTransactionsTask,
-  runSyncRecentTransactionsTask
+  runSyncRecentTransactionsTask,
 } from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
 import {runContractsMetadataTask, runLoadContractsFromGqlTask} from "./tasks/contractsMetadata";
+import {runEvolvedContractsSourceTask} from './tasks/evolvedContractSources';
 
 
 /**
@@ -54,4 +55,6 @@ export async function runGatewayTasks(context: GatewayContext) {
   await runLoadContractsFromGqlTask(context);
 
   await runContractsMetadataTask(context);
+
+  await runEvolvedContractsSourceTask(context);
 }

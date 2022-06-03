@@ -180,6 +180,15 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
     const contractId = tagsParser.getContractTag(interaction);
     const input = tagsParser.getInputTag(interaction, contractId)?.value;
+    const parsedInput = JSON.parse(input);
+
+    let evolve: string | null;
+    if (parsedInput.value) {
+      evolve = parsedInput.value
+    } else {
+      evolve = null;
+    }
+
     const functionName = parseFunctionName(input, logger);
 
     const internalWrites = tagsParser.getInteractWritesContracts(interaction);
@@ -210,7 +219,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         input: input,
         confirmation_status: "not_processed",
         interact_write: internalWrites,
-        sort_key: sortKey
+        sort_key: sortKey,
+        evolve: evolve
       });
     }
 
