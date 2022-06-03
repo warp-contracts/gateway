@@ -1,6 +1,5 @@
 import {
   GQLEdgeInterface,
-  LexicographicalInteractionsSorter,
   RedStoneLogger,
   SmartWeaveTags,
   TagsParser
@@ -10,6 +9,7 @@ import {GatewayContext} from "../init";
 import {INTERACTIONS_TABLE} from "../../db/schema";
 import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
 import {Knex} from "knex";
+import { isTxIdValid } from "../../utils";
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -182,14 +182,11 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     const input = tagsParser.getInputTag(interaction, contractId)?.value;
     const parsedInput = JSON.parse(input);
 
-    let evolve: string | null;
-    if (parsedInput.value) {
-      evolve = parsedInput.value
-    } else {
-      evolve = null;
-    }
-
     const functionName = parseFunctionName(input, logger);
+
+    let evolve: string | null;
+
+    evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
     const internalWrites = tagsParser.getInteractWritesContracts(interaction);
 

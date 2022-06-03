@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { connect } from '../src/db/connect';
+import { isTxIdValid } from '../src/utils';
 
 async function updateDb() {
   require('dotenv').config({
@@ -10,9 +11,9 @@ async function updateDb() {
 
   const result: any = await db.raw(
     `
-        SELECT INTERACTION_ID, INPUT 
-        FROM INTERACTIONS 
-        WHERE FUNCTION = 'evolve';
+        SELECT interaction_id, input 
+        FROM interactions 
+        WHERE function = 'evolve';
       `
   );
 
@@ -23,7 +24,7 @@ async function updateDb() {
   for (const r of result.rows) {
     const parsedInput = JSON.parse(r.input);
     let srcTxId: string;
-    if (parsedInput.value) {
+    if (parsedInput.value && isTxIdValid(parsedInput.value)) {
       srcTxId = parsedInput.value;
     } else {
       continue;
