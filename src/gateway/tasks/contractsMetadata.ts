@@ -81,7 +81,7 @@ async function loadContractsFromGql(context: GatewayContext) {
   }
 
   if (transactions.length === 0) {
-    logger.info("Now new contracts");
+    logger.info("No new contracts");
     return;
   }
 
