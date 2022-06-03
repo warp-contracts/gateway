@@ -13,3 +13,8 @@ export function readJSON(path: string): JWKInterface {
     throw new Error(`File "${path}" does not contain a valid JSON`);
   }
 }
+
+export function isTxIdValid(txId: string): boolean {
+  const validTxIdRegex = /[a-z0-9_-]{43}/i;
+  return validTxIdRegex.test(txId);
+}
