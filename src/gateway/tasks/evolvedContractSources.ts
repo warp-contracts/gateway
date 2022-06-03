@@ -1,16 +1,16 @@
 import { ContractDefinitionLoader, ContractSource } from "redstone-smartweave";
-import {GatewayContext} from "../init";
+import { GatewayContext } from "../init";
 import { TaskRunner } from "./TaskRunner";
 
 const CONTRACTS_SOURCE_INTERVAL_MS = 10000;
 
-export async function runEvolvedContractsSourceTask(context: GatewayContext) {
+export async function runEvolvedContractSourcesTask(context: GatewayContext) {
   await TaskRunner
-    .from("[evolved contracts source]", loadEvolvedContractsSource, context)
+    .from("[evolved contract sources]", loadEvolvedContractSources, context)
     .runSyncEvery(CONTRACTS_SOURCE_INTERVAL_MS);
 }
 
-async function loadEvolvedContractsSource (context: GatewayContext) {
+async function loadEvolvedContractSources (context: GatewayContext) {
   const {logger, gatewayDb, arweaveWrapper, arweave} = context;
   const definitionLoader = new ContractDefinitionLoader(arweave);
   

@@ -8,7 +8,7 @@ import {
 } from "./tasks/syncTransactions";
 import {GatewayContext} from "./init";
 import {runContractsMetadataTask, runLoadContractsFromGqlTask} from "./tasks/contractsMetadata";
-import {runEvolvedContractsSourceTask} from './tasks/evolvedContractSources';
+import {runEvolvedContractSourcesTask} from './tasks/evolvedContractSources';
 
 
 /**
@@ -56,5 +56,5 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   await runContractsMetadataTask(context);
 
-  await runEvolvedContractsSourceTask(context);
+  await runEvolvedContractSourcesTask(context);
 }
