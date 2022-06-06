@@ -65,7 +65,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
       `, contractId
     );
 
-    const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
+    const total = result?.rows?.length > 0 ? parseInt(result?.rows[0].total) : 0;
 
     const benchmark = Benchmark.measure();
     ctx.body = {
