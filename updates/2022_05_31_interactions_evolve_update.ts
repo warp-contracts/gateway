@@ -4,7 +4,7 @@ import { isTxIdValid } from '../src/utils';
 
 async function updateDb() {
   require('dotenv').config({
-    path: '.secrets/local.env',
+    path: '.secrets/local-testnet.env',
   });
 
   const db = connect();

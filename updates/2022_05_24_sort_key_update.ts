@@ -5,7 +5,7 @@ import {LexicographicalInteractionsSorter} from "redstone-smartweave";
 
 async function updateDb() {
   require("dotenv").config({
-    path: '.secrets/local.env'
+    path: '.secrets/local-testnet.env'
   });
 
   const db = connect();

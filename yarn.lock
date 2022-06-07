@@ -5268,10 +5268,10 @@ redstone-isomorphic@^1.1.0:
     safe-buffer "^5.1.2"
     undici "^4.15.1"
 
-redstone-smartweave@0.5.3:
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.5.3.tgz#0798f11ae0ff6f0d7fe5dd53c4d06589555b1379"
-  integrity sha512-XXiXO/xUzVfAs20BQx4h502HquHMZm9VYYVZrMEIMJ7pGFf79GL0UcuO93PgQsM7hY+TrGqY3uaEbCe61otoDw==
+redstone-smartweave@0.5.9:
+  version "0.5.9"
+  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.5.9.tgz#3a77d96d7f2031ac64d5d3f6736dccd8dda18407"
+  integrity sha512-jb7yFKwRiXjmrRgh1PTzyFpqF8IL6DZhGDagISm9eRAxEwid6jIKLAH3Aa611HCWZPyyTve5JGt3C6X+HuHJLg==
   dependencies:
     "@assemblyscript/loader" "^0.19.23"
     "@idena/vrf-js" "^1.0.1"
