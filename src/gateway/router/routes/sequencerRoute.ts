@@ -10,6 +10,7 @@ import {gzip} from "zlib";
 import Bundlr from "@bundlr-network/client";
 import {BlockData} from "arweave/node/blocks";
 import {VRF} from "../../init";
+import { isTxIdValid } from "../../../utils";
 
 const {Evaluate} = require('@idena/vrf-js');
 
@@ -66,6 +67,11 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     // TODO: add fallback to other bundlr nodes.
     const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, sLogger);
 
+    const parsedInput = JSON.parse(inputTag);
+    const functionName = parseFunctionName(inputTag, sLogger);
+    let evolve: string | null;
+    evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
+
     const interaction = createInteraction(
       transaction,
       originalAddress,
@@ -99,14 +105,15 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
           block_height: currentHeight,
           block_id: currentBlockId,
           contract_id: contractTag,
-          function: parseFunctionName(inputTag, sLogger),
+          function: functionName,
           input: inputTag,
           confirmation_status: "confirmed",
           confirming_peer: "https://node1.bundlr.network",
           source: "redstone-sequencer",
           bundler_tx_id: bTx.id,
           interact_write: internalWrites,
-          sort_key: sortKey
+          sort_key: sortKey,
+          evolve: evolve
         })
     ]);
 
