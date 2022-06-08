@@ -17,7 +17,7 @@ const gatewayRouter = new Router({prefix: '/gateway'});
 
 // get
 gatewayRouter.get("/contracts", contractsRoute);
-gatewayRouter.get("/contracts/:id", contractRoute);
+gatewayRouter.get("/contract", contractRoute);
 gatewayRouter.get("/contracts-safe", safeContractsRoute);
 gatewayRouter.get("/search/:phrase", searchRoute);
 // separate "transactionId" route to make caching in cloudfront possible
