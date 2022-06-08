@@ -77,9 +77,9 @@ The RedStone Gateway consists of three main tasks:
    - Only if we get TX_CONFIRMATION_SUCCESSFUL_ROUNDS within TX_CONFIRMATION_MAX_ROUNDS AND response for the given
      transaction is the same for all the successful rounds - the "confirmation" info for a given transaction is updated in the database.
 
-4. Load Evolved Contract Sources Task - loads all the contracts sources which have been indicated in 'evolve' interaction and are not yet indexed in gateway.
-
 ![confirmm interactions task](./docs/conf_task.png)
+
+4. Load Evolved Contract Sources Task - loads all the contracts sources which have been indicated in 'evolve' interaction and are not yet indexed in gateway.
 
 ### Benchmarks
 
