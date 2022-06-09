@@ -1,28 +1,36 @@
 import Router from "@koa/router";
 import {Benchmark} from "redstone-smartweave";
+import { isTxIdValid } from "../../../utils";
 
-/**
- * @deprecated Following route has been replaced with `contractWithSourceRoute` and is not used in the SDK
- * anymore. It should be deleted in the future, leaving due to backwards compatibility of the introduction of 
- * the new endpoint.
- */
-
-export async function contractRoute(ctx: Router.RouterContext) {
+export async function contractWithSourceRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb} = ctx;
 
-  const {id} = ctx.params;
+  const {txId, srcTxId} = ctx.query;
 
-  if (id?.length != 43) {
-    ctx.body = {};
+  if (!isTxIdValid(txId as string)) {
+    logger.error("Incorrect contract transaction id.");
+    ctx.status = 500;
+    ctx.body = {message: "Incorrect contract transaction id."};
     return;
   }
+
+  if (srcTxId && !isTxIdValid(srcTxId as string)) {
+    logger.error("Incorrect contract source transaction id.");
+    ctx.status = 500;
+    ctx.body = {message: "Incorrect contract source transaction id."};
+    return;
+  }
+
+  const bindings: any[] = [];
+  srcTxId && bindings.push(srcTxId);
+  bindings.push(txId);
 
   try {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
           SELECT c.contract_id                                                                     as "txId",
-                 c.src_tx_id                                                                       as "srcTxId",
+                 s.src_tx_id                                                                       as "srcTxId",
                  (case when s.src_content_type = 'application/javascript' then s.src else null end)  as src,
                  (case when s.src_content_type = 'application/wasm' then s.src_binary else null end) as "srcBinary",
                  c.init_state                                                                      as "initState",
@@ -33,9 +41,9 @@ export async function contractRoute(ctx: Router.RouterContext) {
                  c.contract_tx                                                                     as "contractTx",
                  s.src_tx                                                                          as "srcTx"
           FROM contracts c 
-          JOIN contracts_src s on c.src_tx_id = s.src_tx_id
+          ${srcTxId ? 'JOIN contracts_src s on ? = s.src_tx_id' : 'JOIN contracts_src s on c.src_tx_id = s.src_tx_id'}
           WHERE contract_id = ?;
-      `, [id]
+      `, bindings
     );
 
     if (result?.rows[0].src == null && result?.rows[0].srcBinary == null) {
