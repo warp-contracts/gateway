@@ -4,6 +4,7 @@ import fs from "fs";
 import {TaskRunner} from "../gateway/tasks/TaskRunner";
 import {GatewayContext} from "../gateway/init";
 import {JWKInterface} from "arweave/node/lib/wallet";
+import { BUNDLR_NODE2_URL } from "../constants";
 
 const BUNDLR_CHECK_INTERVAL = 3600000;
 
@@ -15,7 +16,7 @@ export async function runBundlrCheck(context: GatewayContext) {
 
 export function initBundlr(logger: RedStoneLogger): { bundlr: Bundlr, jwk: JWKInterface } {
   const jwk = JSON.parse(fs.readFileSync(".secrets/warp-wallet-jwk.json").toString());
-  const bundlr = new Bundlr("https://node1.bundlr.network/", "arweave", jwk, {
+  const bundlr = new Bundlr(BUNDLR_NODE2_URL, "arweave", jwk, {
     timeout: 5000
   });
   logger.info("Running bundlr on", {

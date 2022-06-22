@@ -7,6 +7,7 @@ import {gzip} from "zlib";
 import Bundlr from "@bundlr-network/client";
 import {evalType} from "../../tasks/contractsMetadata";
 import {getCachedNetworkData} from "../../tasks/networkInfoCache";
+import {BUNDLR_NODE2_URL} from '../../../constants';
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr} = ctx;
@@ -73,7 +74,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
       contract_tx: {...contractTx.toJSON(), data: null},
       bundler_contract_tx_id: bundlerContractTx.id,
-      bundler_contract_node: "https://node1.bundlr.network",
+      bundler_contract_node: BUNDLR_NODE2_URL,
     };
 
     await gatewayDb("contracts")
@@ -87,7 +88,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         src_binary: srcBinary || null,
         src_wasm_lang: srcWasmLang || null,
         bundler_src_tx_id: bundlerSrcTxId,
-        bundler_src_node: "https://node1.bundlr.network",
+        bundler_src_node: BUNDLR_NODE2_URL,
         src_tx: {...srcTx.toJSON(), data: null},
       }
 
@@ -138,7 +139,7 @@ function prepareTags(
     {name: "Uploader-Contract-Owner", value: originalAddress},
     {name: "Uploader-Tx-Id", value: transaction.id},
     {name: "Uploader-Compression", value: "gzip"},
-    {name: "Uploader-Bundler", value: "https://node1.bundlr.network"},
+    {name: "Uploader-Bundler", value: BUNDLR_NODE2_URL},
     ...decodedTags
   ];
 
