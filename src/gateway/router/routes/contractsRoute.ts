@@ -1,14 +1,14 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
 
 const MAX_CONTRACTS_PER_PAGE = 100;
 
 export async function contractsRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {contractType, sourceType, page, limit} = ctx.query;
+  const { contractType, sourceType, page, limit } = ctx.query;
 
-  logger.debug("Contracts route", {contractType, sourceType, page, limit});
+  logger.debug('Contracts route', { contractType, sourceType, page, limit });
 
   const parsedPage = page ? parseInt(page as string) : 1;
   const parsedLimit = limit ? Math.min(parseInt(limit as string), MAX_CONTRACTS_PER_PAGE) : MAX_CONTRACTS_PER_PAGE;
@@ -42,10 +42,15 @@ export async function contractsRoute(ctx: Router.RouterContext) {
                    LEFT JOIN contracts_src s
                              ON c.src_tx_id = s.src_tx_id
           WHERE c.contract_id != ''
-            AND c.type != 'error' ${contractType ? 'AND c.type = ?' : ''} ${sourceType ? `AND s.src_content_type = ?` : ''}
+            AND c.type != 'error' ${contractType ? 'AND c.type = ?' : ''} ${
+        sourceType ? `AND s.src_content_type = ?` : ''
+      }
           GROUP BY c.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name, s.src_content_type, s.src_wasm_lang
-          ORDER BY last_interaction_height DESC NULLS LAST, interactions DESC NULLS LAST ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
-      `, bindings
+          ORDER BY last_interaction_height DESC NULLS LAST, interactions DESC NULLS LAST ${
+            parsedPage ? ' LIMIT ? OFFSET ?' : ''
+          };
+      `,
+      bindings
     );
 
     const total = result?.rows?.length > 0 ? parseInt(result.rows[0].total) : 0;
@@ -55,14 +60,14 @@ export async function contractsRoute(ctx: Router.RouterContext) {
         limit: parsedLimit,
         items: result?.rows.length,
         page: parsedPage,
-        pages: Math.ceil(total / parsedLimit)
+        pages: Math.ceil(total / parsedLimit),
       },
-      contracts: result?.rows
+      contracts: result?.rows,
     };
-    logger.debug("Contracts loaded in", benchmark.elapsed());
+    logger.debug('Contracts loaded in', benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

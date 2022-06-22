@@ -1,23 +1,23 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
-import { isTxIdValid } from "../../../utils";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
+import { isTxIdValid } from '../../../utils';
 
 export async function contractWithSourceRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {txId, srcTxId} = ctx.query;
+  const { txId, srcTxId } = ctx.query;
 
   if (!isTxIdValid(txId as string)) {
-    logger.error("Incorrect contract transaction id.");
+    logger.error('Incorrect contract transaction id.');
     ctx.status = 500;
-    ctx.body = {message: "Incorrect contract transaction id."};
+    ctx.body = { message: 'Incorrect contract transaction id.' };
     return;
   }
 
   if (srcTxId && !isTxIdValid(srcTxId as string)) {
-    logger.error("Incorrect contract source transaction id.");
+    logger.error('Incorrect contract source transaction id.');
     ctx.status = 500;
-    ctx.body = {message: "Incorrect contract source transaction id."};
+    ctx.body = { message: 'Incorrect contract source transaction id.' };
     return;
   }
 
@@ -43,19 +43,20 @@ export async function contractWithSourceRoute(ctx: Router.RouterContext) {
           FROM contracts c 
           ${srcTxId ? 'JOIN contracts_src s on ? = s.src_tx_id' : 'JOIN contracts_src s on c.src_tx_id = s.src_tx_id'}
           WHERE contract_id = ?;
-      `, bindings
+      `,
+      bindings
     );
 
     if (result?.rows[0].src == null && result?.rows[0].srcBinary == null) {
       ctx.status = 500;
-      ctx.body = {message: "Contract not properly indexed."};
+      ctx.body = { message: 'Contract not properly indexed.' };
     } else {
       ctx.body = result?.rows[0];
-      logger.debug("Contract data loaded in", benchmark.elapsed());
+      logger.debug('Contract data loaded in', benchmark.elapsed());
     }
   } catch (e: any) {
     logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

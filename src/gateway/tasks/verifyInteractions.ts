@@ -1,6 +1,6 @@
-import axios from "axios";
-import {TaskRunner} from "./TaskRunner";
-import {GatewayContext} from "../init";
+import axios from 'axios';
+import { TaskRunner } from './TaskRunner';
+import { GatewayContext } from '../init';
 
 export const MIN_CONFIRMATIONS = 10;
 const PARALLEL_REQUESTS = 10;
@@ -19,63 +19,62 @@ type ConfirmationRoundResult = {
 }[];
 
 export async function runVerifyInteractionsTask(context: GatewayContext) {
-  await TaskRunner
-    .from("[verify interactions]", verifyInteractions, context)
-    .runSyncEvery(CONFIRMATIONS_INTERVAL_MS);
+  await TaskRunner.from('[verify interactions]', verifyInteractions, context).runSyncEvery(CONFIRMATIONS_INTERVAL_MS);
 }
 
 async function verifyInteractions(context: GatewayContext) {
-  const {logger, gatewayDb, arweaveWrapper} = context;
+  const { logger, gatewayDb, arweaveWrapper } = context;
 
   let currentNetworkHeight;
   try {
     currentNetworkHeight = (await arweaveWrapper.info()).height as number;
   } catch (e: any) {
-    logger.error("Error from Arweave", e.message);
+    logger.error('Error from Arweave', e.message);
     return;
   }
 
   const safeNetworkHeight = currentNetworkHeight - MIN_CONFIRMATIONS;
-  logger.debug("Verify confirmations params:", {
+  logger.debug('Verify confirmations params:', {
     currentNetworkHeight,
     safeNetworkHeight,
-    lastVerificationHeight
+    lastVerificationHeight,
   });
 
   // note: as the "status" endpoint for arweave.net sometime returns 504 - Bad Gateway for corrupted transactions,
   // we need to ask peers directly...
   // https://discord.com/channels/357957786904166400/812013044892172319/917819482787958806
   // only 7 nodes are currently fully synced, duh...
-  let peers: { peer: string; }[];
+  let peers: { peer: string }[];
   try {
-    peers = (await gatewayDb.raw(`
+    peers = (
+      await gatewayDb.raw(`
         SELECT peer
         FROM peers
         WHERE height > 0
           AND blacklisted = false
         ORDER BY height - blocks ASC, response_time ASC
         LIMIT ${PARALLEL_REQUESTS};
-    `)).rows;
+    `)
+    ).rows;
   } catch (e: any) {
     logger.error('Error while fetching peers', e.message);
     return;
   }
 
   if (peers.length < PARALLEL_REQUESTS) {
-    logger.warn("Arweave peers not loaded yet.");
+    logger.warn('Arweave peers not loaded yet.');
     return;
   }
-
 
   // note:
   // 1. excluding Kyve contracts, as they moved to Moonbeam (and their contracts have the most interactions)
   // 2. excluding Koi contracts (well, those with the most interactions, as there are dozens of Koi contracts)
   // - as they're using their own infrastructure and probably won't be interested in using this solution.
   // TODO: make this list configurable.
-  let interactionsToCheck: { block_height: number; interaction_id: string }[]
+  let interactionsToCheck: { block_height: number; interaction_id: string }[];
   try {
-    interactionsToCheck =
-      (await gatewayDb.raw(
+    interactionsToCheck = (
+      await gatewayDb.raw(
         `
             SELECT block_height, interaction_id
             FROM interactions
@@ -99,14 +98,15 @@ async function verifyInteractions(context: GatewayContext) {
             ORDER BY block_height ASC
             LIMIT ?;`,
         [MIN_CONFIRMATIONS, lastVerificationHeight, PARALLEL_REQUESTS]
-      )).rows;
+      )
+    ).rows;
   } catch (e: any) {
-    logger.error("Error while fetching interactions", e.message);
+    logger.error('Error while fetching interactions', e.message);
     return;
   }
 
   if (interactionsToCheck === undefined || interactionsToCheck.length === 0) {
-    logger.info("No new interactions to confirm.");
+    logger.info('No new interactions to confirm.');
     // just in case - search for the non-confirmed interactions from the beginning in the next round
     lastVerificationHeight = 0;
     return;
@@ -116,7 +116,9 @@ async function verifyInteractions(context: GatewayContext) {
 
   lastVerificationHeight = [...interactionsToCheck].pop()?.block_height || lastVerificationHeight;
 
-  logger.debug(`Checking ${interactionsToCheck.length} interactions from height ${interactionsToCheck[0].block_height}.`);
+  logger.debug(
+    `Checking ${interactionsToCheck.length} interactions from height ${interactionsToCheck[0].block_height}.`
+  );
 
   let statusesRounds: ConfirmationRoundResult[] = Array<ConfirmationRoundResult>(TX_CONFIRMATION_SUCCESSFUL_ROUNDS);
   let successfulRounds = 0;
@@ -125,13 +127,12 @@ async function verifyInteractions(context: GatewayContext) {
   // we need to make sure that each interaction in each round will be checked by a different peer.
   // - that's why we keep the peers registry per interaction
   const interactionsPeers = new Map<string, { peer: string }[]>();
-  interactionsToCheck.forEach(i => {
+  interactionsToCheck.forEach((i) => {
     interactionsPeers.set(i.interaction_id, [...peers]);
   });
 
   // at some point we could probably generify the snowball and use it here to ask multiple peers.
   while (successfulRounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS && rounds < TX_CONFIRMATION_MAX_ROUNDS) {
-
     // too many rounds have already failed and there's no chance to get the minimal successful rounds...
     if (successfulRounds + TX_CONFIRMATION_MAX_ROUNDS - rounds < TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
       logger.warn("There's no point in trying, exiting..");
@@ -147,7 +148,7 @@ async function verifyInteractions(context: GatewayContext) {
       const statuses = await Promise.race([
         new Promise<any[]>(function (resolve, reject) {
           setTimeout(
-            () => reject("Status query timeout, better luck next time..."),
+            () => reject('Status query timeout, better luck next time...'),
             TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS
           );
         }),
@@ -164,44 +165,46 @@ async function verifyInteractions(context: GatewayContext) {
 
             return axios.get(`${randomPeerUrl}/tx/${tx.interaction_id}/status`);
           })
-        )
+        ),
       ]);
 
       // verifying responses from peers
       for (let i = 0; i < statuses.length; i++) {
         const statusResponse = statuses[i];
         const txId = interactionsToCheck[i].interaction_id;
-        if (statusResponse.status === "rejected") {
+        if (statusResponse.status === 'rejected') {
           // interaction is (probably) corrupted
           if (statusResponse.reason.response?.status === 404) {
             logger.warn(`Interaction ${txId} on ${statusResponse.reason.request.host} not found.`);
             roundResult.push({
               txId: txId,
               peer: statusResponse.reason.request.host,
-              result: "corrupted",
+              result: 'corrupted',
               confirmations: 0,
             });
           } else {
             // no proper response from peer (eg. 500)
             // TODO: consider blacklisting such peer (after returning error X times?) 'till next peersCheckLoop
-            logger.error(`Query for ${txId} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`);
+            logger.error(
+              `Query for ${txId} to ${statusResponse.reason?.request?.host} rejected. ${statusResponse.reason}.`
+            );
             roundResult.push({
               txId: txId,
               peer: statusResponse.reason?.request?.host,
-              result: "error",
+              result: 'error',
               confirmations: 0,
             });
           }
         } else {
           // transaction confirmed by given peer
-          const confirmations = parseInt(statusResponse.value.data["number_of_confirmations"]);
+          const confirmations = parseInt(statusResponse.value.data['number_of_confirmations']);
           logger.trace(`Confirmed ${txId} with ${confirmations}`);
 
           roundResult.push({
             txId: txId,
             peer: statusResponse.value.request.host,
             result: confirmations >= MIN_CONFIRMATIONS ? 'confirmed' : 'forked',
-            confirmations: statusResponse.value.data["number_of_confirmations"],
+            confirmations: statusResponse.value.data['number_of_confirmations'],
           });
         }
       }
@@ -216,10 +219,11 @@ async function verifyInteractions(context: GatewayContext) {
 
   if (successfulRounds != TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
     logger.warn(
-      `Transactions verification was not successful, successful rounds ${successfulRounds}, required successful rounds ${TX_CONFIRMATION_SUCCESSFUL_ROUNDS}`);
+      `Transactions verification was not successful, successful rounds ${successfulRounds}, required successful rounds ${TX_CONFIRMATION_SUCCESSFUL_ROUNDS}`
+    );
     lastVerificationHeight = prevVerificationHeight;
   } else {
-    logger.info("Verifying rounds");
+    logger.info('Verifying rounds');
 
     // sanity check...whether all rounds have the same amount of interactions checked.
     for (let i = 0; i < statusesRounds.length; i++) {
@@ -249,12 +253,12 @@ async function verifyInteractions(context: GatewayContext) {
           confirmingPeers.push(statusesRounds[j][i].peer);
           confirmations.push(statusesRounds[j][i].confirmations);
         } else {
-          logger.warn("Different response from peers for", {
+          logger.warn('Different response from peers for', {
             current_peer: statusesRounds[j][i],
             // note: j - 1 is safe here, because in this branch j >= 1
             // - if the status is different, than it means we're checking at least
             // second round for the given transaction
-            prev_peer: statusesRounds[j - 1][i]
+            prev_peer: statusesRounds[j - 1][i],
           });
           break;
         }
@@ -263,17 +267,17 @@ async function verifyInteractions(context: GatewayContext) {
       if (sameStatusOccurrence === TX_CONFIRMATION_SUCCESSFUL_ROUNDS) {
         // sanity check...
         if (status === null) {
-          logger.error("WTF? Status should not be null!");
+          logger.error('WTF? Status should not be null!');
           continue;
         }
         try {
-          logger.trace("Updating confirmation status in db");
-          await gatewayDb("interactions")
-            .where("interaction_id", interactionsToCheck[i].interaction_id)
+          logger.trace('Updating confirmation status in db');
+          await gatewayDb('interactions')
+            .where('interaction_id', interactionsToCheck[i].interaction_id)
             .update({
               confirmation_status: status,
-              confirming_peer: confirmingPeers.join(","),
-              confirmations: confirmations.join(","),
+              confirming_peer: confirmingPeers.join(','),
+              confirmations: confirmations.join(','),
             });
         } catch (e) {
           logger.error(e);
@@ -283,5 +287,5 @@ async function verifyInteractions(context: GatewayContext) {
     }
   }
 
-  logger.info("Transactions confirmation done.");
+  logger.info('Transactions confirmation done.');
 }

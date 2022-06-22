@@ -1,30 +1,29 @@
-import Router from "@koa/router";
-import Transaction from "arweave/node/lib/transaction";
-import Arweave from "arweave";
-import {GQLTagInterface, SmartWeaveTags} from "redstone-smartweave";
-import util from "util";
-import {gzip} from "zlib";
-import Bundlr from "@bundlr-network/client";
-import {evalType} from "../../tasks/contractsMetadata";
-import {getCachedNetworkData} from "../../tasks/networkInfoCache";
-import {BUNDLR_NODE2_URL} from '../../../constants';
+import Router from '@koa/router';
+import Transaction from 'arweave/node/lib/transaction';
+import Arweave from 'arweave';
+import { GQLTagInterface, SmartWeaveTags } from 'redstone-smartweave';
+import util from 'util';
+import { gzip } from 'zlib';
+import Bundlr from '@bundlr-network/client';
+import { evalType } from '../../tasks/contractsMetadata';
+import { getCachedNetworkData } from '../../tasks/networkInfoCache';
+import { BUNDLR_NODE2_URL } from '../../../constants';
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr} = ctx;
+  const { logger, gatewayDb, arweave, bundlr } = ctx;
 
-  const contractTx: Transaction = new Transaction({...ctx.request.body.contractTx});
+  const contractTx: Transaction = new Transaction({ ...ctx.request.body.contractTx });
   let srcTx: Transaction | null = null;
   if (ctx.request.body.srcTx) {
-    srcTx = new Transaction({...ctx.request.body.srcTx});
+    srcTx = new Transaction({ ...ctx.request.body.srcTx });
   }
-  logger.debug("New deploy contract transaction", contractTx.id);
+  logger.debug('New deploy contract transaction', contractTx.id);
 
   const originalOwner = contractTx.owner;
   const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
   const contractTags = prepareTags(contractTx, originalAddress);
 
   try {
-
     let srcTxId, srcContentType, src, srcBinary, srcWasmLang, bundlerSrcTxId;
 
     if (srcTx) {
@@ -39,20 +38,19 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       }
       const response = await uploadToBundlr(srcTx, bundlr, srcTags);
       bundlerSrcTxId = response.bTx.id;
-      logger.debug("Src Tx successfully bundled", {
+      logger.debug('Src Tx successfully bundled', {
         id: srcTxId,
-        bundled_tx_id: bundlerSrcTxId
+        bundled_tx_id: bundlerSrcTxId,
       });
-
     } else {
       srcTxId = tagValue(SmartWeaveTags.CONTRACT_SRC_TX_ID, contractTags);
       // maybe ad some sanity check here - whether the src is already indexed by the gateway?
     }
 
-    const {bTx: bundlerContractTx} = await uploadToBundlr(contractTx, bundlr, contractTags);
-    logger.debug("Contract Tx successfully bundled", {
+    const { bTx: bundlerContractTx } = await uploadToBundlr(contractTx, bundlr, contractTags);
+    logger.debug('Contract Tx successfully bundled', {
       id: contractTx.id,
-      bundled_tx_id: bundlerContractTx.id
+      bundled_tx_id: bundlerContractTx.id,
     });
 
     let initStateRaw = tagValue(SmartWeaveTags.INIT_STATE, contractTags);
@@ -72,13 +70,12 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       pst_name: type == 'pst' ? initState?.name : null,
       block_height: getCachedNetworkData().cachedNetworkInfo.height,
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
-      contract_tx: {...contractTx.toJSON(), data: null},
+      contract_tx: { ...contractTx.toJSON(), data: null },
       bundler_contract_tx_id: bundlerContractTx.id,
       bundler_contract_node: BUNDLR_NODE2_URL,
     };
 
-    await gatewayDb("contracts")
-      .insert(insert);
+    await gatewayDb('contracts').insert(insert);
 
     if (srcTx) {
       let contracts_src_insert: any = {
@@ -89,58 +86,52 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         src_wasm_lang: srcWasmLang || null,
         bundler_src_tx_id: bundlerSrcTxId,
         bundler_src_node: BUNDLR_NODE2_URL,
-        src_tx: {...srcTx.toJSON(), data: null},
-      }
+        src_tx: { ...srcTx.toJSON(), data: null },
+      };
 
-      await gatewayDb("contracts_src")
-        .insert(contracts_src_insert)
-        .onConflict("src_tx_id")
-        .ignore();
+      await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    logger.info("Contract successfully bundled.");
+    logger.info('Contract successfully bundled.');
 
     ctx.body = {
       contractId: contractTx.id,
       bundleContractId: bundlerContractTx.id,
       srcTxId: srcTxId,
-      bundleSrcId: bundlerSrcTxId
-    }
+      bundleSrcId: bundlerSrcTxId,
+    };
   } catch (e) {
-    logger.error("Error while inserting bundled transaction");
+    logger.error('Error while inserting bundled transaction');
     logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }
 
 function tagValue(name: string, tags: GQLTagInterface[]): string | undefined {
-  const tag = tags.find(t => t.name == name);
+  const tag = tags.find((t) => t.name == name);
   return tag?.value;
 }
 
-function prepareTags(
-  transaction: Transaction,
-  originalAddress: string): GQLTagInterface[] {
-
+function prepareTags(transaction: Transaction, originalAddress: string): GQLTagInterface[] {
   const decodedTags: GQLTagInterface[] = [];
 
-  transaction.tags.forEach(tag => {
-    const key = tag.get('name', {decode: true, string: true});
-    const value = tag.get('value', {decode: true, string: true});
+  transaction.tags.forEach((tag) => {
+    const key = tag.get('name', { decode: true, string: true });
+    const value = tag.get('value', { decode: true, string: true });
     decodedTags.push({
       name: key,
-      value: value
+      value: value,
     });
   });
 
   const tags = [
-    {name: "Uploader", value: "RedStone"},
-    {name: "Uploader-Contract-Owner", value: originalAddress},
-    {name: "Uploader-Tx-Id", value: transaction.id},
-    {name: "Uploader-Compression", value: "gzip"},
-    {name: "Uploader-Bundler", value: BUNDLR_NODE2_URL},
-    ...decodedTags
+    { name: 'Uploader', value: 'RedStone' },
+    { name: 'Uploader-Contract-Owner', value: originalAddress },
+    { name: 'Uploader-Tx-Id', value: transaction.id },
+    { name: 'Uploader-Compression', value: 'gzip' },
+    { name: 'Uploader-Bundler', value: BUNDLR_NODE2_URL },
+    ...decodedTags,
   ];
 
   return tags;
@@ -154,15 +145,11 @@ async function compress(transaction: Transaction) {
   return gzippedData;
 }
 
-async function uploadToBundlr(
-  transaction: Transaction,
-  bundlr: Bundlr,
-  tags: GQLTagInterface[]) {
-
+async function uploadToBundlr(transaction: Transaction, bundlr: Bundlr, tags: GQLTagInterface[]) {
   const gzippedData = await compress(transaction);
-  const bTx = bundlr.createTransaction(gzippedData, {tags});
+  const bTx = bundlr.createTransaction(gzippedData, { tags });
   await bTx.sign();
   const bundlrResponse = await bTx.upload();
 
-  return {bTx, bundlrResponse};
+  return { bTx, bundlrResponse };
 }
