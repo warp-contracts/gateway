@@ -1,10 +1,10 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
 
 export async function interactionRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {id} = ctx.params;
+  const { id } = ctx.params;
 
   if (id?.length != 43) {
     ctx.body = {};
@@ -30,13 +30,14 @@ export async function interactionRoute(ctx: Router.RouterContext) {
                     sort_key as sortKey
              FROM interactions
              WHERE interaction_id = ?;
-      `, [id]
+      `,
+      [id]
     );
     ctx.body = result?.rows[0];
-    logger.debug("Contract data loaded in", benchmark.elapsed());
+    logger.debug('Contract data loaded in', benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

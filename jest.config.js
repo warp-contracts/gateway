@@ -1,16 +1,13 @@
 module.exports = {
   clearMocks: true,
 
-  moduleFileExtensions: ["ts", "js"],
+  moduleFileExtensions: ['ts', 'js'],
 
-  testEnvironment: "node",
+  testEnvironment: 'node',
 
-  "transformIgnorePatterns": [
-    "<rootDir>/node_modules/(?!@assemblyscript/.*)"
-  ],
-
+  transformIgnorePatterns: ['<rootDir>/node_modules/(?!@assemblyscript/.*)'],
 
   transform: {
-    '^.+\\.(ts|js)$': 'ts-jest'
-  }
+    '^.+\\.(ts|js)$': 'ts-jest',
+  },
 };

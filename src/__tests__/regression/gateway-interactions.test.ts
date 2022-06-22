@@ -8,7 +8,7 @@ import {
   GQLEdgeInterface,
   LoggerFactory,
   RedstoneGatewayInteractionsLoader,
-  SourceType
+  SourceType,
 } from 'redstone-smartweave';
 
 /* 
@@ -25,7 +25,7 @@ const arweave = Arweave.init({
   port: 443,
   protocol: 'https',
   timeout: 600000,
-  logging: false
+  logging: false,
 });
 
 LoggerFactory.INST.logLevel('fatal');
@@ -40,7 +40,11 @@ const testCases: string[] = JSON.parse(
 describe.each([750000, 775000, 800000, 825000, 850000])('testing for block height %d', (toBlockHeight) => {
   it('returns same amount of interactions for the same block height', async () => {
     console.log('toBlockHeight', toBlockHeight);
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance/', {}, SourceType.ARWEAVE);
+    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader(
+      'https://gateway.redstone.finance/',
+      {},
+      SourceType.ARWEAVE
+    );
     const arweaveInteractionsLoader = new ArweaveGatewayInteractionsLoader(arweave);
     const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
       'Daj-MNSnH55TDfxqC7v4eq0lKzVIwh98srUaWqyuZtY',
@@ -63,7 +67,11 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     const arweaveNetworkInfo = await arweave.network.getInfo();
     // testing for the more current block height to detect possible gw desynchronize issues
     const blockHeight = arweaveNetworkInfo.height - 20;
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance', {}, SourceType.ARWEAVE);
+    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader(
+      'https://gateway.redstone.finance',
+      {},
+      SourceType.ARWEAVE
+    );
     const arweaveInteractionsLoader = new ArweaveGatewayInteractionsLoader(arweave);
     const responseRedstoneInteractionsLoader: GQLEdgeInterface[] = await redstoneInteractionsLoader.load(
       contractTxId,
@@ -80,8 +88,7 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     expect(responseRedstoneInteractionsLoader.length).toEqual(responseArweaveInteractionsLoader.length);
 
     responseRedstoneInteractionsLoader.forEach((resRedstone, index) => {
-      const arTx =
-        responseArweaveInteractionsLoader.find((resArweave) => resArweave.node.id === resRedstone.node.id);
+      const arTx = responseArweaveInteractionsLoader.find((resArweave) => resArweave.node.id === resRedstone.node.id);
       if (arTx) {
         // these props are only added for redstone gateway
         arTx.node.bundledIn = resRedstone.node.bundledIn;
@@ -92,4 +99,3 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     });
   }, 600000);
 });
-

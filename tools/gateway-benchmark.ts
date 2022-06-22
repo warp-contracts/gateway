@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import Arweave from "arweave";
+import Arweave from 'arweave';
 import {
   ArweaveGatewayInteractionsLoader,
   DefaultEvaluationOptions,
@@ -8,10 +8,10 @@ import {
   RedstoneGatewayInteractionsLoader,
   Benchmark,
   EvaluationOptions,
-} from "redstone-smartweave";
-import { TsLogFactory } from "redstone-smartweave/lib/cjs/logging/node/TsLogFactory";
-import Table from "cli-table";
-import colors from "colors/safe";
+} from 'redstone-smartweave';
+import { TsLogFactory } from 'redstone-smartweave/lib/cjs/logging/node/TsLogFactory';
+import Table from 'cli-table';
+import colors from 'colors/safe';
 
 /*
 Script allows to benchmark loading interactions response time based on the given gateway
@@ -22,25 +22,19 @@ e.g yarn ts-node tools/gateway-benchmark.ts arweave Daj-MNSnH55TDfxqC7v4eq0lKzVI
 
 async function gatewayBenchmark() {
   const table = new Table({
-    head: [
-      "gateway",
-      "contractId",
-      "fromBlockHeight",
-      "toBlockHeight",
-      "timeSpent",
-    ],
+    head: ['gateway', 'contractId', 'fromBlockHeight', 'toBlockHeight', 'timeSpent'],
     colWidths: [10, 50, 20, 20, 20],
   });
 
   const arweave = Arweave.init({
-    host: "arweave.net",
+    host: 'arweave.net',
     port: 443,
-    protocol: "https",
+    protocol: 'https',
     logging: false,
   });
 
   LoggerFactory.use(new TsLogFactory());
-  LoggerFactory.INST.logLevel("debug");
+  LoggerFactory.INST.logLevel('debug');
 
   const gateway = process.argv[2];
   const contractId = process.argv[3];
@@ -48,13 +42,11 @@ async function gatewayBenchmark() {
   const toBlockHeight = process.argv[5];
 
   const loader =
-    gateway == "arweave"
+    gateway == 'arweave'
       ? new ArweaveGatewayInteractionsLoader(arweave)
-      : new RedstoneGatewayInteractionsLoader(
-          "https://gateway.redstone.finance"
-        );
+      : new RedstoneGatewayInteractionsLoader('https://gateway.redstone.finance');
 
-  const options = gateway == "arweave" ? new DefaultEvaluationOptions() : null;
+  const options = gateway == 'arweave' ? new DefaultEvaluationOptions() : null;
 
   const benchmark = Benchmark.measure();
 
@@ -67,15 +59,7 @@ async function gatewayBenchmark() {
 
   const timeSpent = benchmark.elapsed();
 
-  table.push(
-    [
-      gateway,
-      contractId,
-      fromBlockHeight,
-      toBlockHeight,
-      timeSpent.toString(),
-    ].map((el) => colors.blue(el))
-  );
+  table.push([gateway, contractId, fromBlockHeight, toBlockHeight, timeSpent.toString()].map((el) => colors.blue(el)));
 
   console.log(table.toString());
 }

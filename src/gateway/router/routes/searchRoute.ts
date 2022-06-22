@@ -1,10 +1,10 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
 
 export async function searchRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {phrase} = ctx.params;
+  const { phrase } = ctx.params;
 
   if (phrase?.length < 3) {
     ctx.body = [];
@@ -29,13 +29,14 @@ export async function searchRoute(ctx: Router.RouterContext) {
           WHERE interaction_id ILIKE ?
           ORDER BY sort_order
           LIMIT 30;
-      `, [`${phrase}%`, `${phrase}%`, `${phrase}%`, `${phrase}%`]
+      `,
+      [`${phrase}%`, `${phrase}%`, `${phrase}%`, `${phrase}%`]
     );
     ctx.body = result?.rows;
-    logger.debug("Contracts loaded in", benchmark.elapsed());
+    logger.debug('Contracts loaded in', benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

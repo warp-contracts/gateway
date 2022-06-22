@@ -1,16 +1,16 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
 
 /**
  * @deprecated Following route has been replaced with `contractWithSourceRoute` and is not used in the SDK
- * anymore. It should be deleted in the future, leaving due to backwards compatibility of the introduction of 
+ * anymore. It should be deleted in the future, leaving due to backwards compatibility of the introduction of
  * the new endpoint.
  */
 
 export async function contractRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {id} = ctx.params;
+  const { id } = ctx.params;
 
   if (id?.length != 43) {
     ctx.body = {};
@@ -35,19 +35,20 @@ export async function contractRoute(ctx: Router.RouterContext) {
           FROM contracts c 
           JOIN contracts_src s on c.src_tx_id = s.src_tx_id
           WHERE contract_id = ?;
-      `, [id]
+      `,
+      [id]
     );
 
     if (result?.rows[0].src == null && result?.rows[0].srcBinary == null) {
       ctx.status = 500;
-      ctx.body = {message: "Contract not properly indexed."};
+      ctx.body = { message: 'Contract not properly indexed.' };
     } else {
       ctx.body = result?.rows[0];
-      logger.debug("Contract data loaded in", benchmark.elapsed());
+      logger.debug('Contract data loaded in', benchmark.elapsed());
     }
   } catch (e: any) {
     logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

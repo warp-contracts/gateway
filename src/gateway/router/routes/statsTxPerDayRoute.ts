@@ -1,10 +1,10 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
 
 export async function statsTxPerDayRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {phrase} = ctx.params;
+  const { phrase } = ctx.params;
 
   if (phrase?.length < 3) {
     ctx.body = [];
@@ -25,10 +25,10 @@ export async function statsTxPerDayRoute(ctx: Router.RouterContext) {
       `
     );
     ctx.body = result?.rows;
-    logger.debug("Stats loaded in", benchmark.elapsed());
+    logger.debug('Stats loaded in', benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }
