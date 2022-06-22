@@ -1,6 +1,6 @@
-import {GatewayContext} from "./gateway/init";
-import {Benchmark, GQLEdgeInterface, GQLResultInterface, GQLTransactionsResultInterface} from "redstone-smartweave";
-import {sleep} from "./utils";
+import { GatewayContext } from './gateway/init';
+import { Benchmark, GQLEdgeInterface, GQLResultInterface, GQLTransactionsResultInterface } from 'redstone-smartweave';
+import { sleep } from './utils';
 
 export const MAX_GQL_REQUEST = 100;
 const GQL_RETRY_MS = 30 * 1000;
@@ -26,16 +26,10 @@ function filterBundles(tx: GQLEdgeInterface) {
   return !tx.node.parent?.id && !tx.node.bundledIn?.id;
 }
 
-export async function loadPages(
-  context: GatewayContext,
-  query: string,
-  variables: ReqVariables
-) {
+export async function loadPages(context: GatewayContext, query: string, variables: ReqVariables) {
   let transactions = await getNextPage(context, query, variables);
 
-  const txInfos: GQLEdgeInterface[] = transactions.edges.filter(
-    (tx) => filterBundles(tx)
-  );
+  const txInfos: GQLEdgeInterface[] = transactions.edges.filter((tx) => filterBundles(tx));
 
   while (transactions.pageInfo.hasNextPage) {
     const cursor = transactions.edges[MAX_GQL_REQUEST - 1].cursor;
@@ -47,10 +41,7 @@ export async function loadPages(
 
     transactions = await getNextPage(context, query, variables);
 
-    txInfos.push(
-      ...transactions.edges.filter(
-        (tx) => filterBundles(tx))
-    );
+    txInfos.push(...transactions.edges.filter((tx) => filterBundles(tx)));
   }
   return txInfos;
 }
@@ -60,11 +51,11 @@ export async function getNextPage(
   query: string,
   variables: ReqVariables
 ): Promise<GQLTransactionsResultInterface> {
-  const {logger, arweaveWrapper} = context;
+  const { logger, arweaveWrapper } = context;
 
   const benchmark = Benchmark.measure();
   let response = await arweaveWrapper.gql(query, variables);
-  logger.debug("GQL page load:", benchmark.elapsed());
+  logger.debug('GQL page load:', benchmark.elapsed());
 
   while (response.status === 403) {
     logger.warn(`GQL rate limiting, waiting ${GQL_RETRY_MS}ms before next try.`);
@@ -80,7 +71,7 @@ export async function getNextPage(
 
   if (response.data.errors) {
     logger.error(response.data.errors);
-    throw new Error("Error while loading interaction transactions");
+    throw new Error('Error while loading interaction transactions');
   }
 
   const data: GQLResultInterface = response.data;

@@ -1,8 +1,8 @@
-import Router from "@koa/router";
-import {Benchmark} from "redstone-smartweave";
+import Router from '@koa/router';
+import { Benchmark } from 'redstone-smartweave';
 
 export async function safeContractsRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
   try {
     const benchmark = Benchmark.measure();
@@ -22,10 +22,10 @@ export async function safeContractsRoute(ctx: Router.RouterContext) {
       `
     );
     ctx.body = result?.rows;
-    logger.debug("Safe contracts loaded in", benchmark.elapsed());
+    logger.debug('Safe contracts loaded in', benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

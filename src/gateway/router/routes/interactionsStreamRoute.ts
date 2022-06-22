@@ -1,12 +1,12 @@
-import Router from "@koa/router";
-import {stringify} from "JSONStream";
+import Router from '@koa/router';
+import { stringify } from 'JSONStream';
 
 export async function interactionsStreamRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb} = ctx;
+  const { logger, gatewayDb } = ctx;
 
-  const {contractId, confirmationStatus, from, to} = ctx.query;
+  const { contractId, confirmationStatus, from, to } = ctx.query;
 
-  logger.debug("Interactions stream route", {
+  logger.debug('Interactions stream route', {
     contractId,
     confirmationStatus,
     from,
@@ -14,8 +14,9 @@ export async function interactionsStreamRoute(ctx: Router.RouterContext) {
   });
 
   const parsedConfirmationStatus = confirmationStatus
-    ? confirmationStatus == "not_corrupted"
-      ? ['confirmed', 'not_processed'] : [confirmationStatus]
+    ? confirmationStatus == 'not_corrupted'
+      ? ['confirmed', 'not_processed']
+      : [confirmationStatus]
     : undefined;
 
   const bindings: any[] = [];
@@ -24,14 +25,20 @@ export async function interactionsStreamRoute(ctx: Router.RouterContext) {
   to && bindings.push(to as string);
 
   try {
-    const result: any = gatewayDb.raw(
-      `
+    const result: any = gatewayDb
+      .raw(
+        `
           SELECT interaction
           FROM interactions
-          WHERE contract_id = ? ${parsedConfirmationStatus ? ` AND confirmation_status IN (${parsedConfirmationStatus.map(status => `'${status}'`).join(', ')})` : ''} ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
+          WHERE contract_id = ? ${
+            parsedConfirmationStatus
+              ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
+              : ''
+          } ${from ? ' AND block_height >= ?' : ''} ${to ? ' AND block_height <= ?' : ''}
           ORDER BY sort_key ASC;
-      `, bindings
-    )
+      `,
+        bindings
+      )
       .stream() // note: https://www.npmjs.com/package/pg-query-stream is required for stream to work
       .pipe(stringify());
 
@@ -42,6 +49,6 @@ export async function interactionsStreamRoute(ctx: Router.RouterContext) {
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

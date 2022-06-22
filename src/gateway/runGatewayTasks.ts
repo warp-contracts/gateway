@@ -1,15 +1,14 @@
-import {runLoadPeersTask} from "./tasks/loadPeers";
-import {runVerifyInteractionsTask} from "./tasks/verifyInteractions";
-import {runVerifyCorruptedTransactionsTask} from "./tasks/verifyCorruptedTransactions";
+import { runLoadPeersTask } from './tasks/loadPeers';
+import { runVerifyInteractionsTask } from './tasks/verifyInteractions';
+import { runVerifyCorruptedTransactionsTask } from './tasks/verifyCorruptedTransactions';
 import {
   runSyncLastDayTransactionsTask,
   runSyncLastHourTransactionsTask,
   runSyncRecentTransactionsTask,
-} from "./tasks/syncTransactions";
-import {GatewayContext} from "./init";
-import {runContractsMetadataTask, runLoadContractsFromGqlTask} from "./tasks/contractsMetadata";
-import {runEvolvedContractSourcesTask} from './tasks/evolvedContractSources';
-
+} from './tasks/syncTransactions';
+import { GatewayContext } from './init';
+import { runContractsMetadataTask, runLoadContractsFromGqlTask } from './tasks/contractsMetadata';
+import { runEvolvedContractSourcesTask } from './tasks/evolvedContractSources';
 
 /**
  * Gateway consists of four separate tasks, each runs with its own interval:

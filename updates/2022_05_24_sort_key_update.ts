@@ -1,7 +1,7 @@
 /* eslint-disable */
-import Arweave from "arweave";
-import {connect} from "../src/db/connect";
-import {LexicographicalInteractionsSorter} from "redstone-smartweave";
+import Arweave from 'arweave';
+import { connect } from '../src/db/connect';
+import { LexicographicalInteractionsSorter } from 'redstone-smartweave';
 
 async function updateDb() {
   require("dotenv").config({
@@ -11,9 +11,9 @@ async function updateDb() {
   const db = connect();
 
   const arweave = Arweave.init({
-    host: "arweave.net",
+    host: 'arweave.net',
     port: 443,
-    protocol: "https",
+    protocol: 'https',
   });
 
   const sorter = new LexicographicalInteractionsSorter(arweave);
@@ -36,18 +36,16 @@ async function updateDb() {
     );
 
     if (result?.rows?.length == 0) {
-      console.log("====== Arweave transactions done! ======");
+      console.log('====== Arweave transactions done! ======');
       break;
     }
 
     for (const r of result.rows) {
       const sortKey = await sorter.createSortKey(r.block_id, r.interaction_id, r.block_height);
       console.log(`${r.id} : ${r.block_height} : ${r.interaction_id} = ${sortKey}`);
-      await db('interactions')
-        .where({id: r.id})
-        .update({
-          sort_key: sortKey
-        });
+      await db('interactions').where({ id: r.id }).update({
+        sort_key: sortKey,
+      });
     }
 
     round++;

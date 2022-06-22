@@ -1,22 +1,19 @@
-import Application from "koa";
-import {GatewayContext} from "../init";
+import Application from 'koa';
+import { GatewayContext } from '../init';
 
 export class TaskRunner {
   private constructor(
     private readonly name: string,
     private readonly worker: (context: GatewayContext) => Promise<void>,
-    private readonly context: GatewayContext) {
-  }
+    private readonly context: GatewayContext
+  ) {}
 
-  static from(
-    name: string,
-    worker: (context: GatewayContext) => Promise<void>,
-    context: GatewayContext): TaskRunner {
+  static from(name: string, worker: (context: GatewayContext) => Promise<void>, context: GatewayContext): TaskRunner {
     return new TaskRunner(name, worker, context);
   }
 
   async runSyncEvery(intervalMs: number, initialRun = true): Promise<void> {
-    const {name, worker, context} = this;
+    const { name, worker, context } = this;
     context.logger.info(`Starting sync task ${this.name} every ${intervalMs}ms.`);
 
     if (initialRun) {
@@ -36,7 +33,7 @@ export class TaskRunner {
   }
 
   async runAsyncEvery(intervalMs: number, initialRun = true): Promise<void> {
-    const {name, worker, context} = this;
+    const { name, worker, context } = this;
     context.logger.info(`Starting async task ${this.name} every ${intervalMs}ms`);
 
     if (initialRun) {
@@ -50,7 +47,7 @@ export class TaskRunner {
           .then(() => {
             context.logger.info(`Task ${name} completed.`);
           })
-          .catch(r => {
+          .catch((r) => {
             context.logger.error(`Task ${name} error.`, r);
           });
         workerLoop();

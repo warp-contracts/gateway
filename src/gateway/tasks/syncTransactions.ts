@@ -1,15 +1,10 @@
-import {
-  GQLEdgeInterface,
-  RedStoneLogger,
-  SmartWeaveTags,
-  TagsParser
-} from "redstone-smartweave";
-import {TaskRunner} from "./TaskRunner";
-import {GatewayContext} from "../init";
-import {INTERACTIONS_TABLE} from "../../db/schema";
-import {loadPages, MAX_GQL_REQUEST, ReqVariables} from "../../gql";
-import {Knex} from "knex";
-import { isTxIdValid } from "../../utils";
+import { GQLEdgeInterface, RedStoneLogger, SmartWeaveTags, TagsParser } from 'redstone-smartweave';
+import { TaskRunner } from './TaskRunner';
+import { GatewayContext } from '../init';
+import { INTERACTIONS_TABLE } from '../../db/schema';
+import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
+import { Knex } from 'knex';
+import { isTxIdValid } from '../../utils';
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -57,70 +52,60 @@ const AVG_BLOCKS_PER_DAY = (60 * 60 * 24) / AVG_BLOCK_TIME_SECONDS + 60;
 const HOUR_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_INTERVAL_MS = HOUR_INTERVAL_MS * 24;
 
-
 export async function runSyncRecentTransactionsTask(context: GatewayContext) {
-  await TaskRunner
-    .from("[sync latest transactions]", syncLastTransactions, context)
-    .runSyncEvery(BLOCKS_INTERVAL_MS);
+  await TaskRunner.from('[sync latest transactions]', syncLastTransactions, context).runSyncEvery(BLOCKS_INTERVAL_MS);
 }
-
 
 export async function runSyncLastHourTransactionsTask(context: GatewayContext) {
-  await TaskRunner
-    .from("[sync last hour transactions]", syncLastHourTransactions, context)
-    .runAsyncEvery(HOUR_INTERVAL_MS);
+  await TaskRunner.from('[sync last hour transactions]', syncLastHourTransactions, context).runAsyncEvery(
+    HOUR_INTERVAL_MS
+  );
 }
-
 
 export async function runSyncLastDayTransactionsTask(context: GatewayContext) {
-  await TaskRunner
-    .from("[sync last day transactions]", syncLastDayTransactions, context)
-    .runAsyncEvery(DAY_INTERVAL_MS);
+  await TaskRunner.from('[sync last day transactions]', syncLastDayTransactions, context).runAsyncEvery(
+    DAY_INTERVAL_MS
+  );
 }
-
 
 function syncLastTransactions(context: GatewayContext) {
   return syncTransactions(context, LOAD_PAST_BLOCKS);
 }
 
-
 function syncLastHourTransactions(context: GatewayContext) {
   return syncTransactions(context, AVG_BLOCKS_PER_HOUR);
 }
-
 
 function syncLastDayTransactions(context: GatewayContext) {
   return syncTransactions(context, AVG_BLOCKS_PER_DAY);
 }
 
-
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number) {
-  const {gatewayDb, logger, arweaveWrapper, sorter} = context;
+  const { gatewayDb, logger, arweaveWrapper, sorter } = context;
 
-  logger.info("Syncing blocks");
+  logger.info('Syncing blocks');
 
   // 1. find last processed block height and current Arweave network height
   let results: any[];
   try {
     results = await Promise.allSettled([
-      gatewayDb("interactions")
-        .select("block_height")
-        .orderBy("block_height", "desc")
-        .limit(1)
-        .first(),
-      arweaveWrapper.info()
+      gatewayDb('interactions').select('block_height').orderBy('block_height', 'desc').limit(1).first(),
+      arweaveWrapper.info(),
     ]);
   } catch (e: any) {
-    logger.error("Error while checking new blocks", e.message);
+    logger.error('Error while checking new blocks', e.message);
     return;
   }
 
   const rejections = results.filter((r) => {
-    return r.status === "rejected";
+    return r.status === 'rejected';
   });
 
   if (rejections.length > 0) {
-    logger.error("Error while processing next block", rejections.map((r) => r.message));
+    logger.error(
+      'Error while processing next block',
+      rejections.map((r) => r.message)
+    );
     return;
   }
 
@@ -128,7 +113,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
   // note: the first SW interaction was registered at 472810 block height
   const lastProcessedBlockHeight = results[0].value?.block_height || 0;
 
-  logger.debug("Network info", {
+  logger.debug('Network info', {
     currentNetworkHeight,
     lastProcessedBlockHeight,
   });
@@ -139,13 +124,13 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     heightTo = heightFrom + 5000;
   }*/
 
-  logger.debug("Loading interactions for blocks", {
+  logger.debug('Loading interactions for blocks', {
     heightFrom,
     heightTo,
   });
 
   // 2. load interactions
-  let gqlInteractions: GQLEdgeInterface[]
+  let gqlInteractions: GQLEdgeInterface[];
   try {
     gqlInteractions = await load(
       context,
@@ -159,12 +144,12 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       heightTo
     );
   } catch (e: any) {
-    logger.error("Error while loading interactions", e.message);
+    logger.error('Error while loading interactions', e.message);
     return;
   }
 
   if (gqlInteractions.length === 0) {
-    logger.info("Now new interactions");
+    logger.info('Now new interactions');
     return;
   }
 
@@ -191,7 +176,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     const internalWrites = tagsParser.getInteractWritesContracts(interaction);
 
     if (contractId === undefined || input === undefined) {
-      logger.error("Contract or input tag not found for interaction", interaction);
+      logger.error('Contract or input tag not found for interaction', interaction);
       continue;
     }
 
@@ -203,9 +188,9 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     // - and using "ON CONFLICT" does not work here - as it works only for
     // the rows currently stored in db - not the ones that we're trying to batch insert.
     if (interactionsInsertsIds.has(interaction.node.id)) {
-      logger.warn("Interaction already added", interaction.node.id);
+      logger.warn('Interaction already added', interaction.node.id);
     } else {
-      interactionsInsertsIds.add(interaction.node.id)
+      interactionsInsertsIds.add(interaction.node.id);
       interactionsInserts.push({
         interaction_id: interaction.node.id,
         interaction: JSON.stringify(interaction.node),
@@ -214,10 +199,10 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         contract_id: contractId,
         function: functionName,
         input: input,
-        confirmation_status: "not_processed",
+        confirmation_status: 'not_processed',
         interact_write: internalWrites,
         sort_key: sortKey,
-        evolve: evolve
+        evolve: evolve,
       });
     }
 
@@ -268,23 +253,19 @@ async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsI
 
   // note: the same issue occurred recently for tx IoGSPjQ--LY2KRgCBioaX0GTlohCq64IYSFolayuEPg
   // it was first returned for block 868561, and then moved to 868562 - probably due to fork
-  return gatewayDb("interactions")
+  return gatewayDb('interactions')
     .insert(interactionsInserts)
-    .onConflict("interaction_id")
+    .onConflict('interaction_id')
     .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'interaction', 'sort_key']);
 }
 
 // TODO: verify internalWrites
-async function load(
-  context: GatewayContext,
-  from: number,
-  to: number
-): Promise<GQLEdgeInterface[]> {
+async function load(context: GatewayContext, from: number, to: number): Promise<GQLEdgeInterface[]> {
   const mainTransactionsVariables: ReqVariables = {
     tags: [
       {
         name: SmartWeaveTags.APP_NAME,
-        values: ["SmartWeaveAction"],
+        values: ['SmartWeaveAction'],
       },
     ],
     blockFilter: {
@@ -301,9 +282,9 @@ export function parseFunctionName(input: string, logger: RedStoneLogger) {
   try {
     return JSON.parse(input).function;
   } catch (e) {
-    logger.error("Could not parse function name", {
+    logger.error('Could not parse function name', {
       input: input,
     });
-    return "[Error during parsing function name]";
+    return '[Error during parsing function name]';
   }
 }
