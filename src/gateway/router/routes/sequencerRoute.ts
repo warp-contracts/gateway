@@ -11,6 +11,7 @@ import Bundlr from "@bundlr-network/client";
 import {BlockData} from "arweave/node/blocks";
 import {VRF} from "../../init";
 import { isTxIdValid } from "../../../utils";
+import { BUNDLR_NODE2_URL } from "../../../constants";
 
 const {Evaluate} = require('@idena/vrf-js');
 
@@ -108,7 +109,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
           function: functionName,
           input: inputTag,
           confirmation_status: "confirmed",
-          confirming_peer: "https://node1.bundlr.network",
+          confirming_peer: BUNDLR_NODE2_URL,
           source: "redstone-sequencer",
           bundler_tx_id: bTx.id,
           interact_write: internalWrites,
