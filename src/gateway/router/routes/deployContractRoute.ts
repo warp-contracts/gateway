@@ -2,12 +2,12 @@ import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'redstone-smartweave';
-import util from 'util';
 import { gzip } from 'zlib';
 import Bundlr from '@bundlr-network/client';
 import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { BUNDLR_NODE2_URL } from '../../../constants';
+import { callbackToPromise } from '../../../utils';
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -139,7 +139,7 @@ function prepareTags(transaction: Transaction, originalAddress: string): GQLTagI
 
 async function compress(transaction: Transaction) {
   const stringifiedTx = JSON.stringify(transaction);
-  const gzipPromisified = util.promisify(gzip);
+  const gzipPromisified = callbackToPromise(gzip);
   const gzippedData = await gzipPromisified(stringifiedTx);
 
   return gzippedData;

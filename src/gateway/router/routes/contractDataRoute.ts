@@ -1,13 +1,12 @@
 import Router from '@koa/router';
 import Arweave from 'arweave';
-import { Benchmark, RedStoneLogger } from 'redstone-smartweave';
-import { isTxIdValid } from '../../../utils';
-import util from 'util';
+import { ArweaveWrapper, Benchmark, RedStoneLogger } from 'redstone-smartweave';
+import { callbackToPromise, isTxIdValid } from '../../../utils';
 import { gunzip } from 'zlib';
 import Transaction from 'arweave/node/lib/transaction';
 
 export async function contractDataRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb, arweave } = ctx;
+  const { logger, gatewayDb, arweave, arweaveWrapper } = ctx;
 
   const { id } = ctx.params;
 
@@ -20,7 +19,7 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    logger.debug('Id', id);
+    logger.debug('ContractDataRoute id: ', id);
 
     const result: any = await gatewayDb.raw(
       `
@@ -35,7 +34,12 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
       ctx.status = 500;
       ctx.body = { message: 'Contract not indexed as bundled.' };
     } else {
-      const { data, contentType } = await getContractData(arweave, logger, result?.rows[0].bundlerContractTxId);
+      const { data, contentType } = await getContractData(
+        arweave,
+        logger,
+        result?.rows[0].bundlerContractTxId,
+        arweaveWrapper
+      );
       ctx.body = data;
       ctx.set('Content-Type', contentType);
       logger.debug('Contract data loaded in', benchmark.elapsed());
@@ -47,36 +51,28 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
   }
 }
 
-async function getContractData(arweave: Arweave, logger: RedStoneLogger, id: string) {
-  const data = await fetch(`https://arweave.net/${id}`)
-    .then((res) => {
-      return res.arrayBuffer();
-    })
-    .then((data) => {
-      return data;
-    });
+async function getContractData(arweave: Arweave, logger: RedStoneLogger, id: string, arweaveWrapper: ArweaveWrapper) {
+  const data = await arweaveWrapper.txData(id);
 
   // decompress and decode contract transction data
-  const gunzipPromisified = util.promisify(gunzip);
-  const gunzippedData = await gunzipPromisified(data);
-  logger.debug(`Gunzipped data for bundled contract: ${id}`, gunzippedData);
-  const strData = arweave.utils.bufferToString(gunzippedData);
-  logger.debug(`Parsed data for bundled contract: ${id}`, strData);
+  const gunzipPromisified = callbackToPromise(gunzip);
+  const unzippedData = await gunzipPromisified(data);
+  const strData = arweave.utils.bufferToString(unzippedData);
   const tx = new Transaction({ ...JSON.parse(strData) });
-  const bufferFromTxData = Buffer.from(tx.data);
+  const txData = Buffer.from(tx.data);
 
   // get contract transaction content type from its tag
-  const contentType = await getContentType(tx);
+  const contentType = getContentType(tx);
   logger.debug(`Content type for id: ${id}: `, contentType);
 
-  return { data: bufferFromTxData, contentType };
+  return { data: txData, contentType };
 }
 
-async function getContentType(tx: Transaction) {
-  const tagContentType = await tx
+function getContentType(tx: Transaction) {
+  const tagContentType = tx
     .get('tags')
     // @ts-ignore
     .find((tag: BaseObject) => tag.get('name', { decode: true, string: true }) == 'Content-Type');
 
-  return await tagContentType.get('value', { decode: true, string: true });
+  return tagContentType.get('value', { decode: true, string: true });
 }
