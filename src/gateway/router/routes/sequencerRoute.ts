@@ -5,12 +5,11 @@ import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { arrayToHex, Benchmark, GQLTagInterface, RedStoneLogger, SmartWeaveTags } from 'redstone-smartweave';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import util from 'util';
 import { gzip } from 'zlib';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
 import { VRF } from '../../init';
-import { isTxIdValid } from '../../../utils';
+import { callbackToPromise, isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 
 const { Evaluate } = require('@idena/vrf-js');
@@ -270,7 +269,7 @@ function prepareTags(
 
 async function compress(transaction: Transaction) {
   const stringifiedTx = JSON.stringify(transaction);
-  const gzipPromisified = util.promisify(gzip);
+  const gzipPromisified = callbackToPromise(gzip);
   const gzippedData = await gzipPromisified(stringifiedTx);
 
   return gzippedData;
