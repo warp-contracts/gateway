@@ -14,6 +14,7 @@ import { deployContractRoute } from './routes/deployContractRoute';
 import { arweaveInfoRoute } from './routes/arweaveInfoRoute';
 import { interactionsSortKeyRoute } from './routes/interactionsSortKeyRoute';
 import { contractDataRoute } from './routes/contractDataRoute';
+import { nftsOwnedByAddressRoute } from "./routes/nftsOwnedByAddressRoute";
 
 const gatewayRouter = new Router({ prefix: '/gateway' });
 
@@ -24,6 +25,7 @@ gatewayRouter.get('/contract-data/:id', contractDataRoute);
 gatewayRouter.get('/contracts/:id', contractRoute);
 gatewayRouter.get('/contracts-safe', safeContractsRoute);
 gatewayRouter.get('/search/:phrase', searchRoute);
+gatewayRouter.get('/nft/owner/:address', nftsOwnedByAddressRoute);
 // separate "transactionId" route to make caching in cloudfront possible
 gatewayRouter.get('/interactions/transactionId', interactionsRoute);
 gatewayRouter.get('/interactions', interactionsRoute);
