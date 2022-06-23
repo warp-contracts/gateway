@@ -31,7 +31,7 @@ export async function contractRoute(ctx: Router.RouterContext) {
                  c.pst_name                                                                        as "pstName",
                  s.src_wasm_lang                                                                   as "srcWasmLang",
                  c.contract_tx                                                                     as "contractTx",
-                 s.src_tx                                                                          as "srcTx"
+                 s.src_tx                                                                          as "srcTx",
           FROM contracts c 
           JOIN contracts_src s on c.src_tx_id = s.src_tx_id
           WHERE contract_id = ?;
