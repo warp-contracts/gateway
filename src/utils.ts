@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { JWKInterface } from 'arweave/node/lib/wallet';
+import util from 'util';
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -17,4 +18,8 @@ export function readJSON(path: string): JWKInterface {
 export function isTxIdValid(txId: string): boolean {
   const validTxIdRegex = /[a-z0-9_-]{43}/i;
   return validTxIdRegex.test(txId);
+}
+
+export function callbackToPromise(callback: Function) {
+  return util.promisify(callback);
 }
