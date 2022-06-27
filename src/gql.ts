@@ -54,6 +54,7 @@ export async function getNextPage(
   const { logger, arweaveWrapper } = context;
 
   const benchmark = Benchmark.measure();
+  logger.debug('GQL Variables', JSON.stringify(variables));
   let response = await arweaveWrapper.gql(query, variables);
   logger.debug('GQL page load:', benchmark.elapsed());
 
