@@ -2,12 +2,10 @@ import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'redstone-smartweave';
-import { gzip } from 'zlib';
 import Bundlr from '@bundlr-network/client';
 import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { BUNDLR_NODE2_URL } from '../../../constants';
-import { callbackToPromise } from '../../../utils';
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -73,6 +71,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       contract_tx: { ...contractTx.toJSON(), data: null },
       bundler_contract_tx_id: bundlerContractTx.id,
       bundler_contract_node: BUNDLR_NODE2_URL,
+      bundler_contract_tags: JSON.stringify(contractTags),
     };
 
     await gatewayDb('contracts').insert(insert);
@@ -129,7 +128,6 @@ function prepareTags(transaction: Transaction, originalAddress: string): GQLTagI
     { name: 'Uploader', value: 'RedStone' },
     { name: 'Uploader-Contract-Owner', value: originalAddress },
     { name: 'Uploader-Tx-Id', value: transaction.id },
-    { name: 'Uploader-Compression', value: 'gzip' },
     { name: 'Uploader-Bundler', value: BUNDLR_NODE2_URL },
     ...decodedTags,
   ];
@@ -137,17 +135,8 @@ function prepareTags(transaction: Transaction, originalAddress: string): GQLTagI
   return tags;
 }
 
-async function compress(transaction: Transaction) {
-  const stringifiedTx = JSON.stringify(transaction);
-  const gzipPromisified = callbackToPromise(gzip);
-  const gzippedData = await gzipPromisified(stringifiedTx);
-
-  return gzippedData;
-}
-
 async function uploadToBundlr(transaction: Transaction, bundlr: Bundlr, tags: GQLTagInterface[]) {
-  const gzippedData = await compress(transaction);
-  const bTx = bundlr.createTransaction(gzippedData, { tags });
+  const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
   await bTx.sign();
   const bundlrResponse = await bTx.upload();
 

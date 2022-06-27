@@ -24,7 +24,8 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
 
     const result: any = await gatewayDb.raw(
       `
-          SELECT bundler_contract_tx_id as "bundlerContractTxId"
+          SELECT  bundler_contract_tx_id as "bundlerContractTxId",
+                  bundler_contract_tags as "bundlerContractTags"
           FROM contracts 
           WHERE contract_id = ?;
       `,
@@ -39,6 +40,7 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
         arweave,
         logger,
         result?.rows[0].bundlerContractTxId,
+        result?.rows[0].bundlerContractTags || null,
         arweaveWrapper
       );
       ctx.body = data;
@@ -52,8 +54,15 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
   }
 }
 
-async function getContractData(arweave: Arweave, logger: RedStoneLogger, id: string, arweaveWrapper: ArweaveWrapper) {
+async function getContractData(
+  arweave: Arweave,
+  logger: RedStoneLogger,
+  id: string,
+  tags: object[],
+  arweaveWrapper: ArweaveWrapper
+) {
   let data: ArrayBuffer | Buffer;
+
   try {
     data = await arweaveWrapper.txData(id);
   } catch (e) {
@@ -65,9 +74,15 @@ async function getContractData(arweave: Arweave, logger: RedStoneLogger, id: str
   }
 
   // decompress and decode contract transction data
-  const gunzipPromisified = callbackToPromise(gunzip);
-  const unzippedData = await gunzipPromisified(data);
-  const strData = arweave.utils.bufferToString(unzippedData);
+  let bufData: ArrayBuffer | Buffer;
+  // only txs which were not zipped have bundler contract tags
+  if (!tags) {
+    const gunzipPromisified = callbackToPromise(gunzip);
+    bufData = await gunzipPromisified(data);
+  } else {
+    bufData = data;
+  }
+  const strData = arweave.utils.bufferToString(bufData);
   const tx = new Transaction({ ...JSON.parse(strData) });
   const txData = Buffer.from(tx.data);
 
