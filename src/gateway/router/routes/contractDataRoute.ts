@@ -4,6 +4,7 @@ import { ArweaveWrapper, Benchmark, RedStoneLogger } from 'redstone-smartweave';
 import { callbackToPromise, isTxIdValid } from '../../../utils';
 import { gunzip } from 'zlib';
 import Transaction from 'arweave/node/lib/transaction';
+import { BUNDLR_NODE2_URL } from '../../../constants';
 
 export async function contractDataRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, arweaveWrapper } = ctx;
@@ -52,7 +53,18 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
 }
 
 async function getContractData(arweave: Arweave, logger: RedStoneLogger, id: string, arweaveWrapper: ArweaveWrapper) {
-  const data = await arweaveWrapper.txData(id);
+  let data: ArrayBuffer | Buffer;
+  try {
+    data = await arweaveWrapper.txData(id);
+  } catch (e) {
+    data = await fetch(`${BUNDLR_NODE2_URL}/tx/${id}/data`)
+      .then((res) => {
+        return res.arrayBuffer();
+      })
+      .then((data) => {
+        return data;
+      });
+  }
 
   // decompress and decode contract transction data
   const gunzipPromisified = callbackToPromise(gunzip);
