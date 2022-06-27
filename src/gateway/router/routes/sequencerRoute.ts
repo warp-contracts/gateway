@@ -5,11 +5,10 @@ import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { arrayToHex, Benchmark, GQLTagInterface, RedStoneLogger, SmartWeaveTags } from 'redstone-smartweave';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { gzip } from 'zlib';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
 import { VRF } from '../../init';
-import { callbackToPromise, isTxIdValid } from '../../../utils';
+import { isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 
 const { Evaluate } = require('@idena/vrf-js');
@@ -267,14 +266,6 @@ function prepareTags(
   return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData };
 }
 
-async function compress(transaction: Transaction) {
-  const stringifiedTx = JSON.stringify(transaction);
-  const gzipPromisified = callbackToPromise(gzip);
-  const gzippedData = await gzipPromisified(stringifiedTx);
-
-  return gzippedData;
-}
-
 async function uploadToBundlr(
   transaction: Transaction,
   bundlr: Bundlr,
@@ -282,9 +273,8 @@ async function uploadToBundlr(
   logger: RedStoneLogger
 ) {
   const uploadBenchmark = Benchmark.measure();
-  const gzippedData = await compress(transaction);
 
-  const bTx = bundlr.createTransaction(gzippedData, { tags });
+  const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
   await bTx.sign();
 
   // TODO: move uploading to a separate Worker, to increase TPS
