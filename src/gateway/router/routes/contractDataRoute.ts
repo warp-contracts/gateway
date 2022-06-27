@@ -57,13 +57,11 @@ async function getContractData(arweave: Arweave, logger: RedStoneLogger, id: str
   try {
     data = await arweaveWrapper.txData(id);
   } catch (e) {
-    data = await fetch(`${BUNDLR_NODE2_URL}/tx/${id}/data`)
-      .then((res) => {
-        return res.arrayBuffer();
-      })
-      .then((data) => {
-        return data;
-      });
+    logger.error(`Error from Arweave Gateway while loading data: `, e);
+
+    data = await fetch(`${BUNDLR_NODE2_URL}/tx/${id}/data`).then((res) => {
+      return res.arrayBuffer();
+    });
   }
 
   // decompress and decode contract transction data
