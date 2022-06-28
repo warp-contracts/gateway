@@ -252,7 +252,6 @@ function prepareTags(
     { name: 'Sequencer-Tx-Id', value: transaction.id },
     { name: 'Sequencer-Block-Height', value: '' + currentHeight },
     { name: 'Sequencer-Block-Id', value: currentBlockId },
-    { name: 'Sequencer-Compression', value: 'gzip' },
     ...decodedTags,
   ];
 
