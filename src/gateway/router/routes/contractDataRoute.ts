@@ -83,6 +83,9 @@ async function getContractData(
     bufData = data;
   }
   const strData = arweave.utils.bufferToString(bufData);
+
+  logger.debug('strData', strData);
+
   const tx = new Transaction({ ...JSON.parse(strData) });
   const txData = Buffer.from(tx.data);
 
