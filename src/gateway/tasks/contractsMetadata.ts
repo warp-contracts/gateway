@@ -68,7 +68,7 @@ async function loadContractsFromGql(context: GatewayContext) {
 
   let transactions: GQLEdgeInterface[];
   try {
-    transactions = await load(context, from, currentNetworkHeight);
+    transactions = await load(context, 960070, 960080);
   } catch (e: any) {
     logger.error('Error while loading contracts', e.message);
     return;
