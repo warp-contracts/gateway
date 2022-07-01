@@ -43,9 +43,15 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
         result?.rows[0].bundlerContractTags || null,
         arweaveWrapper
       );
-      ctx.body = data;
-      ctx.set('Content-Type', contentType);
-      logger.debug('Contract data loaded in', benchmark.elapsed());
+      if (data && contentType) {
+        ctx.body = data;
+        ctx.set('Content-Type', contentType);
+        logger.debug('Contract data loaded in', benchmark.elapsed());
+      } else {
+        ctx.status = 500;
+        ctx.body = { message: 'Contract data cannot be retrieved from neither Arweave gateway nor Bundlr.' };
+        ctx.logger.error('Contract data cannot be retrieved from neither Arweave gateway nor Bundlr.');
+      }
     }
   } catch (e: any) {
     logger.error(e);
@@ -61,18 +67,32 @@ async function getContractData(
   tags: object[],
   arweaveWrapper: ArweaveWrapper
 ) {
-  let data: ArrayBuffer | Buffer;
+  let data: Buffer | ArrayBuffer | null | void;
 
   try {
     data = await arweaveWrapper.txData(id);
+    if (data.byteLength == 0) {
+      data = null;
+    }
   } catch (e) {
     logger.error(`Error from Arweave Gateway while loading data: `, e);
-
-    data = await fetch(`${BUNDLR_NODE2_URL}/tx/${id}/data`).then((res) => {
-      return res.arrayBuffer();
-    });
+    data = null;
   }
 
+  if (data == null) {
+    data = await fetch(`${BUNDLR_NODE2_URL}/tx/${id}/data`)
+      .then((res) => {
+        return res.arrayBuffer();
+      })
+      .catch((e) => {
+        logger.error(`Error from Bundlr Gateway while loading data: `, e);
+        return null;
+      });
+  }
+
+  if (data == null) {
+    return { data: null, contentType: null };
+  }
   // decompress and decode contract transction data
   let bufData: ArrayBuffer | Buffer;
   // only txs which were not zipped have bundler contract tags
