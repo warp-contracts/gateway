@@ -1,19 +1,19 @@
-# RedStone SmartWeave Gateway
+# Warp Gateway
 
-RedStone SmartWeave Gateway - a fast and reliable way to
+Warp Gateway - a fast and reliable way to
 load [SmartWeave](https://github.com/redstone-finance/redstone-smartcontracts) transactions.
 All the data indexed by our gateway can be viewed in [SonAR](https://sonar.redstone.tools/#/app/contracts).
 
 1. fast - load your contract interactions in seconds, not minutes!
 2. reliable - built-in protection against forks and corrupted transactions
 
-- [RedStone SmartWeave Gateway](#redstone-smartweave-gateway)
+- [Warp Gateway](#warp-gateway)
   - [Reasoning](#reasoning)
   - [Our solution](#our-solution)
   - [Benchmarks](#benchmarks)
   - [Corrupted transactions](#corrupted-transactions)
   - [Public access](#public-access)
-  - [RedStone SmartContracts SDK integration](#redstone-smart-contracts-sdk-integration)
+  - [Warp Contracts SDK integration](#warp-contracts-sdk-integration)
   - [Installation](#installation)
   - [Running](#running)
   - [Running (Docker)](#running--docker-)
@@ -62,7 +62,7 @@ We combine data from both the Arweave Gateway and the Arweave peers directly, pe
 index them in a dedicated database.
 ![gateway](./docs/gateway.png)
 
-The RedStone Gateway consists of three main tasks:
+The Warp Gateway consists of three main tasks:
 
 1. The Sync Arweave Peers Task - this task is responsible for loading information about currently active peers and
    ranking them by the amount of synced blocks and response times.
@@ -87,7 +87,7 @@ Tested for block height range: 0 - 831901. Benchmarks source can be
 found [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark.ts)
 and [here](https://github.com/redstone-finance/redstone-sw-gateway/tools/gateway-benchmark-comparison.ts).
 
-| Contract                                               |     Project     | <sub>Interactions</sub> |   <sub>Arweave GW</sub> | <sub>RedStone GW</sub> | <sub>RedStone GW(cache)</sub> |
+| Contract                                               |     Project     | <sub>Interactions</sub> |   <sub>Arweave GW</sub> | <sub>Warp GW</sub> | <sub>Warp GW(cache)</sub> |
 | ------------------------------------------------------ | :-------------: | ----------------------: | ----------------------: | ---------------------: | ----------------------------: |
 | <sub>LkfzZvdl_vfjRXZOPjnov18cGnnK3aDKj0qSQCgkCX8</sub> |      Kyve       |                  281129 |  <sub>3h 7min 39s</sub> |   <sub>1 min 27s</sub> |                 <sub>8s</sub> |
 | <sub>l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c</sub> |      Kyve       |                  194326 | <sub>2h 32min 54s</sub> |         <sub>46s</sub> |                 <sub>6s</sub> |
@@ -132,14 +132,14 @@ and [here](https://discord.com/channels/357957786904166400/358038065974870018/90
 
 ### Public access
 
-RedStone SmartWeave Gateway is currently publicly available
+Warp Gateway is currently publicly available
 under [https://gateway.redstone.finance/](https://gateway.redstone.finance/).
 The contracts scanner web app is available under [https://scanner.redstone.tools/](https://scanner.redstone.tools/).
 
-### RedStone SmartContracts SDK integration
+### Warp Contracts SDK integration
 
-We've prepared a dedicated plugin for the RedStone SmartContracts SDK that allows to easily connect and load
-interactions from the RedStone SmartWeave Gateway. More
+We've prepared a dedicated plugin for the Warp Contracts SDK that allows to easily connect and load
+interactions from the Warp Gateway. More
 details [here](https://github.com/redstone-finance/redstone-smartcontracts#using-the-redstone-gateway).
 
 ### Installation
