@@ -19,7 +19,7 @@ export async function statsRoute(ctx: Router.RouterContext) {
           FROM interactions i
           UNION
           SELECT 2 AS sort_order, count(c.contract_id) AS total
-          FROM contracts c
+          FROM contracts c WHERE c.type != 'error'
           ORDER BY sort_order;
       `
     );
