@@ -23,6 +23,8 @@ const CONTRACTS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: 
           block {
             height
           }
+          parent { id }
+          bundledIn { id }
         }
         cursor
       }
@@ -129,7 +131,7 @@ async function insertContracts(gatewayDb: Knex<any, unknown[]>, contractsInserts
   await gatewayDb('contracts')
     .insert(contractsInserts)
     .onConflict('contract_id')
-    .merge(['block_height', 'content_type']);
+    .ignore();
 }
 
 function getContentTypeTag(interactionTransaction: GQLEdgeInterface): string | undefined {
@@ -188,7 +190,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         src_tx_id: definition.srcTxId,
         init_state: definition.initState,
         owner: definition.owner,
-        type: evalType(definition.initState),
+        type,
         pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
         pst_name: type == 'pst' ? definition.initState?.name : null,
         contract_tx: definition.contractTx,
