@@ -67,6 +67,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
       block_height: getCachedNetworkData().cachedNetworkInfo.height,
+      block_timestamp: getCachedNetworkData().cachedBlockInfo.timestamp,
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
       contract_tx: { ...contractTx.toJSON(), data: null },
       bundler_contract_tx_id: bundlerContractTx.id,
