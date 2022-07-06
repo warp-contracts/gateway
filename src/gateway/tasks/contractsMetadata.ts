@@ -22,6 +22,7 @@ const CONTRACTS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: 
           }
           block {
             height
+            timestamp
           }
           parent { id }
           bundledIn { id }
@@ -96,6 +97,7 @@ async function loadContractsFromGql(context: GatewayContext) {
       contractsInserts.push({
         contract_id: transaction.node.id,
         block_height: transaction.node.block.height,
+        block_timestamp: transaction.node.block.timestamp,
         content_type: contentType || 'unknown',
       });
       contractsInsertsIds.add(contractId);
@@ -128,10 +130,7 @@ async function loadContractsFromGql(context: GatewayContext) {
 }
 
 async function insertContracts(gatewayDb: Knex<any, unknown[]>, contractsInserts: any[]) {
-  await gatewayDb('contracts')
-    .insert(contractsInserts)
-    .onConflict('contract_id')
-    .ignore();
+  await gatewayDb('contracts').insert(contractsInserts).onConflict('contract_id').ignore();
 }
 
 function getContentTypeTag(interactionTransaction: GQLEdgeInterface): string | undefined {
