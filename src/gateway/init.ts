@@ -89,7 +89,11 @@ export interface GatewayContext {
       },
     })
   );
-  app.use(bodyParser());
+  app.use(
+    bodyParser({
+      jsonLimit: '2mb',
+    })
+  );
 
   app.use(gatewayRouter.routes());
   app.use(gatewayRouter.allowedMethods());
