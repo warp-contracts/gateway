@@ -2,8 +2,7 @@ import Router from '@koa/router';
 import { contractsRoute } from './routes/contractsRoute';
 import { interactionsRoute } from './routes/interactionsRoute';
 import { searchRoute } from './routes/searchRoute';
-import { statsRoute } from './routes/statsRoute';
-import { statsTxPerDayRoute } from './routes/statsTxPerDayRoute';
+import { totalTxsRoute } from './routes/stats/totalTxsRoute';
 import { contractRoute } from './routes/contractRoute';
 import { contractWithSourceRoute } from './routes/contractWithSourceRoute';
 import { interactionRoute } from './routes/interactionRoute';
@@ -14,7 +13,8 @@ import { deployContractRoute } from './routes/deployContractRoute';
 import {arweaveBlockRoute, arweaveInfoRoute} from './routes/arweaveInfoRoute';
 import { interactionsSortKeyRoute } from './routes/interactionsSortKeyRoute';
 import { contractDataRoute } from './routes/contractDataRoute';
-import { nftsOwnedByAddressRoute } from "./routes/nftsOwnedByAddressRoute";
+import { nftsOwnedByAddressRoute } from './routes/nftsOwnedByAddressRoute';
+import { txsPerDayRoute } from './routes/stats/txsPerDayRoute';
 
 const gatewayRouter = new Router({ prefix: '/gateway' });
 
@@ -33,8 +33,8 @@ gatewayRouter.get('/interactions', interactionsRoute);
 gatewayRouter.get('/interactions-sort-key', interactionsSortKeyRoute);
 gatewayRouter.get('/interactions-stream', interactionsStreamRoute);
 gatewayRouter.get('/interactions/:id', interactionRoute);
-gatewayRouter.get('/stats', statsRoute);
-gatewayRouter.get('/stats/per-day', statsTxPerDayRoute);
+gatewayRouter.get('/stats', totalTxsRoute);
+gatewayRouter.get('/stats/per-day', txsPerDayRoute);
 gatewayRouter.get('/arweave/info', arweaveInfoRoute);
 gatewayRouter.get('/arweave/block', arweaveBlockRoute);
 
