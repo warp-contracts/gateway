@@ -11,7 +11,7 @@ import { safeContractsRoute } from './routes/safeContractsRoute';
 import { sequencerRoute } from './routes/sequencerRoute';
 import { interactionsStreamRoute } from './routes/interactionsStreamRoute';
 import { deployContractRoute } from './routes/deployContractRoute';
-import { arweaveInfoRoute } from './routes/arweaveInfoRoute';
+import {arweaveBlockRoute, arweaveInfoRoute} from './routes/arweaveInfoRoute';
 import { interactionsSortKeyRoute } from './routes/interactionsSortKeyRoute';
 import { contractDataRoute } from './routes/contractDataRoute';
 import { nftsOwnedByAddressRoute } from "./routes/nftsOwnedByAddressRoute";
@@ -36,6 +36,7 @@ gatewayRouter.get('/interactions/:id', interactionRoute);
 gatewayRouter.get('/stats', statsRoute);
 gatewayRouter.get('/stats/per-day', statsTxPerDayRoute);
 gatewayRouter.get('/arweave/info', arweaveInfoRoute);
+gatewayRouter.get('/arweave/block', arweaveBlockRoute);
 
 // post
 gatewayRouter.post('/contracts/deploy', deployContractRoute);
