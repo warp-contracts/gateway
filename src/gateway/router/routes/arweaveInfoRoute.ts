@@ -16,3 +16,19 @@ export async function arweaveInfoRoute(ctx: Router.RouterContext) {
     };
   }
 }
+
+export async function arweaveBlockRoute(ctx: Router.RouterContext) {
+  const { logger } = ctx;
+
+  const result = getCachedNetworkData().cachedBlockInfo;
+  if (result == null) {
+    logger.error('Block info not yet available.');
+    ctx.status = 500;
+    ctx.body = { message: 'Block info not yet available.' };
+  } else {
+    logger.debug('Returning block info with block height', result.height);
+    ctx.body = {
+      ...result,
+    };
+  }
+}
