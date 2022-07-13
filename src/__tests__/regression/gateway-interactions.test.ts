@@ -7,9 +7,9 @@ import {
   DefaultEvaluationOptions,
   GQLEdgeInterface,
   LoggerFactory,
-  RedstoneGatewayInteractionsLoader,
+  WarpGatewayInteractionsLoader,
   SourceType,
-} from 'redstone-smartweave';
+} from 'warp-contracts';
 
 /* 
 TODO: two test cases have been removed from the list - gateway-interaction test is failing due to the different
@@ -40,7 +40,7 @@ const testCases: string[] = JSON.parse(
 describe.each([750000, 775000, 800000, 825000, 850000])('testing for block height %d', (toBlockHeight) => {
   it('returns same amount of interactions for the same block height', async () => {
     console.log('toBlockHeight', toBlockHeight);
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader(
+    const redstoneInteractionsLoader = new WarpGatewayInteractionsLoader(
       'https://gateway.redstone.finance/',
       {},
       SourceType.ARWEAVE
@@ -67,7 +67,7 @@ describe.each(testCases)('testing contractId %s', (contractTxId) => {
     const arweaveNetworkInfo = await arweave.network.getInfo();
     // testing for the more current block height to detect possible gw desynchronize issues
     const blockHeight = arweaveNetworkInfo.height - 20;
-    const redstoneInteractionsLoader = new RedstoneGatewayInteractionsLoader(
+    const redstoneInteractionsLoader = new WarpGatewayInteractionsLoader(
       'https://gateway.redstone.finance',
       {},
       SourceType.ARWEAVE

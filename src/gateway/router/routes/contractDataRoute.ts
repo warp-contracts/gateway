@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import Arweave from 'arweave';
-import { ArweaveWrapper, Benchmark, RedStoneLogger } from 'redstone-smartweave';
+import { ArweaveWrapper, Benchmark, WarpLogger } from 'warp-contracts';
 import { callbackToPromise, isTxIdValid } from '../../../utils';
 import { gunzip } from 'zlib';
 import Transaction from 'arweave/node/lib/transaction';
@@ -56,7 +56,7 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
 
 async function getContractData(
   arweave: Arweave,
-  logger: RedStoneLogger,
+  logger: WarpLogger,
   id: string,
   tags: object[],
   arweaveWrapper: ArweaveWrapper

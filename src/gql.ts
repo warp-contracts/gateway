@@ -1,5 +1,5 @@
 import { GatewayContext } from './gateway/init';
-import { Benchmark, GQLEdgeInterface, GQLResultInterface, GQLTransactionsResultInterface } from 'redstone-smartweave';
+import { Benchmark, GQLEdgeInterface, GQLResultInterface, GQLTransactionsResultInterface } from 'warp-contracts';
 import { sleep } from './utils';
 
 export const MAX_GQL_REQUEST = 100;

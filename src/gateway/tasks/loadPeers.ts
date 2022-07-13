@@ -1,6 +1,5 @@
-import Application from 'koa';
 import { PeerList } from 'arweave/node/network';
-import { Benchmark } from 'redstone-smartweave';
+import { Benchmark } from 'warp-contracts';
 import axios from 'axios';
 import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';

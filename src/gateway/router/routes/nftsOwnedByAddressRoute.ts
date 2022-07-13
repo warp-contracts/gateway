@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { Benchmark } from 'redstone-smartweave';
+import { Benchmark } from 'warp-contracts';
 import {isTxIdValid} from "../../../utils";
 
 export async function nftsOwnedByAddressRoute(ctx: Router.RouterContext) {

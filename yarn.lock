@@ -1657,6 +1657,13 @@ arconnect@^0.2.8:
   dependencies:
     arweave "^1.10.13"
 
+arconnect@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/arconnect/-/arconnect-0.4.2.tgz#83de7638fb46183e82d7ec7efb5594c5f7cdc806"
+  integrity sha512-Jkpd4QL3TVqnd3U683gzXmZUVqBUy17DdJDuL/3D9rkysLgX6ymJ2e+sR+xyZF5Rh42CBqDXWNMmCjBXeP7Gbw==
+  dependencies:
+    arweave "^1.10.13"
+
 arg@^4.1.0:
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/arg/-/arg-4.1.3.tgz#269fc7ad5b8e42cb63c896d5666017261c144089"
@@ -1698,7 +1705,19 @@ arweave@1.10.18:
     base64-js "^1.3.1"
     bignumber.js "^9.0.1"
 
-arweave@1.10.23, arweave@^1.10.13, arweave@^1.10.18:
+arweave@1.11.4:
+  version "1.11.4"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.11.4.tgz#19e5850d3b9f655cacb0953b36a12ac6596b195c"
+  integrity sha512-EPUms1OMet/VFmYMefgxIpj17PIlIZzIteiHAn0tetN+d/LRV6N9CCsrg/t22hL6yLGdGRHrYlDEdsWqjwSSYg==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    axios "^0.27.2"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
+    util "^0.12.4"
+
+arweave@^1.10.13, arweave@^1.10.18:
   version "1.10.23"
   resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.10.23.tgz#6edc056026d6c11ec47d817bb2c4f6d8fb8c65e5"
   integrity sha512-lAeCopS9iNGhmJkUovWqb7R+JEF83LP8f51rG+H98JPI9KQVRJYtM5NmMMU8auDtOzvBPTZ7me1pYn/CfS3VTg==
@@ -1803,6 +1822,14 @@ axios@^0.26.1:
   dependencies:
     follow-redirects "^1.14.8"
 
+axios@^0.27.2:
+  version "0.27.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.27.2.tgz#207658cc8621606e586c85db4b41a750e756d972"
+  integrity sha512-t+yRIyySRTp/wua5xEr+z1q60QmLq8ABsS5O9Me1AsE5dfKqgnCFzwiCZZ/cGNd1lq4/7akDWMxdhVlucjmnOQ==
+  dependencies:
+    follow-redirects "^1.14.9"
+    form-data "^4.0.0"
+
 babel-jest@^27.4.6:
   version "27.4.6"
   resolved "https://registry.yarnpkg.com/babel-jest/-/babel-jest-27.4.6.tgz#4d024e69e241cdf4f396e453a07100f44f7ce314"
@@ -1876,7 +1903,7 @@ base-x@^3.0.2:
   dependencies:
     safe-buffer "^5.0.1"
 
-base64-js@^1.2.0, base64-js@^1.3.1:
+base64-js@^1.2.0, base64-js@^1.3.1, base64-js@^1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
   integrity sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==
@@ -1891,7 +1918,7 @@ bech32@1.1.4:
   resolved "https://registry.yarnpkg.com/bech32/-/bech32-1.1.4.tgz#e38c9f37bf179b8eb16ae3a772b40c356d4832e9"
   integrity sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==
 
-bignumber.js@^9.0.0, bignumber.js@^9.0.1:
+bignumber.js@^9.0.0, bignumber.js@^9.0.1, bignumber.js@^9.0.2:
   version "9.0.2"
   resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.0.2.tgz#71c6c6bed38de64e24a65ebe16cfcf23ae693673"
   integrity sha512-GAcQvbpsM0pUb0zw1EI0KhQEZ+lRwR5fYaAp3vPOYuP7aDvGy6cVN6XHLauvF8SOga2y0dcLcjt3iQDTSEliyw==
@@ -3112,6 +3139,11 @@ follow-redirects@^1.14.8:
   version "1.14.9"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.9.tgz#dd4ea157de7bfaf9ea9b3fbd85aa16951f78d8d7"
   integrity sha512-MQDfihBQYMcyy5dhRDJUHcw7lb2Pv/TuE6xP1vyraLukNDHKbDxDNaOE3NbCAdKQApno+GPRyo1YAp89yCjK4w==
+
+follow-redirects@^1.14.9:
+  version "1.15.1"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.1.tgz#0ca6a452306c9b276e4d3127483e29575e207ad5"
+  integrity sha512-yLAMQs+k0b2m7cVxpS1VKJVvoz7SS9Td1zss3XRwXj+ZDH00RJgnuLx7E44wx02kQLrdM3aOOy+FpzS7+8OizA==
 
 foreach@^2.0.5:
   version "2.0.5"
@@ -5268,28 +5300,6 @@ redstone-isomorphic@^1.1.0:
     safe-buffer "^5.1.2"
     undici "^4.15.1"
 
-redstone-smartweave@0.5.9:
-  version "0.5.9"
-  resolved "https://registry.yarnpkg.com/redstone-smartweave/-/redstone-smartweave-0.5.9.tgz#3a77d96d7f2031ac64d5d3f6736dccd8dda18407"
-  integrity sha512-jb7yFKwRiXjmrRgh1PTzyFpqF8IL6DZhGDagISm9eRAxEwid6jIKLAH3Aa611HCWZPyyTve5JGt3C6X+HuHJLg==
-  dependencies:
-    "@assemblyscript/loader" "^0.19.23"
-    "@idena/vrf-js" "^1.0.1"
-    archiver "^5.3.0"
-    arweave "1.10.23"
-    bignumber.js "^9.0.1"
-    elliptic "^6.5.4"
-    fast-copy "^2.1.1"
-    knex "^0.95.14"
-    lodash "^4.17.21"
-    redstone-isomorphic "1.1.6"
-    redstone-wasm-metering "1.0.0"
-    safe-stable-stringify "2.3.1"
-    stream-buffers "^3.0.2"
-    tslog "^3.2.2"
-    unzipit "^1.4.0"
-    vm2 "3.9.9"
-
 redstone-wasm-json-toolkit@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/redstone-wasm-json-toolkit/-/redstone-wasm-json-toolkit-1.0.0.tgz#e7f0bf39c4566d445769ac6626351ce2512b61cb"
@@ -6189,6 +6199,28 @@ walker@^1.0.7:
   integrity sha512-ts/8E8l5b7kY0vlWLewOkDXMmPdLcVV4GmOQLyxuSswIJsweeFZtAsMF7k1Nszz+TYBQrlYRmzOnr398y1JemQ==
   dependencies:
     makeerror "1.0.12"
+
+warp-contracts@1.1.8:
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.1.8.tgz#e1adf21aaca1b5f05583346dd50e4823c50e1acc"
+  integrity sha512-q5uqP/y1LZhkjzfMpEh1Yoyk8OEQh9Q/n4SbGAn7Jpher28fcpNA1kq9hTwkUEHBpmN1mknm0mhyxU546q5QQw==
+  dependencies:
+    "@assemblyscript/loader" "^0.19.23"
+    "@idena/vrf-js" "^1.0.1"
+    archiver "^5.3.0"
+    arweave "1.11.4"
+    bignumber.js "^9.0.1"
+    elliptic "^6.5.4"
+    fast-copy "^2.1.1"
+    knex "^0.95.14"
+    lodash "^4.17.21"
+    redstone-isomorphic "1.1.6"
+    redstone-wasm-metering "1.0.0"
+    safe-stable-stringify "2.3.1"
+    stream-buffers "^3.0.2"
+    tslog "^3.2.2"
+    unzipit "^1.4.0"
+    vm2 "3.9.9"
 
 wcwidth@^1.0.1:
   version "1.0.1"

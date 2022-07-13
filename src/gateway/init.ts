@@ -4,7 +4,7 @@ import { Knex } from 'knex';
 import Koa from 'koa';
 import Application from 'koa';
 import bodyParser from 'koa-bodyparser';
-import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, RedStoneLogger } from 'redstone-smartweave';
+import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger } from 'warp-contracts';
 import { connect } from '../db/connect';
 import Arweave from 'arweave';
 import { runGatewayTasks } from './runGatewayTasks';
@@ -30,8 +30,8 @@ export type VRF = { pubKeyHex: string; privKey: any; ec: any };
 
 export interface GatewayContext {
   gatewayDb: Knex;
-  logger: RedStoneLogger;
-  sLogger: RedStoneLogger;
+  logger: WarpLogger;
+  sLogger: WarpLogger;
   arweave: Arweave;
   bundlr: Bundlr;
   jwk: JWKInterface;

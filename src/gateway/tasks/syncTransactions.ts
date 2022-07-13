@@ -1,4 +1,4 @@
-import { GQLEdgeInterface, RedStoneLogger, SmartWeaveTags, TagsParser } from 'redstone-smartweave';
+import { GQLEdgeInterface, WarpLogger, SmartWeaveTags, TagsParser } from 'warp-contracts';
 import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
 import { INTERACTIONS_TABLE } from '../../db/schema';
@@ -278,7 +278,7 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
   return await loadPages(context, INTERACTIONS_QUERY, mainTransactionsVariables);
 }
 
-export function parseFunctionName(input: string, logger: RedStoneLogger) {
+export function parseFunctionName(input: string, logger: WarpLogger) {
   try {
     return JSON.parse(input).function;
   } catch (e) {

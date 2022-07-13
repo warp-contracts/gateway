@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { Benchmark } from 'redstone-smartweave';
+import { Benchmark } from 'warp-contracts';
 
 /**
  * @deprecated Following route has been replaced with `contractWithSourceRoute` and is not used in the SDK
