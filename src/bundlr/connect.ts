@@ -1,4 +1,4 @@
-import { RedStoneLogger } from 'redstone-smartweave';
+import { WarpLogger } from 'warp-contracts';
 import Bundlr from '@bundlr-network/client';
 import fs from 'fs';
 import { TaskRunner } from '../gateway/tasks/TaskRunner';
@@ -12,7 +12,7 @@ export async function runBundlrCheck(context: GatewayContext) {
   await TaskRunner.from('[bundlr balance check]', checkBalance, context).runSyncEvery(BUNDLR_CHECK_INTERVAL, true);
 }
 
-export function initBundlr(logger: RedStoneLogger): { bundlr: Bundlr; jwk: JWKInterface } {
+export function initBundlr(logger: WarpLogger): { bundlr: Bundlr; jwk: JWKInterface } {
   const jwk = JSON.parse(fs.readFileSync('.secrets/warp-wallet-jwk.json').toString());
   const bundlr = new Bundlr(BUNDLR_NODE2_URL, 'arweave', jwk, {
     timeout: 5000,

@@ -3,7 +3,7 @@ import Transaction from 'arweave/node/lib/transaction';
 import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
-import { arrayToHex, Benchmark, GQLTagInterface, RedStoneLogger, SmartWeaveTags } from 'redstone-smartweave';
+import { arrayToHex, Benchmark, GQLTagInterface, WarpLogger, SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
@@ -269,7 +269,7 @@ async function uploadToBundlr(
   transaction: Transaction,
   bundlr: Bundlr,
   tags: GQLTagInterface[],
-  logger: RedStoneLogger
+  logger: WarpLogger
 ) {
   const uploadBenchmark = Benchmark.measure();
 
@@ -297,7 +297,7 @@ async function createSortKey(
   const jwkDBytes = arweave.utils.b64UrlToBuffer(jwk.d as string);
   const concatenated = arweave.utils.concatBuffers([blockHashBytes, txIdBytes, jwkDBytes]);
   const hashed = arrayToHex(await arweave.crypto.hash(concatenated));
-  const blockHeightString = `${blockHeight + 1}`.padStart(12, '0');
+  const blockHeightString = `${blockHeight}`.padStart(12, '0');
 
   return `${blockHeightString},${mills},${hashed}`;
 }

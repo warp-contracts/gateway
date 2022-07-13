@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { Benchmark } from 'redstone-smartweave';
+import { Benchmark } from 'warp-contracts';
 
 export async function safeContractsRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb } = ctx;
