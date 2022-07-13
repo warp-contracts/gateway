@@ -297,7 +297,7 @@ async function createSortKey(
   const jwkDBytes = arweave.utils.b64UrlToBuffer(jwk.d as string);
   const concatenated = arweave.utils.concatBuffers([blockHashBytes, txIdBytes, jwkDBytes]);
   const hashed = arrayToHex(await arweave.crypto.hash(concatenated));
-  const blockHeightString = `${blockHeight}`.padStart(12, '0');
+  const blockHeightString = `${blockHeight + 1}`.padStart(12, '0');
 
   return `${blockHeightString},${mills},${hashed}`;
 }
