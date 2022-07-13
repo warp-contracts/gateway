@@ -36,7 +36,7 @@
     "parse-json-stream": "^2.4.0",
     "pg": "8.7.3",
     "pg-query-stream": "^4.2.3",
-    "warp-contracts": "1.1.8",
+    "warp-contracts": "1.1.9",
     "yargs": "17.3.0"
   },
   "devDependencies": {
