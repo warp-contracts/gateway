@@ -1,7 +1,7 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
-import { GQLTagInterface, SmartWeaveTags } from 'redstone-smartweave';
+import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
 import Bundlr from '@bundlr-network/client';
 import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';

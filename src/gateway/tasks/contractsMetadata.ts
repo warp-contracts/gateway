@@ -1,6 +1,6 @@
 import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
-import { ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags } from 'redstone-smartweave';
+import { ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags } from 'warp-contracts';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT } from './syncTransactions';
 import { Knex } from 'knex';

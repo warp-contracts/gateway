@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { Benchmark } from 'redstone-smartweave';
+import { Benchmark } from 'warp-contracts';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 

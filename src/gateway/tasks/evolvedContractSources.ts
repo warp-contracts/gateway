@@ -1,4 +1,4 @@
-import { ContractDefinitionLoader, ContractSource } from 'redstone-smartweave';
+import { ContractDefinitionLoader, ContractSource } from 'warp-contracts';
 import { GatewayContext } from '../init';
 import { TaskRunner } from './TaskRunner';
 
