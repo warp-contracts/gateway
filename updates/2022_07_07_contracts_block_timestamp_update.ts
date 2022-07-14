@@ -1,10 +1,10 @@
 /* eslint-disable */
 import { connect } from '../src/db/connect';
 import axios from 'axios';
-import { Benchmark } from 'redstone-smartweave';
+import { Benchmark } from 'warp-contracts';
 async function updateContractsWithBlockTimestamp() {
   require('dotenv').config({
-    path: '.secrets/local.env',
+    path: '.secrets/prod-testnet.env',
   });
 
   const db = connect();
@@ -27,10 +27,13 @@ async function updateContractsWithBlockTimestamp() {
 
     const res: any = await Promise.allSettled(
       blockHeights.rows.map(async (r: any) => {
-        return axios.get(`https://arweave.net/block/height/${r.block_height}`);
+        return axios.get(`https://testnet.redstone.tools/block/height/${r.block_height}`);
       })
     );
     const resFulfilled = res.filter((r: any) => r.status == 'fulfilled');
+    // const resRejected = res.filter((r: any) => r.status == 'rejected');
+    // console.log(resRejected);
+
     let values = '';
     let updateTemplate = (values: string) =>
       `
