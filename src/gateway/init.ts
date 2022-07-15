@@ -25,6 +25,7 @@ const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
 
 const cors = require('@koa/cors');
+const compress = require('koa-compress');
 
 export type VRF = { pubKeyHex: string; privKey: any; ec: any };
 
@@ -94,6 +95,17 @@ export interface GatewayContext {
       jsonLimit: '2mb',
     })
   );
+
+  /*app.use(compress({
+    threshold: 2048,
+    deflate: false,
+    br: false/!*{
+      params: {
+        [zlib.constants.BROTLI_PARAM_QUALITY]: 4
+      }
+    }*!/
+  }));*/
+  app.use(bodyParser());
 
   app.use(gatewayRouter.routes());
   app.use(gatewayRouter.allowedMethods());

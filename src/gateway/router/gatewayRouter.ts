@@ -15,6 +15,8 @@ import { interactionsSortKeyRoute } from './routes/interactionsSortKeyRoute';
 import { contractDataRoute } from './routes/contractDataRoute';
 import { nftsOwnedByAddressRoute } from './routes/nftsOwnedByAddressRoute';
 import { txsPerDayRoute } from './routes/stats/txsPerDayRoute';
+import {interactionsContractGroupsRoute} from "./routes/interactionsContractGroupsRoute";
+import {interactionsSortKeyRoute_v2} from "./routes/interactionsSortKeyRoute_v2";
 
 const gatewayRouter = new Router({ prefix: '/gateway' });
 
@@ -31,7 +33,9 @@ gatewayRouter.get('/interactions/transactionId', interactionsRoute);
 gatewayRouter.get('/interactions', interactionsRoute);
 // adding temporarily - https://github.com/redstone-finance/redstone-sw-gateway/pull/65#discussion_r880555807
 gatewayRouter.get('/interactions-sort-key', interactionsSortKeyRoute);
+gatewayRouter.get('/v2/interactions-sort-key', interactionsSortKeyRoute_v2);
 gatewayRouter.get('/interactions-stream', interactionsStreamRoute);
+gatewayRouter.get('/interactions-contract-groups', interactionsContractGroupsRoute);
 gatewayRouter.get('/interactions/:id', interactionRoute);
 gatewayRouter.get('/stats', totalTxsRoute);
 gatewayRouter.get('/stats/per-day', txsPerDayRoute);
