@@ -275,7 +275,8 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
     first: MAX_GQL_REQUEST,
   };
 
-  return await loadPages(context, INTERACTIONS_QUERY, mainTransactionsVariables);
+  const { logger, arweaveWrapper } = context;
+  return await loadPages({ logger, arweaveWrapper }, INTERACTIONS_QUERY, mainTransactionsVariables);
 }
 
 export function parseFunctionName(input: string, logger: WarpLogger) {
