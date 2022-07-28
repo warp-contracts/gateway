@@ -152,7 +152,8 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
     first: MAX_GQL_REQUEST,
   };
 
-  return await loadPages(context, CONTRACTS_QUERY, variables);
+  const { logger, arweaveWrapper } = context;
+  return await loadPages({ logger, arweaveWrapper }, CONTRACTS_QUERY, variables);
 }
 
 async function loadContractsMetadata(context: GatewayContext) {
@@ -184,6 +185,7 @@ async function loadContractsMetadata(context: GatewayContext) {
     try {
       const definition: ContractDefinition<any> = await definitionLoader.load(row.contract.trim());
       const type = evalType(definition.initState);
+      const srcTxOwner = await arweave.wallets.ownerToAddress(definition.srcTx.owner);
 
       let update: any = {
         src_tx_id: definition.srcTxId,
@@ -197,6 +199,7 @@ async function loadContractsMetadata(context: GatewayContext) {
 
       let contracts_src_insert: any = {
         src_tx_id: definition.srcTxId,
+        owner: srcTxOwner,
         src_content_type: definition.contractType == 'js' ? 'application/javascript' : 'application/wasm',
         src_tx: definition.srcTx,
       };
