@@ -152,7 +152,8 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
     first: MAX_GQL_REQUEST,
   };
 
-  return await loadPages(context, CONTRACTS_QUERY, variables);
+  const { logger, arweaveWrapper } = context;
+  return await loadPages({ logger, arweaveWrapper }, CONTRACTS_QUERY, variables);
 }
 
 async function loadContractsMetadata(context: GatewayContext) {

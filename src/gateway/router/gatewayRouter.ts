@@ -10,13 +10,14 @@ import { safeContractsRoute } from './routes/safeContractsRoute';
 import { sequencerRoute } from './routes/sequencerRoute';
 import { interactionsStreamRoute } from './routes/interactionsStreamRoute';
 import { deployContractRoute } from './routes/deployContractRoute';
-import {arweaveBlockRoute, arweaveInfoRoute} from './routes/arweaveInfoRoute';
+import { arweaveBlockRoute, arweaveInfoRoute } from './routes/arweaveInfoRoute';
 import { interactionsSortKeyRoute } from './routes/interactionsSortKeyRoute';
 import { contractDataRoute } from './routes/contractDataRoute';
 import { nftsOwnedByAddressRoute } from './routes/nftsOwnedByAddressRoute';
 import { txsPerDayRoute } from './routes/stats/txsPerDayRoute';
-import {interactionsContractGroupsRoute} from "./routes/interactionsContractGroupsRoute";
-import {interactionsSortKeyRoute_v2} from "./routes/interactionsSortKeyRoute_v2";
+import { interactionsContractGroupsRoute } from './routes/interactionsContractGroupsRoute';
+import { interactionsSortKeyRoute_v2 } from './routes/interactionsSortKeyRoute_v2';
+import { contractSourceRoute } from './routes/contractSourceRoute';
 
 const gatewayRouter = new Router({ prefix: '/gateway' });
 
@@ -41,6 +42,7 @@ gatewayRouter.get('/stats', totalTxsRoute);
 gatewayRouter.get('/stats/per-day', txsPerDayRoute);
 gatewayRouter.get('/arweave/info', arweaveInfoRoute);
 gatewayRouter.get('/arweave/block', arweaveBlockRoute);
+gatewayRouter.get('/contract-source', contractSourceRoute);
 
 // post
 gatewayRouter.post('/contracts/deploy', deployContractRoute);

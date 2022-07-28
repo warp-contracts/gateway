@@ -1,5 +1,12 @@
 import { GatewayContext } from './gateway/init';
-import { Benchmark, GQLEdgeInterface, GQLResultInterface, GQLTransactionsResultInterface } from 'warp-contracts';
+import {
+  ArweaveWrapper,
+  Benchmark,
+  GQLEdgeInterface,
+  GQLResultInterface,
+  GQLTransactionsResultInterface,
+  WarpLogger,
+} from 'warp-contracts';
 import { sleep } from './utils';
 
 export const MAX_GQL_REQUEST = 100;
@@ -22,11 +29,16 @@ export interface ReqVariables {
   after?: string;
 }
 
+export interface GqlContext {
+  logger: WarpLogger;
+  arweaveWrapper: ArweaveWrapper;
+}
+
 function filterBundles(tx: GQLEdgeInterface) {
   return !tx.node.parent?.id && !tx.node.bundledIn?.id;
 }
 
-export async function loadPages(context: GatewayContext, query: string, variables: ReqVariables) {
+export async function loadPages(context: GqlContext, query: string, variables: any) {
   let transactions = await getNextPage(context, query, variables);
 
   const txInfos: GQLEdgeInterface[] = transactions.edges.filter((tx) => filterBundles(tx));
@@ -47,9 +59,9 @@ export async function loadPages(context: GatewayContext, query: string, variable
 }
 
 export async function getNextPage(
-  context: GatewayContext,
+  context: GqlContext,
   query: string,
-  variables: ReqVariables
+  variables: any
 ): Promise<GQLTransactionsResultInterface> {
   const { logger, arweaveWrapper } = context;
 
