@@ -23,7 +23,7 @@ function loadInteractionsForSrcTx(
       WHERE c.src_tx_id = ?
         AND i.confirmation_status IN ('confirmed', 'not_processed')
         ${fromSortKey ? ' AND sort_key > ?' : ''}
-      ORDER BY i.contract_id ASC, i.sort_key ASC
+      ORDER i.sort_key ASC
       LIMIT ? OFFSET ?`;
 
   return gatewayDb.raw(query, bindings);
@@ -68,7 +68,7 @@ function loadInteractionsForGroup(
           AND (s.src NOT LIKE '%readContractState%' AND s.src NOT LIKE '%unsafeClient%'))
           OR s.src_content_type = 'application/wasm') 
           ${fromSortKey ? ' AND sort_key > ?' : ''}
-      ORDER BY i.contract_id ASC, i.sort_key ASC
+      ORDER BY i.sort_key ASC
       LIMIT ? OFFSET ?;
   `;
 
@@ -95,18 +95,14 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
 
     logger.info(`Loading contract groups interactions: ${benchmark.elapsed()}`);
 
-    const grouped: any = {};
+    const interactions = [];
     for (let row of result?.rows) {
-      if (!grouped[row.contractId]) {
-        grouped[row.contractId] = [];
-      }
-      grouped[row.contractId].push(
-        {
-          ...row.interaction,
-          confirmationStatus: row.confirmation_status,
-          sortKey: row.sort_key,
-        }
-      )
+      interactions.push({
+        contractId: row.contractId,
+        ...row.interaction,
+        confirmationStatus: row.confirmation_status,
+        sortKey: row.sort_key,
+      });
     }
 
     ctx.body = {
@@ -116,7 +112,7 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
         page: parsedPage
       },
 
-      interactions: grouped,
+      interactions,
     };
   } catch (e: any) {
     ctx.logger.error(e);
