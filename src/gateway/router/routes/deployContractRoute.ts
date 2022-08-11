@@ -22,10 +22,11 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
   const contractTags = prepareTags(contractTx, originalAddress);
 
   try {
-    let srcTxId, srcContentType, src, srcBinary, srcWasmLang, bundlerSrcTxId;
+    let srcTxId, srcContentType, src, srcBinary, srcWasmLang, bundlerSrcTxId, srcTxOwner;
 
     if (srcTx) {
       srcTxId = srcTx.id;
+      srcTxOwner = await arweave.wallets.ownerToAddress(srcTx.owner);
       const srcTags = prepareTags(srcTx, originalAddress);
       srcContentType = tagValue(SmartWeaveTags.CONTENT_TYPE, srcTags);
       srcWasmLang = tagValue(SmartWeaveTags.WASM_LANG, srcTags);
@@ -80,6 +81,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     if (srcTx) {
       let contracts_src_insert: any = {
         src_tx_id: srcTxId,
+        owner: srcTxOwner,
         src: src || null,
         src_content_type: srcContentType,
         src_binary: srcBinary || null,
