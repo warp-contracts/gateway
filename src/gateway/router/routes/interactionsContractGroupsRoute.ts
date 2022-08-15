@@ -6,51 +6,59 @@ import {Benchmark} from "warp-contracts";
 const MAX_INTERACTIONS_PER_PAGE = 50000;
 
 function loadInteractionsForSrcTx(
-  gatewayDb: Knex, group: string, fromSortKey: string, limit: number, offset: number) {
+  gatewayDb: Knex, group: string, fromSortKey: string, fromBlockHeight: number | null, limit: number, offset: number) {
   const bindings: any[] = [];
   bindings.push(group);
   fromSortKey && bindings.push(fromSortKey);
+  fromBlockHeight && bindings.push(fromBlockHeight);
   bindings.push(limit);
   bindings.push(offset);
 
   const query = `
-      SELECT i.contract_id as "contractId",
+      SELECT c.contract_id  as "contractId",
+             c.block_height as "contractCreation",
+             i.sort_key,
              i.interaction,
-             i.confirmation_status,
-             i.sort_key
-      FROM interactions i
-               JOIN contracts c ON i.contract_id = c.contract_id
+             i.confirmation_status
+      FROM contracts c
+               LEFT JOIN interactions i ON c.contract_id = i.contract_id
       WHERE c.src_tx_id = ?
-        AND i.confirmation_status IN ('confirmed', 'not_processed')
-        ${fromSortKey ? ' AND sort_key > ?' : ''}
-      ORDER i.sort_key ASC
-      LIMIT ? OFFSET ?`;
+        AND (
+              (i.sort_key is not null AND i.confirmation_status IN ('confirmed', 'not_processed')
+                  ${fromSortKey ? ' AND i.sort_key > ?' : ''})
+              OR (i.sort_key is null ${fromBlockHeight ? ' AND c.block_height >= ?' : ''})
+          )
+      ORDER BY i.sort_key ASC NULLS LAST, c.block_height ASC
+      LIMIT ? OFFSET ?;
+  `;
 
   return gatewayDb.raw(query, bindings);
 }
 
 function loadInteractionsForGroup(
-  gatewayDb: Knex, group: string, fromSortKey: string, limit: number, offset: number) {
+  gatewayDb: Knex, group: string, fromSortKey: string, fromBlockHeight: number | null, limit: number, offset: number) {
   const bindings: any[] = [];
   if (group != 'all_pst') {
     throw new Error(`Unknown group ${group}`);
   }
 
   fromSortKey && bindings.push(fromSortKey);
+  fromBlockHeight && bindings.push(fromBlockHeight);
   bindings.push(limit);
   bindings.push(offset);
 
   const query = `
-      SELECT i.contract_id as "contractId",
+      SELECT c.contract_id  as "contractId",
+             c.block_height as "contractCreation",
+             i.sort_key,
              i.interaction,
-             i.confirmation_status,
-             i.sort_key
-      FROM interactions i
-               JOIN contracts c ON i.contract_id = c.contract_id
+             i.confirmation_status
+      FROM contracts c
+               LEFT JOIN interactions i ON c.contract_id = i.contract_id
                JOIN contracts_src s ON s.src_tx_id = c.src_tx_id
       WHERE c.type = 'pst'
         AND c.content_type = 'application/json'
-        AND i.contract_id NOT IN (
+        AND c.contract_id NOT IN (
                                   'LkfzZvdl_vfjRXZOPjnov18cGnnK3aDKj0qSQCgkCX8', /* kyve  */
                                   'l6S4oMyzw_rggjt4yt4LrnRmggHQ2CdM1hna2MK4o_c', /* kyve  */
                                   'B1SRLyFzWJjeA0ywW41Qu1j7ZpBLHsXSSrWLrT3ebd8', /* kyve  */
@@ -62,13 +70,16 @@ function loadInteractionsForGroup(
                                   'OFD4GqQcqp-Y_Iqh8DN_0s3a_68oMvvnekeOEu_a45I', /* kyve  */
                                   'CdPAQNONoR83Shj3CbI_9seC-LqgI1oLaRJhSwP90-o', /* koi   */
                                   'dNXaqE_eATp2SRvyFjydcIPHbsXAe9UT-Fktcqs7MDk' /* kyve  */)
-        AND c.src_tx_id NOT IN ('a7IR-xvPkBtcYUBZXd8z-Tu611VeJH33uEA5XiFUNA') /* Hoh */
-        AND i.confirmation_status IN ('confirmed', 'not_processed')
+        AND c.src_tx_id NOT IN ('Qa7IR-xvPkBtcYUBZXd8z-Tu611VeJH33uEA5XiFUNA') /* Hoh */
+        AND (
+              (i.sort_key is not null AND i.confirmation_status IN ('confirmed', 'not_processed')
+                  ${fromSortKey ? ' AND i.sort_key > ?' : ''})
+              OR (i.sort_key is null ${fromBlockHeight ? ' AND c.block_height >= ?' : ''})
+          )
         AND ((s.src_content_type = 'application/javascript'
           AND (s.src NOT LIKE '%readContractState%' AND s.src NOT LIKE '%unsafeClient%'))
-          OR s.src_content_type = 'application/wasm') 
-          ${fromSortKey ? ' AND sort_key > ?' : ''}
-      ORDER BY i.sort_key ASC
+          OR s.src_content_type = 'application/wasm')
+      ORDER BY i.sort_key ASC NULLS LAST, c.block_height ASC
       LIMIT ? OFFSET ?;
   `;
 
@@ -77,21 +88,22 @@ function loadInteractionsForGroup(
 
 export async function interactionsContractGroupsRoute(ctx: Router.RouterContext) {
   const {gatewayDb, logger} = ctx;
-  const {group, fromSortKey, page, limit} = ctx.query;
+  const {group, fromSortKey, fromBlockHeight, page, limit} = ctx.query;
   const parsedPage = page ? parseInt(page as string) : 1;
   const parsedLimit = limit
     ? Math.min(parseInt(limit as string), MAX_INTERACTIONS_PER_PAGE)
     : MAX_INTERACTIONS_PER_PAGE;
   const offset = (parsedPage - 1) * parsedLimit;
   const parsedGroup = group as string;
+  const parsedBlockHeight = fromBlockHeight ? parseInt(fromBlockHeight as string) : null;
 
   let result;
 
   try {
     const benchmark = Benchmark.measure();
     result = isTxIdValid(parsedGroup)
-      ? await loadInteractionsForSrcTx(gatewayDb, parsedGroup, fromSortKey as string, parsedLimit, offset)
-      : await loadInteractionsForGroup(gatewayDb, parsedGroup, fromSortKey as string, parsedLimit, offset);
+      ? await loadInteractionsForSrcTx(gatewayDb, parsedGroup, fromSortKey as string, parsedBlockHeight, parsedLimit, offset)
+      : await loadInteractionsForGroup(gatewayDb, parsedGroup, fromSortKey as string, parsedBlockHeight, parsedLimit, offset);
 
     logger.info(`Loading contract groups interactions: ${benchmark.elapsed()}`);
 
@@ -102,6 +114,7 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
         ...row.interaction,
         confirmationStatus: row.confirmation_status,
         sortKey: row.sort_key,
+        contractCreation: row.contractCreation
       });
     }
 
