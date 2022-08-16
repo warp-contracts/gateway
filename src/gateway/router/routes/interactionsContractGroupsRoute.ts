@@ -8,7 +8,9 @@ const MAX_INTERACTIONS_PER_PAGE = 50000;
 function loadInteractionsForSrcTx(
   gatewayDb: Knex, group: string, fromSortKey: string, fromBlockHeight: number | null, limit: number, offset: number) {
   const bindings: any[] = [];
-  bindings.push(group);
+
+  const parsedGroup = group.split(',');
+
   fromSortKey && bindings.push(fromSortKey);
   fromBlockHeight && bindings.push(fromBlockHeight);
   bindings.push(limit);
@@ -17,13 +19,14 @@ function loadInteractionsForSrcTx(
   const query = `
       SELECT c.contract_id                                        as "contractId",
              c.block_height                                       as "contractCreation",
+             c.src_tx_id                                          as "contractSourceId",
              (CASE WHEN i.sort_key IS NULL THEN c.init_state END) as "initState",
              i.sort_key                                           as "sortKey",
              i.interaction                                        as "interaction",
              i.confirmation_status                                as "confirmationStatus"
       FROM contracts c
                LEFT JOIN interactions i ON c.contract_id = i.contract_id
-      WHERE c.src_tx_id = ?
+      WHERE c.src_tx_id IN (${parsedGroup.map(group => `'${group}'`).join(', ')})
         AND (
               (i.sort_key is not null AND i.confirmation_status IN ('confirmed', 'not_processed')
                   ${fromSortKey ? ' AND i.sort_key > ?' : ''})
@@ -53,6 +56,7 @@ function loadInteractionsForGroup(
   const query = `
       SELECT c.contract_id                                        as "contractId",
              c.block_height                                       as "contractCreation",
+             c.src_tx_id                                          as "contractSourceId",
              (CASE WHEN i.sort_key IS NULL THEN c.init_state END) as "initState",
              i.sort_key                                           as "sortKey",
              i.interaction                                        as "interaction",
@@ -121,7 +125,8 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
         confirmationStatus: row.confirmationStatus,
         sortKey: row.sortKey,
         contractCreation: row.contractCreation,
-        initState: row.initState
+        initState: row.initState,
+        contractSourceId: row.contractSourceId
       });
     }
 
@@ -131,7 +136,6 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
         items: result?.rows.length,
         page: parsedPage
       },
-
       interactions,
     };
   } catch (e: any) {
