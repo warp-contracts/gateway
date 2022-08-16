@@ -15,11 +15,12 @@ function loadInteractionsForSrcTx(
   bindings.push(offset);
 
   const query = `
-      SELECT c.contract_id  as "contractId",
-             c.block_height as "contractCreation",
-             i.sort_key,
-             i.interaction,
-             i.confirmation_status
+      SELECT c.contract_id                                        as "contractId",
+             c.block_height                                       as "contractCreation",
+             (CASE WHEN i.sort_key IS NULL THEN c.init_state END) as "initState",
+             i.sort_key                                           as "sortKey",
+             i.interaction                                        as "interaction",
+             i.confirmation_status                                as "confirmationStatus"
       FROM contracts c
                LEFT JOIN interactions i ON c.contract_id = i.contract_id
       WHERE c.src_tx_id = ?
@@ -28,7 +29,9 @@ function loadInteractionsForSrcTx(
                   ${fromSortKey ? ' AND i.sort_key > ?' : ''})
               OR (i.sort_key is null ${fromBlockHeight ? ' AND c.block_height >= ?' : ''})
           )
-      ORDER BY i.sort_key ASC NULLS LAST, c.block_height ASC
+        -- note: there might multiple contracts at same block_height, so to get stable results during pagination
+        -- - the c.contract_id column is added to sorting
+      ORDER BY i.sort_key ASC NULLS LAST, c.block_height ASC, c.contract_id ASC
       LIMIT ? OFFSET ?;
   `;
 
@@ -48,11 +51,12 @@ function loadInteractionsForGroup(
   bindings.push(offset);
 
   const query = `
-      SELECT c.contract_id  as "contractId",
-             c.block_height as "contractCreation",
-             i.sort_key,
-             i.interaction,
-             i.confirmation_status
+      SELECT c.contract_id                                        as "contractId",
+             c.block_height                                       as "contractCreation",
+             (CASE WHEN i.sort_key IS NULL THEN c.init_state END) as "initState",
+             i.sort_key                                           as "sortKey",
+             i.interaction                                        as "interaction",
+             i.confirmation_status                                as "confirmationStatus"
       FROM contracts c
                LEFT JOIN interactions i ON c.contract_id = i.contract_id
                JOIN contracts_src s ON s.src_tx_id = c.src_tx_id
@@ -79,7 +83,9 @@ function loadInteractionsForGroup(
         AND ((s.src_content_type = 'application/javascript'
           AND (s.src NOT LIKE '%readContractState%' AND s.src NOT LIKE '%unsafeClient%'))
           OR s.src_content_type = 'application/wasm')
-      ORDER BY i.sort_key ASC NULLS LAST, c.block_height ASC
+        -- note: there might multiple contracts at same block_height, so to get stable results during pagination
+        -- - the c.contract_id column is added to sorting
+      ORDER BY i.sort_key ASC NULLS LAST, c.block_height ASC, c.contract_id ASC
       LIMIT ? OFFSET ?;
   `;
 
@@ -112,9 +118,10 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
       interactions.push({
         contractId: row.contractId,
         ...row.interaction,
-        confirmationStatus: row.confirmation_status,
-        sortKey: row.sort_key,
-        contractCreation: row.contractCreation
+        confirmationStatus: row.confirmationStatus,
+        sortKey: row.sortKey,
+        contractCreation: row.contractCreation,
+        initState: row.initState
       });
     }
 
