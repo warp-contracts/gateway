@@ -2,7 +2,7 @@ import { TaskRunner } from './TaskRunner';
 import { MIN_CONFIRMATIONS } from './verifyInteractions';
 import { GatewayContext } from '../init';
 
-const CORRUPTED_CHECK_INTERVAL_MS = 1000 * 60 * 60 * 4;
+const CORRUPTED_CHECK_INTERVAL_MS = 1000 * 60 * 60;
 
 export async function runVerifyCorruptedTransactionsTask(context: GatewayContext) {
   await TaskRunner.from('[corrupted transactions check]', verifyCorruptedTransactions, context).runAsyncEvery(
