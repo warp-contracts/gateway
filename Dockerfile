@@ -1,7 +1,8 @@
-FROM node:14.18.2-alpine
+FROM node:16.17.0-alpine3.16
 
 RUN mkdir /app
 WORKDIR /app
+RUN apk add git
 
 # Installing required npm packages
 COPY package.json package.json

@@ -118,9 +118,10 @@ export interface GatewayContext {
 
   // note: replica only serves "GET" requests and does not run any tasks
   if (!replica) {
+    const privateKey = process.env.VRF_PRIV_KEY || fs.readFileSync('./.secrets/vrf-priv-key.txt', 'utf8');
     app.context.vrf = {
-      pubKeyHex: fs.readFileSync('./vrf-pub-key.txt', 'utf8'),
-      privKey: EC.keyFromPrivate(fs.readFileSync('./.secrets/vrf-priv-key.txt', 'utf8'), 'hex').getPrivate(),
+      pubKeyHex: process.env.VRF_PUB_KEY || fs.readFileSync('./vrf-pub-key.txt', 'utf8'),
+      privKey: EC.keyFromPrivate(privateKey, 'hex').getPrivate(),
       ec: EC,
     };
 

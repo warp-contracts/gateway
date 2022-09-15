@@ -12,8 +12,14 @@ export async function runBundlrCheck(context: GatewayContext) {
   await TaskRunner.from('[bundlr balance check]', checkBalance, context).runSyncEvery(BUNDLR_CHECK_INTERVAL, true);
 }
 
+function getJwk() {
+  const jwkString = process.env.WARP_WALLET_JWK
+      || fs.readFileSync('.secrets/warp-wallet-jwk.json').toString();
+  return JSON.parse(jwkString);
+}
+
 export function initBundlr(logger: WarpLogger): { bundlr: Bundlr; jwk: JWKInterface } {
-  const jwk = JSON.parse(fs.readFileSync('.secrets/warp-wallet-jwk.json').toString());
+  const jwk = getJwk();
   const bundlr = new Bundlr(BUNDLR_NODE2_URL, 'arweave', jwk, {
     timeout: 5000,
   });
