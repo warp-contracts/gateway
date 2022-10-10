@@ -36,22 +36,40 @@ async function main() {
     }
   ];
   const userSigner = new ArweaveSigner(userJwk);
-  const data = Math.random().toString().slice(-4);
-  const dataItem = createData(
-    data,
+  const dataItem1 = createData(
+    Math.random().toString().slice(-4),
     userSigner,
     {tags}
   );
-  await dataItem.sign(userSigner);
+  const dataItem2 = createData(
+    Math.random().toString().slice(-4),
+    userSigner,
+    {tags}
+  );
+  const dataItem3 = createData(
+    Math.random().toString().slice(-4),
+    userSigner,
+    {tags}
+  );
+  await dataItem1.sign(userSigner);
+  await dataItem2.sign(userSigner);
+  await dataItem3.sign(userSigner);
 
-  const bundle = await bundleAndSignData([dataItem], warpJwk);
+  console.log("dataItem1 id", dataItem1.id);
+  console.log("dataItem2 id", dataItem2.id);
+  console.log("dataItem3 id", dataItem3.id);
+
+  const bundle = await bundleAndSignData([dataItem1, dataItem2, dataItem3], warpJwk);
 
   const result = await bundlr.uploader.upload(bundle.getRaw(), [
     {name: 'Bundle-Format', value: 'binary'},
     {name: 'Bundle-Version', value: '2.0'},
-    {name: 'Application', value: 'Warp'}
+    {name: 'Application', value: 'Warp-Sequencer'}
   ]);
   console.log(result.data);
 }
 
 main().finally(() => console.log("done"));
+
+// -RGYTnzNe9cZYmj4Un0zUFDSCkMeqmeW0NmlsGmWMLM - bundle with one data-item (iN9MSwkn-5zjLwXOKMuJjrLENBYumIsUzrzi7eaTYC0)
+// Ax3ocdUpesprt-J2Hc0VuzskKaTNjVgla7QfGfDP9B4 - bundle with three data-items (WOzSUJLXsFldUUb1QrKEuwOlVZrnEp9XloxxWvbAjRI, jDs8nPV3U3h82ho3O3xDH5QFQpvKGD0ii2MB6nfJBS4, u_Iei58HBL2rLZD3DfeRAs-6TyHMDZOSl7u17K6pf4Y)
