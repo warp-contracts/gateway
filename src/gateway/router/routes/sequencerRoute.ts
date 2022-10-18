@@ -51,7 +51,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       throw new Error('Current block not set');
     }
 
-    const millis = Date.now();
+    const millis = Date. now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
     let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData } = prepareTags(

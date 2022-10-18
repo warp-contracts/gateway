@@ -16,11 +16,22 @@ async function main() {
   const warpJwk = JSON.parse(fs.readFileSync('.secrets/warp-wallet-jwk.json').toString());
   const warpJwkAddress = await arweave.wallets.jwkToAddress(warpJwk);
   console.log('Using warp jwk with address', warpJwkAddress);
-  const bundlr = new Bundlr("https://node1.bundlr.network", 'arweave', warpJwk, {
+  const bundlr = new Bundlr("https://node2.bundlr.network", 'arweave', warpJwk, {
     timeout: 5000,
   });
 
-  // jwk used to sign the data-item
+  const bTx = bundlr.createTransaction("OMG" );
+  await bTx.sign();
+  console.log(bTx.id);
+
+  const bTx2 = bundlr.createTransaction("OMG" );
+  await bTx2.sign();
+  console.log(bTx2.id);
+  //const response = await bTx.upload();
+
+  //console.log(response.data);
+
+ /* // jwk used to sign the data-item
   const userJwk = await arweave.wallets.generate();
 
   const tags = [
@@ -66,7 +77,7 @@ async function main() {
     {name: 'Bundle-Version', value: '2.0'},
     {name: 'Application', value: 'Warp-Sequencer'}
   ]);
-  console.log(result.data);
+  console.log(result.data);*/
 }
 
 main().finally(() => console.log("done"));
