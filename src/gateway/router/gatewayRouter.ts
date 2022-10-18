@@ -19,6 +19,7 @@ import { interactionsContractGroupsRoute } from './routes/interactionsContractGr
 import { interactionsSortKeyRoute_v2 } from './routes/interactionsSortKeyRoute_v2';
 import { contractSourceRoute } from './routes/contractSourceRoute';
 import { contractsBySourceRoute } from './routes/contractsBySourceRoute';
+import { creatorRoute } from './routes/creatorRoute';
 
 const gatewayRouter = new Router({ prefix: '/gateway' });
 
@@ -45,6 +46,7 @@ gatewayRouter.get('/arweave/info', arweaveInfoRoute);
 gatewayRouter.get('/arweave/block', arweaveBlockRoute);
 gatewayRouter.get('/contract-source', contractSourceRoute);
 gatewayRouter.get('/contracts-by-source', contractsBySourceRoute);
+gatewayRouter.get('/creator', creatorRoute);
 
 // post
 gatewayRouter.post('/contracts/deploy', deployContractRoute);
