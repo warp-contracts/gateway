@@ -2,10 +2,10 @@ import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
-import Bundlr from '@bundlr-network/client';
 import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { BUNDLR_NODE2_URL } from '../../../constants';
+import { uploadToBundlr } from './sequencerRoute';
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -35,7 +35,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       } else {
         srcBinary = Buffer.from(srcTx.data);
       }
-      const response = await uploadToBundlr(srcTx, bundlr, srcTags);
+      const response = await uploadToBundlr(srcTx, bundlr, srcTags, logger);
       bundlerSrcTxId = response.bTx.id;
       logger.debug('Src Tx successfully bundled', {
         id: srcTxId,
@@ -46,7 +46,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       // maybe ad some sanity check here - whether the src is already indexed by the gateway?
     }
 
-    const { bTx: bundlerContractTx } = await uploadToBundlr(contractTx, bundlr, contractTags);
+    const { bTx: bundlerContractTx } = await uploadToBundlr(contractTx, bundlr, contractTags, logger);
     logger.debug('Contract Tx successfully bundled', {
       id: contractTx.id,
       bundled_tx_id: bundlerContractTx.id,
@@ -136,12 +136,4 @@ function prepareTags(transaction: Transaction, originalAddress: string): GQLTagI
   ];
 
   return tags;
-}
-
-async function uploadToBundlr(transaction: Transaction, bundlr: Bundlr, tags: GQLTagInterface[]) {
-  const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
-  await bTx.sign();
-  const bundlrResponse = await bTx.upload();
-
-  return { bTx, bundlrResponse };
 }

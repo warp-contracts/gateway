@@ -3,7 +3,7 @@ import Transaction from 'arweave/node/lib/transaction';
 import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
-import {arrayToHex, Benchmark, GQLTagInterface, WarpLogger, SmartWeaveTags, block_973730} from 'warp-contracts';
+import { arrayToHex, Benchmark, GQLTagInterface, WarpLogger, SmartWeaveTags, block_973730 } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
@@ -265,7 +265,7 @@ function prepareTags(
   return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData };
 }
 
-async function uploadToBundlr(
+export async function uploadToBundlr(
   transaction: Transaction,
   bundlr: Bundlr,
   tags: GQLTagInterface[],
@@ -280,6 +280,18 @@ async function uploadToBundlr(
   const bundlrResponse = await bTx.upload();
   logger.debug('Uploading to bundlr', uploadBenchmark.elapsed());
   logger.debug('Bundlr response id', bundlrResponse.data.id);
+  logger.debug('Bundlr response status', bundlrResponse.status);
+
+  if (
+    bundlrResponse.status !== 200 ||
+    !bundlrResponse.data.public ||
+    !bundlrResponse.data.signature ||
+    !bundlrResponse.data.block
+  ) {
+    throw new Error(
+      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
+    );
+  }
 
   return { bTx, bundlrResponse };
 }
