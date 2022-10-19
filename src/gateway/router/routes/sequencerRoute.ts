@@ -32,7 +32,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
   const originalSignature = transaction.signature;
   const originalOwner = transaction.owner;
-  const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
 
   try {
     if (cachedNetworkData == null) {
@@ -54,9 +53,9 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
-    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData } = prepareTags(
+    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress } = prepareTags(
       transaction,
-      originalAddress,
+      originalOwner,
       millis,
       sortKey,
       currentHeight,
@@ -207,7 +206,7 @@ function bufToBn(buf: Array<number>) {
 
 function prepareTags(
   transaction: Transaction,
-  originalAddress: string,
+  originalOwner: string,
   millis: number,
   sortKey: string,
   currentHeight: number,
@@ -217,13 +216,14 @@ function prepareTags(
 ) {
   let contractTag: string = '',
     inputTag: string = '',
-    requestVrfTag = '';
+    requestVrfTag = '',
+    originalAddress = '';
 
   const decodedTags: GQLTagInterface[] = [];
 
   const internalWrites: string[] = [];
 
-  transaction.tags.forEach((tag) => {
+  transaction.tags.forEach(async (tag) => {
     const key = tag.get('name', { decode: true, string: true });
     const value = tag.get('value', { decode: true, string: true });
     if (key == SmartWeaveTags.CONTRACT_TX_ID) {
@@ -237,6 +237,11 @@ function prepareTags(
     }
     if (key == SmartWeaveTags.REQUEST_VRF) {
       requestVrfTag = value;
+    }
+    if (key == 'Signature-Type' && value == 'ethereum') {
+      originalAddress = originalOwner;
+    } else {
+      originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
     }
     decodedTags.push({
       name: key,
@@ -262,7 +267,7 @@ function prepareTags(
     vrfData = vrfGen.vrfData;
   }
 
-  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData };
+  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData, originalAddress };
 }
 
 export async function uploadToBundlr(
