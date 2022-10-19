@@ -238,7 +238,7 @@ function prepareTags(
     if (key == SmartWeaveTags.REQUEST_VRF) {
       requestVrfTag = value;
     }
-    if (key == 'Signature-Type') {
+    if (key == 'Signature-Type' && value == 'ethereum') {
       originalAddress = originalOwner;
     } else {
       originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
