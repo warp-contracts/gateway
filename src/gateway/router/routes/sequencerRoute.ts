@@ -3,7 +3,15 @@ import Transaction from 'arweave/node/lib/transaction';
 import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
-import { arrayToHex, Benchmark, GQLTagInterface, WarpLogger, SmartWeaveTags, block_973730 } from 'warp-contracts';
+import {
+  arrayToHex,
+  Benchmark,
+  GQLTagInterface,
+  WarpLogger,
+  SmartWeaveTags,
+  block_973730,
+  LoggerFactory,
+} from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
@@ -52,8 +60,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
-
-    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress } = prepareTags(
+    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress } = await prepareTags(
       transaction,
       originalOwner,
       millis,
@@ -204,7 +211,7 @@ function bufToBn(buf: Array<number>) {
   return BigInt('0x' + hex.join(''));
 }
 
-function prepareTags(
+async function prepareTags(
   transaction: Transaction,
   originalOwner: string,
   millis: number,
@@ -223,7 +230,7 @@ function prepareTags(
 
   const internalWrites: string[] = [];
 
-  transaction.tags.forEach(async (tag) => {
+  for (const tag of transaction.tags) {
     const key = tag.get('name', { decode: true, string: true });
     const value = tag.get('value', { decode: true, string: true });
     if (key == SmartWeaveTags.CONTRACT_TX_ID) {
@@ -247,7 +254,7 @@ function prepareTags(
       name: key,
       value: value,
     });
-  });
+  }
 
   const tags = [
     { name: 'Sequencer', value: 'RedStone' },
