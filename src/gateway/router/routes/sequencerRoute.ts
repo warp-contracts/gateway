@@ -9,7 +9,6 @@ import {
   GQLTagInterface,
   WarpLogger,
   SmartWeaveTags,
-  block_973730
 } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
@@ -341,12 +340,7 @@ async function createSortKey(
   const concatenated = arweave.utils.concatBuffers([blockHashBytes, txIdBytes, jwkDBytes]);
   const hashed = arrayToHex(await arweave.crypto.hash(concatenated));
 
-  let blockHeightString;
-  if (blockHeight <= block_973730) {
-    blockHeightString = `${blockHeight + 1}`.padStart(12, '0');
-  } else {
-    blockHeightString = `${blockHeight}`.padStart(12, '0');
-  }
+  const blockHeightString = `${blockHeight}`.padStart(12, '0');
 
   return `${blockHeightString},${mills},${hashed}`;
 }
