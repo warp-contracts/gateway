@@ -163,8 +163,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     const interaction = gqlInteractions[i];
     const blockId = interaction.node.block.id;
 
-    const contractId = tagsParser.getContractTag(interaction);
-    const input = tagsParser.getInputTag(interaction, contractId)?.value;
+    const contractId = tagsParser.getContractTag(interaction.node);
+    const input = tagsParser.getInputTag(interaction.node, contractId)?.value;
     const parsedInput = JSON.parse(input);
 
     const functionName = parseFunctionName(input, logger);
@@ -173,7 +173,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
     evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
-    const internalWrites = tagsParser.getInteractWritesContracts(interaction);
+    const internalWrites = tagsParser.getInteractWritesContracts(interaction.node);
 
     if (contractId === undefined || input === undefined) {
       logger.error('Contract or input tag not found for interaction', interaction);
