@@ -181,7 +181,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     }
 
     const sortKey = await sorter.createSortKey(blockId, interaction.node.id, interaction.node.block.height);
-
+    const testnet = testnetVersion(interaction);
     // now this one is really fucked-up - if the interaction contains the same tag X-times,
     // the default GQL endpoint will return this interaction X-times...
     // this is causing "SQLITE_CONSTRAINT: UNIQUE constraint failed: interactions.id"
@@ -203,6 +203,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         interact_write: internalWrites,
         sort_key: sortKey,
         evolve: evolve,
+        testnet
       });
     }
 
@@ -278,6 +279,13 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
   const { logger, arweaveWrapper } = context;
   return await loadPages({ logger, arweaveWrapper }, INTERACTIONS_QUERY, mainTransactionsVariables);
 }
+
+export function testnetVersion(tx: GQLEdgeInterface): string | null {
+  return tx.node.tags.find(
+    (tag) => tag.name === 'Warp-Testnet'
+  )?.value || null;
+}
+
 
 export function parseFunctionName(input: string, logger: WarpLogger) {
   try {

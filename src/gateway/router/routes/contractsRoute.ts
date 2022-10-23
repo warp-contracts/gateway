@@ -6,7 +6,7 @@ const MAX_CONTRACTS_PER_PAGE = 100;
 export async function contractsRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb } = ctx;
 
-  const { contractType, sourceType, page, limit } = ctx.query;
+  const { contractType, sourceType, page, limit, testnet } = ctx.query;
 
   logger.debug('Contracts route', { contractType, sourceType, page, limit });
 
@@ -29,6 +29,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
                  c.type                                                          AS contract_type,
                  c.pst_ticker                                                    AS pst_ticker,
                  c.pst_name                                                      AS pst_name,
+                 c.testnet                                                       AS testnet,
                  s.src_content_type                                              AS src_content_type,
                  s.src_wasm_lang                                                 AS src_wasm_lang,
                  count(i.contract_id)                                            AS interactions,
@@ -42,9 +43,10 @@ export async function contractsRoute(ctx: Router.RouterContext) {
                    LEFT JOIN contracts_src s
                              ON c.src_tx_id = s.src_tx_id
           WHERE c.contract_id != ''
-            AND c.type != 'error' ${contractType ? 'AND c.type = ?' : ''} ${
-        sourceType ? `AND s.src_content_type = ?` : ''
-      }
+            AND c.type != 'error' 
+                ${contractType ? ' AND c.type = ?' : ''} 
+                ${sourceType ? ' AND s.src_content_type = ?' : ''}
+                ${testnet ? ' AND c.testnet IS NOT NULL' : ''}
           GROUP BY c.contract_id, c.owner, c.type, c.pst_ticker, c.pst_name, s.src_content_type, s.src_wasm_lang
           ORDER BY last_interaction_height DESC NULLS LAST, interactions DESC NULLS LAST ${
             parsedPage ? ' LIMIT ? OFFSET ?' : ''
