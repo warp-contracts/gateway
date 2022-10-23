@@ -14,10 +14,10 @@ async function loadEvolvedContractSources(context: GatewayContext) {
   const { logger, gatewayDb, arweaveWrapper, arweave } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave);
 
-  const result: { evolve: string }[] = (
+  const result: { evolve: string, testnet: string | null }[] = (
     await gatewayDb.raw(
       `
-          SELECT evolve
+          SELECT evolve, testnet
           FROM interactions
           WHERE evolve NOT IN (SELECT src_tx_id from contracts_src)
           AND evolve IS NOT NULL;
@@ -35,6 +35,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
   for (const row of result) {
     logger.debug(`Loading evolved contract source: ${row.evolve}.`);
     const srcTxId = row.evolve;
+    const testnet = row.testnet;
 
     try {
       const { src, srcWasmLang, contractType, srcTx }: ContractSource = await definitionLoader.loadContractSource(
@@ -51,6 +52,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
         contracts_src_insert = {
           ...contracts_src_insert,
           src: src,
+          testnet
         };
       } else {
         const rawTxData = await arweaveWrapper.txData(srcTxId);
@@ -58,6 +60,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
           ...contracts_src_insert,
           src_binary: rawTxData,
           src_wasm_lang: srcWasmLang,
+          testnet
         };
       }
 

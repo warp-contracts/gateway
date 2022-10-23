@@ -59,7 +59,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
-    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner } = await prepareTags(
+    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner, testnetVersion } = await prepareTags(
       sLogger,
       transaction,
       originalOwner,
@@ -89,7 +89,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       cachedNetworkData.cachedBlockInfo,
       sortKey,
       vrfData,
-      isEvmSigner ? originalSignature : null
+      isEvmSigner ? originalSignature : null,
+      testnetVersion
     );
 
     const insertBench = Benchmark.measure();
@@ -125,6 +126,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         interact_write: internalWrites,
         sort_key: sortKey,
         evolve: evolve,
+        testnet: testnetVersion
       }),
     ]);
 
@@ -155,7 +157,8 @@ function createInteraction(
   blockInfo: BlockData,
   sortKey: string,
   vrfData: VrfData | null,
-  signature: string | null
+  signature: string | null,
+  testnetVersion: string | null
 ) {
   const interaction: any = {
     id: transaction.id,
@@ -176,6 +179,7 @@ function createInteraction(
     sortKey: sortKey,
     source: 'redstone-sequencer',
     vrf: vrfData,
+    testnet: testnetVersion
   };
   if (signature) {
     interaction.signature = signature;
@@ -237,7 +241,8 @@ async function prepareTags(
     inputTag: string = '',
     requestVrfTag = '',
     originalAddress = '',
-    isEvmSigner = false;
+    isEvmSigner = false,
+    testnetVersion = null;
 
   const decodedTags: GQLTagInterface[] = [];
 
@@ -263,6 +268,9 @@ async function prepareTags(
       originalAddress = originalOwner;
       logger.info(`original address type for ${transaction.id}`, originalOwner);
       isEvmSigner = true;
+    }
+    if (key == 'Warp-Testnet') {
+      testnetVersion = value;
     }
     decodedTags.push({
       name: key,
@@ -292,7 +300,7 @@ async function prepareTags(
     vrfData = vrfGen.vrfData;
   }
 
-  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner };
+  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner, testnetVersion };
 }
 
 export async function uploadToBundlr(

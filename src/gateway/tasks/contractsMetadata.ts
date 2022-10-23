@@ -2,7 +2,7 @@ import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
 import { ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags } from 'warp-contracts';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
-import { AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT } from './syncTransactions';
+import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion} from './syncTransactions';
 import { Knex } from 'knex';
 import { getCachedNetworkData } from './networkInfoCache';
 
@@ -91,6 +91,7 @@ async function loadContractsFromGql(context: GatewayContext) {
     const contractId = transaction.node.id;
     if (!contractsInsertsIds.has(contractId)) {
       const contentType = getContentTypeTag(transaction);
+      const testnet = testnetVersion(transaction);
       if (!contentType) {
         logger.warn(`Cannot determine contract content type for contract ${contractId}`);
       }
@@ -99,6 +100,7 @@ async function loadContractsFromGql(context: GatewayContext) {
         block_height: transaction.node.block.height,
         block_timestamp: transaction.node.block.timestamp,
         content_type: contentType || 'unknown',
+        testnet
       });
       contractsInsertsIds.add(contractId);
 
