@@ -20,7 +20,7 @@ import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
-const replica = argv.replica || false;
+const replica = argv.replica as boolean || false;
 const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
 
@@ -96,19 +96,11 @@ export interface GatewayContext {
     })
   );
 
-  /*app.use(compress({
-    threshold: 2048,
-    deflate: false,
-    br: false/!*{
-      params: {
-        [zlib.constants.BROTLI_PARAM_QUALITY]: 4
-      }
-    }*!/
-  }));*/
   app.use(bodyParser());
 
-  app.use(gatewayRouter.routes());
-  app.use(gatewayRouter.allowedMethods());
+  const gwRouter = gatewayRouter(replica);
+  app.use(gwRouter.routes());
+  app.use(gwRouter.allowedMethods());
 
   app.use(welcomeRouter.routes());
   app.use(welcomeRouter.allowedMethods());
