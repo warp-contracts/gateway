@@ -55,8 +55,15 @@ export async function creatorRoute(ctx: Router.RouterContext) {
     );
 
     const total = result?.rows?.length > 0 ? parseInt(result.rows[0].total) : 0;
+
     ctx.body = {
-      total,
+      paging: {
+        total,
+        limit: parsedLimit,
+        items: result?.rows.length,
+        page: parsedPage,
+        pages: Math.ceil(total / parsedLimit),
+      },
       transactions: result?.rows,
     };
 
