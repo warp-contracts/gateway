@@ -21,35 +21,42 @@ import { contractSourceRoute } from './routes/contractSourceRoute';
 import { contractsBySourceRoute } from './routes/contractsBySourceRoute';
 import { creatorRoute } from './routes/creatorRoute';
 
-const gatewayRouter = new Router({ prefix: '/gateway' });
+const gatewayRouter = (replica: boolean): Router => {
+  const router = new Router({ prefix: '/gateway' });
+  // get
+  router.get('/contracts', contractsRoute);
+  router.get('/contract', contractWithSourceRoute);
+  router.get('/contract-data/:id', contractDataRoute);
+  router.get('/contracts/:id', contractRoute);
+  router.get('/contracts-safe', safeContractsRoute);
+  router.get('/search/:phrase', searchRoute);
+  router.get('/nft/owner/:address', nftsOwnedByAddressRoute);
+  // separate "transactionId" route to make caching in cloudfront possible
+  router.get('/interactions/transactionId', interactionsRoute);
+  router.get('/interactions', interactionsRoute);
+  // adding temporarily - https://github.com/redstone-finance/redstone-sw-gateway/pull/65#discussion_r880555807
+  router.get('/interactions-sort-key', interactionsSortKeyRoute);
+  router.get('/v2/interactions-sort-key', interactionsSortKeyRoute_v2);
+  router.get('/interactions-stream', interactionsStreamRoute);
+  router.get('/interactions-contract-groups', interactionsContractGroupsRoute);
+  router.get('/interactions/:id', interactionRoute);
+  router.get('/stats', totalTxsRoute);
+  router.get('/stats/per-day', txsPerDayRoute);
+  router.get('/arweave/info', arweaveInfoRoute);
+  router.get('/arweave/block', arweaveBlockRoute);
+  router.get('/contract-source', contractSourceRoute);
+  router.get('/contracts-by-source', contractsBySourceRoute);
+  router.get('/creator', creatorRoute);
 
-// get
-gatewayRouter.get('/contracts', contractsRoute);
-gatewayRouter.get('/contract', contractWithSourceRoute);
-gatewayRouter.get('/contract-data/:id', contractDataRoute);
-gatewayRouter.get('/contracts/:id', contractRoute);
-gatewayRouter.get('/contracts-safe', safeContractsRoute);
-gatewayRouter.get('/search/:phrase', searchRoute);
-gatewayRouter.get('/nft/owner/:address', nftsOwnedByAddressRoute);
-// separate "transactionId" route to make caching in cloudfront possible
-gatewayRouter.get('/interactions/transactionId', interactionsRoute);
-gatewayRouter.get('/interactions', interactionsRoute);
-// adding temporarily - https://github.com/redstone-finance/redstone-sw-gateway/pull/65#discussion_r880555807
-gatewayRouter.get('/interactions-sort-key', interactionsSortKeyRoute);
-gatewayRouter.get('/v2/interactions-sort-key', interactionsSortKeyRoute_v2);
-gatewayRouter.get('/interactions-stream', interactionsStreamRoute);
-gatewayRouter.get('/interactions-contract-groups', interactionsContractGroupsRoute);
-gatewayRouter.get('/interactions/:id', interactionRoute);
-gatewayRouter.get('/stats', totalTxsRoute);
-gatewayRouter.get('/stats/per-day', txsPerDayRoute);
-gatewayRouter.get('/arweave/info', arweaveInfoRoute);
-gatewayRouter.get('/arweave/block', arweaveBlockRoute);
-gatewayRouter.get('/contract-source', contractSourceRoute);
-gatewayRouter.get('/contracts-by-source', contractsBySourceRoute);
-gatewayRouter.get('/creator', creatorRoute);
+  // post
+  if (!replica) {
+    router.post('/contracts/deploy', deployContractRoute);
+    router.post('/sequencer/register', sequencerRoute);
+  }
 
-// post
-gatewayRouter.post('/contracts/deploy', deployContractRoute);
-gatewayRouter.post('/sequencer/register', sequencerRoute);
+  return router;
+} 
+
+
 
 export default gatewayRouter;
