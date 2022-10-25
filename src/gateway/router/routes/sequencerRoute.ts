@@ -9,8 +9,7 @@ import {
   GQLTagInterface,
   WarpLogger,
   SmartWeaveTags,
-  block_973730,
-  LoggerFactory,
+  block_973730
 } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
@@ -60,7 +59,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
-    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress } = await prepareTags(
+    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner } = await prepareTags(
       transaction,
       originalOwner,
       millis,
@@ -87,7 +86,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       currentBlockId,
       cachedNetworkData.cachedBlockInfo,
       sortKey,
-      vrfData
+      vrfData,
+      isEvmSigner ? originalSignature : null
     );
 
     const insertBench = Benchmark.measure();
@@ -147,7 +147,8 @@ function createInteraction(
   currentBlockId: string,
   blockInfo: BlockData,
   sortKey: string,
-  vrfData: VrfData | null
+  vrfData: VrfData | null,
+  signature: string | null
 ) {
   const interaction: any = {
     id: transaction.id,
@@ -169,6 +170,9 @@ function createInteraction(
     source: 'redstone-sequencer',
     vrf: vrfData,
   };
+  if (signature) {
+    interaction.signature = signature;
+  }
 
   return interaction;
 }
@@ -224,7 +228,8 @@ async function prepareTags(
   let contractTag: string = '',
     inputTag: string = '',
     requestVrfTag = '',
-    originalAddress = '';
+    originalAddress = '',
+    isEvmSigner = false;
 
   const decodedTags: GQLTagInterface[] = [];
 
@@ -247,6 +252,7 @@ async function prepareTags(
     }
     if (key == 'Signature-Type' && value == 'ethereum') {
       originalAddress = originalOwner;
+      isEvmSigner = true;
     } else {
       originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
     }
@@ -274,7 +280,7 @@ async function prepareTags(
     vrfData = vrfGen.vrfData;
   }
 
-  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData, originalAddress };
+  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner };
 }
 
 export async function uploadToBundlr(
