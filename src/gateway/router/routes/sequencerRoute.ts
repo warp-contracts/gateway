@@ -258,7 +258,7 @@ async function prepareTags(
     if (key == 'Signature-Type' && value == 'ethereum') {
       logger.info(`Signature type for ${transaction.id}`, value);
       originalAddress = originalOwner;
-      logger.info(`original address type for ${transaction.id}`, value);
+      logger.info(`original address type for ${transaction.id}`, originalOwner);
       isEvmSigner = true;
     } else {
       originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
