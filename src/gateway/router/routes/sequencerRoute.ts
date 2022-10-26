@@ -268,7 +268,7 @@ async function prepareTags(
     });
   }
 
-  if (isEvmSigner) {
+  if (!isEvmSigner) {
     originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
   }
 
