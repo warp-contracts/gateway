@@ -261,14 +261,15 @@ async function prepareTags(
       originalAddress = originalOwner;
       logger.info(`original address type for ${transaction.id}`, originalOwner);
       isEvmSigner = true;
-    } else {
-      logger.warn('I should not be here');
-      originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
     }
     decodedTags.push({
       name: key,
       value: value,
     });
+  }
+
+  if (isEvmSigner) {
+    originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
   }
 
   const tags = [
