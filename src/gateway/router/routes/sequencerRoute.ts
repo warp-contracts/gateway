@@ -60,6 +60,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
     let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner } = await prepareTags(
+      sLogger,
       transaction,
       originalOwner,
       millis,
@@ -91,6 +92,9 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     );
 
     const insertBench = Benchmark.measure();
+    if (isEvmSigner) {
+      sLogger.info(`Interaction for ${transaction.id}`, JSON.stringify(interaction));
+    }
 
     await Promise.allSettled([
       gatewayDb('sequencer').insert({
@@ -216,6 +220,7 @@ function bufToBn(buf: Array<number>) {
 }
 
 async function prepareTags(
+  logger:any,
   transaction: Transaction,
   originalOwner: string,
   millis: number,
@@ -251,7 +256,9 @@ async function prepareTags(
       requestVrfTag = value;
     }
     if (key == 'Signature-Type' && value == 'ethereum') {
+      logger.info(`Signature type for ${transaction.id}`, value);
       originalAddress = originalOwner;
+      logger.info(`original address type for ${transaction.id}`, value);
       isEvmSigner = true;
     } else {
       originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
