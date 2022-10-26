@@ -79,6 +79,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     let evolve: string | null;
     evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
+    sLogger.info('Original address before create interaction', originalAddress)
     const interaction = createInteraction(
       transaction,
       originalAddress,
@@ -261,6 +262,7 @@ async function prepareTags(
       logger.info(`original address type for ${transaction.id}`, originalOwner);
       isEvmSigner = true;
     } else {
+      logger.warn('I should not be here');
       originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
     }
     decodedTags.push({
