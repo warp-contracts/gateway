@@ -17,6 +17,7 @@ import { BlockData } from 'arweave/node/blocks';
 import { VRF } from '../../init';
 import { isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE2_URL } from '../../../constants';
+import {updateCache} from "../../updateCache";
 
 const { Evaluate } = require('@idena/vrf-js');
 
@@ -135,6 +136,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     });
 
     ctx.body = bundlrResponse.data;
+    updateCache(contractTag, sLogger);
     sLogger.info('Total sequencer processing', benchmark.elapsed());
   } catch (e) {
     sLogger.error('Error while inserting bundled transaction');
