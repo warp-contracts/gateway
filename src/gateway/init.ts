@@ -17,6 +17,7 @@ import Bundlr from '@bundlr-network/client';
 import { initBundlr } from '../bundlr/connect';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
+import {loadCacheableContracts} from "./tasks/cacheableContracts";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -126,6 +127,7 @@ export interface GatewayContext {
         fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, { flag: 'wx' });
         removeLock = true;
 
+        await loadCacheableContracts(app.context);
         await runNetworkInfoCacheTask(app.context);
         // note: only one worker in cluster runs the gateway tasks
         // all workers in cluster run the http server
