@@ -64,10 +64,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     const initState = JSON.parse(initStateRaw);
     const type = evalType(initState);
 
-    const cacheable = isCacheable(srcContentType, src, srcTxId);
-    if (cacheable) {
-      cacheableContracts.add(contractTx.id);
-    }
+    const cacheable = isContractCacheable(srcContentType, src, srcTxId);
 
     const insert = {
       contract_id: contractTx.id,
@@ -105,7 +102,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    updateCache(contractTx.id, logger);
+    updateCache(contractTx.id, ctx, true);
 
     logger.info('Contract successfully bundled.');
 
@@ -123,7 +120,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
   }
 }
 
-function isCacheable(srcContentType: string | undefined, src: string | undefined, srcTxId: string): boolean {
+function isContractCacheable(srcContentType: string | undefined, src: string | undefined, srcTxId: string): boolean {
   if (srcContentType && src) {
     if (srcContentType === 'application/javascript') {
       return !(src.includes('SmartWeave.unsafeClient') || src.includes('SmartWeave.contracts.'));

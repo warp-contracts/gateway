@@ -137,6 +137,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     ctx.body = bundlrResponse.data;
     updateCache(contractTag, sLogger);
+
     sLogger.info('Total sequencer processing', benchmark.elapsed());
   } catch (e) {
     sLogger.error('Error while inserting bundled transaction');
