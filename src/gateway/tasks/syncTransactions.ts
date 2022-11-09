@@ -6,7 +6,6 @@ import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { Knex } from 'knex';
 import { isTxIdValid } from '../../utils';
 import {updateCache} from "../updateCache";
-import {RouterContext} from "@koa/router";
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -161,6 +160,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
   let interactionsInserts: INTERACTIONS_TABLE[] = [];
   const interactionsInsertsIds = new Set<string>();
 
+  const contracts = new Map();
+
   for (let i = 0; i < gqlInteractions.length; i++) {
     const interaction = gqlInteractions[i];
     const blockId = interaction.node.block.id;
@@ -207,10 +208,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         evolve: evolve,
         testnet
       });
-
-      updateCache(contractId, context, sortKey);
     }
-
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
       try {
         logger.info(`Batch insert ${MAX_BATCH_INSERT} interactions.`);
@@ -225,6 +223,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         return;
       }
     }
+    contracts.set(contractId, sortKey);
   }
 
   // 4. inserting the rest interactions into DB
@@ -238,6 +237,10 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       logger.error(e);
       return;
     }
+  }
+
+  for (let [key, value] of contracts) {
+    updateCache(key, context, value);
   }
 }
 
