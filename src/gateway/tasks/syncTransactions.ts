@@ -208,7 +208,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         testnet
       });
 
-      updateCache(contractId, context);
+      updateCache(contractId, context, sortKey);
     }
 
     if (interactionsInserts.length === MAX_BATCH_INSERT) {

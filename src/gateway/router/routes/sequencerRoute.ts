@@ -137,7 +137,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     });
 
     ctx.body = bundlrResponse.data;
-    updateCache(contractTag, ctx);
+    updateCache(contractTag, ctx, sortKey);
 
     sLogger.info('Total sequencer processing', benchmark.elapsed());
   } catch (e) {

@@ -3,11 +3,11 @@ import {GatewayContext} from "./init";
 
 const channel = 'contracts';
 
-export function updateCache(contractTxId: string, ctx: Router.RouterContext | GatewayContext) {
+export function updateCache(contractTxId: string, ctx: Router.RouterContext | GatewayContext, sortKey?: string) {
   const {logger} = ctx;
 
   try {
-    const message = {contractTxId, test: false, source: 'warp-gw'};
+    const message = {contractTxId, sortKey, test: false, source: 'warp-gw'};
     ctx.publisher.publish(channel, JSON.stringify(message));
     logger.info(`Published ${channel}`, message);
   } catch (e) {
