@@ -65,8 +65,6 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     const initState = JSON.parse(initStateRaw);
     const type = evalType(initState);
 
-    const cacheable = isContractCacheable(srcContentType, src, srcTxId);
-
     const insert = {
       contract_id: contractTx.id,
       src_tx_id: srcTxId,
@@ -82,8 +80,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_contract_tx_id: bundlerContractTx.id,
       bundler_contract_node: BUNDLR_NODE2_URL,
       bundler_contract_tags: JSON.stringify(contractTags),
-      testnet: contractTestnet,
-      cacheable
+      testnet: contractTestnet
     };
 
     await gatewayDb('contracts').insert(insert);
@@ -105,7 +102,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    updateCache(contractTx.id, ctx, true);
+    updateCache(contractTx.id, ctx);
 
     logger.info('Contract successfully bundled.');
 

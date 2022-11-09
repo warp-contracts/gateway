@@ -18,6 +18,8 @@ import { initBundlr } from '../bundlr/connect';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
 import {loadCacheableContracts} from "./tasks/cacheableContracts";
+import path from "path";
+import Redis from "ioredis";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -40,6 +42,7 @@ export interface GatewayContext {
   arweaveWrapper: ArweaveWrapper;
   vrf: VRF;
   sorter: LexicographicalInteractionsSorter;
+  publisher: Redis;
 }
 
 (async () => {
@@ -119,6 +122,15 @@ export interface GatewayContext {
 
     logger.info('vrf', app.context.vrf);
 
+    const connectionOptions = readGwPubSubConfig();
+    const publisher = new Redis(connectionOptions);
+    await publisher.connect();
+    logger.info(`Publisher status`, {
+      host: connectionOptions.host,
+      status: publisher.status
+    });
+    app.context.publisher = publisher;
+
     if (!fs.existsSync('gateway.lock')) {
       try {
         logger.debug(`Creating lock file for ${cluster.worker?.id}`);
@@ -147,4 +159,10 @@ function initArweave(): Arweave {
     timeout: 20000,
     logging: false,
   });
+}
+
+
+function readGwPubSubConfig() {
+  const json = fs.readFileSync(path.join('.secrets', 'gw-pubsub.json'), "utf-8");
+  return JSON.parse(json);
 }
