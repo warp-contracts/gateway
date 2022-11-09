@@ -5,6 +5,8 @@ import { INTERACTIONS_TABLE } from '../../db/schema';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { Knex } from 'knex';
 import { isTxIdValid } from '../../utils';
+import {updateCache} from "../updateCache";
+import {RouterContext} from "@koa/router";
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -69,7 +71,7 @@ export async function runSyncLastDayTransactionsTask(context: GatewayContext) {
 }
 
 function syncLastTransactions(context: GatewayContext) {
-  return syncTransactions(context, LOAD_PAST_BLOCKS);
+  return syncTransactions(context, LOAD_PAST_BLOCKS, true);
 }
 
 function syncLastHourTransactions(context: GatewayContext) {
@@ -80,7 +82,7 @@ function syncLastDayTransactions(context: GatewayContext) {
   return syncTransactions(context, AVG_BLOCKS_PER_DAY);
 }
 
-async function syncTransactions(context: GatewayContext, pastBlocksAmount: number) {
+async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {
   const { gatewayDb, logger, arweaveWrapper, sorter } = context;
 
   logger.info('Syncing blocks');
@@ -205,6 +207,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         evolve: evolve,
         testnet
       });
+
+      updateCache(contractId, context);
     }
 
     if (interactionsInserts.length === MAX_BATCH_INSERT) {

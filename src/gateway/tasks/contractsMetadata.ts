@@ -5,6 +5,7 @@ import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion} from './syncTransactions';
 import { Knex } from 'knex';
 import { getCachedNetworkData } from './networkInfoCache';
+import {updateCache} from "../updateCache";
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -235,6 +236,8 @@ async function loadContractsMetadata(context: GatewayContext) {
           'bundler_src_node',
           'src_tx',
         ]);
+
+      updateCache(definition.txId, context);
 
       logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {
