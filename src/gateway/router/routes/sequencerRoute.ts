@@ -145,7 +145,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sort_key: sortKey,
         evolve: evolve,
         testnet: testnetVersion,
-        last_sort_key: contractLastSortKey
+        last_sort_key: contractLastSortKey,
+        owner: originalOwner
       }),
     ]);
 

@@ -13,6 +13,7 @@ export type INTERACTIONS_TABLE = {
   sort_key: string;
   evolve: string | null;
   testnet: string | null
+  owner: string
 };
 
 export async function initGatewayDb(db: Knex) {

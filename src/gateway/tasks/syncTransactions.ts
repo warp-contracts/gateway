@@ -206,7 +206,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         interact_write: internalWrites,
         sort_key: sortKey,
         evolve: evolve,
-        testnet
+        testnet,
+        owner: interaction.node.owner.address
       });
     }
     if (interactionsInserts.length === MAX_BATCH_INSERT) {

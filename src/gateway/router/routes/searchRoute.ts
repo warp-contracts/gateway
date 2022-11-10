@@ -36,7 +36,7 @@ export async function searchRoute(ctx: Router.RouterContext) {
           FROM
           (
             WITH temp_creator AS (
-                SELECT DISTINCT interaction->'owner'->>'address' as creator_id from interactions where interaction->'owner'->>'address' ILIKE ?
+                SELECT DISTINCT owner as creator_id from interactions where owner ILIKE ?
                 UNION ALL
                 SELECT DISTINCT owner as creator_id FROM contracts WHERE owner ILIKE ?
             )
