@@ -20,15 +20,16 @@ import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
 import {loadCacheableContracts} from "./tasks/cacheableContracts";
 import path from "path";
 import Redis from "ioredis";
+import {LastTxSync} from "./LastTxSyncer";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
 const replica = argv.replica as boolean || false;
+const localEnv = argv.local as boolean || false;
 const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
 
 const cors = require('@koa/cors');
-const compress = require('koa-compress');
 
 export type VRF = { pubKeyHex: string; privKey: any; ec: any };
 
@@ -43,6 +44,8 @@ export interface GatewayContext {
   vrf: VRF;
   sorter: LexicographicalInteractionsSorter;
   publisher: Redis;
+  lastTxSync: LastTxSync;
+  localEnv: boolean;
 }
 
 (async () => {
@@ -66,6 +69,7 @@ export interface GatewayContext {
   LoggerFactory.INST.logLevel('info');
   LoggerFactory.INST.logLevel('info', 'gateway');
   LoggerFactory.INST.logLevel('debug', 'sequencer');
+  LoggerFactory.INST.logLevel('debug', 'LastTxSync');
   const logger = LoggerFactory.INST.create('gateway');
   const sLogger = LoggerFactory.INST.create('sequencer');
 
@@ -86,6 +90,8 @@ export interface GatewayContext {
   app.context.jwk = jwk;
   app.context.arweaveWrapper = new ArweaveWrapper(arweave);
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
+  app.context.lastTxSync = new LastTxSync(gatewayDb);
+  app.context.localEnv = localEnv;
 
   app.use(
     cors({
