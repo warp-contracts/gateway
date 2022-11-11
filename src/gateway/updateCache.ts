@@ -3,8 +3,13 @@ import {GatewayContext} from "./init";
 
 const channel = 'contracts';
 
-export function updateCache(contractTxId: string, ctx: Router.RouterContext | GatewayContext, sortKey?: string) {
+export function updateCache(contractTxId: string, ctx: Router.RouterContext | GatewayContext, sortKey?: string, lastSortKey?: string) {
   const {logger} = ctx;
+
+  if (ctx.localEnv) {
+    logger.info('Skipping publish for local env');
+    return;
+  }
 
   try {
     const message = {contractTxId, sortKey, test: false, source: 'warp-gw'};

@@ -1,24 +1,18 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
-import { parseFunctionName } from '../../tasks/syncTransactions';
+import {parseFunctionName} from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
-import { JWKInterface } from 'arweave/node/lib/wallet';
-import {
-  arrayToHex,
-  Benchmark,
-  GQLTagInterface,
-  WarpLogger,
-  SmartWeaveTags,
-} from 'warp-contracts';
-import { getCachedNetworkData } from '../../tasks/networkInfoCache';
+import {JWKInterface} from 'arweave/node/lib/wallet';
+import {arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger,} from 'warp-contracts';
+import {getCachedNetworkData} from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
-import { BlockData } from 'arweave/node/blocks';
-import { VRF } from '../../init';
-import { isTxIdValid } from '../../../utils';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import {BlockData} from 'arweave/node/blocks';
+import {VRF} from '../../init';
+import {isTxIdValid} from '../../../utils';
+import {BUNDLR_NODE2_URL} from '../../../constants';
 import {updateCache} from "../../updateCache";
 
-const { Evaluate } = require('@idena/vrf-js');
+const {Evaluate} = require('@idena/vrf-js');
 
 export type VrfData = {
   index: string;
@@ -28,19 +22,20 @@ export type VrfData = {
 };
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const { sLogger, gatewayDb, arweave, bundlr, jwk, vrf } = ctx;
-
-  const cachedNetworkData = getCachedNetworkData();
-
-  const benchmark = Benchmark.measure();
-
-  const transaction: Transaction = new Transaction({ ...ctx.request.body });
-  sLogger.debug('New sequencer tx', transaction.id);
-
-  const originalSignature = transaction.signature;
-  const originalOwner = transaction.owner;
+  const {sLogger, gatewayDb, arweave, bundlr, jwk, vrf, lastTxSync} = ctx;
+  let contractMutexRelease = null;
 
   try {
+    const cachedNetworkData = getCachedNetworkData();
+
+    const benchmark = Benchmark.measure();
+
+    const transaction: Transaction = new Transaction({...ctx.request.body});
+    sLogger.debug('New sequencer tx', transaction.id);
+
+    const originalSignature = transaction.signature;
+    const originalOwner = transaction.owner;
+
     if (cachedNetworkData == null) {
       throw new Error('Network or block info not yet cached.');
     }
@@ -57,22 +52,43 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       throw new Error('Current block not set');
     }
 
-    const millis = Date.now();
-    const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
-    let { contractTag, inputTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner, testnetVersion } = await prepareTags(
+    let {
+      contractTag,
+      inputTag,
+      requestVrfTag,
+      internalWrites,
+      decodedTags,
+      tags,
+      originalAddress,
+      isEvmSigner,
+      testnetVersion
+    } = await prepareTags(
       sLogger,
       transaction,
       originalOwner,
-      millis,
-      sortKey,
       currentHeight,
       currentBlockId,
-      vrf,
       arweave
     );
 
+    contractMutexRelease = await lastTxSync.acquireMutex(contractTag);
+    const contractLastSortKey: string  | null = await lastTxSync.getLastSortKey(contractTag);
+
+    const millis = Date.now();
+    const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
+
+    tags.push({name: 'Sequencer-Mills', value: '' + millis});
+    tags.push({name: 'Sequencer-Sort-Key', value: sortKey});
+    tags.push({name: 'Sequencer-Last-Sort-Key', value: contractLastSortKey || 'null'});
+    let vrfData = null;
+    if (requestVrfTag !== '') {
+      const vrfGen = generateVrfTags(sortKey, vrf, arweave);
+      tags.push(...vrfGen.vrfTags);
+      vrfData = vrfGen.vrfData;
+    }
+
     // TODO: add fallback to other bundlr nodes.
-    const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
+    const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, sLogger);
 
     const parsedInput = JSON.parse(inputTag);
     const functionName = parseFunctionName(inputTag, sLogger);
@@ -90,7 +106,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       sortKey,
       vrfData,
       isEvmSigner ? originalSignature : null,
-      testnetVersion
+      testnetVersion,
+      contractLastSortKey
     );
 
     const insertBench = Benchmark.measure();
@@ -98,7 +115,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       sLogger.info(`Interaction for ${transaction.id}`, JSON.stringify(interaction));
     }
 
-    await Promise.allSettled([
+    await Promise.all([
       gatewayDb('sequencer').insert({
         original_sig: originalSignature,
         original_owner: originalOwner,
@@ -110,6 +127,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sequence_sort_key: sortKey,
         bundler_tx_id: bTx.id,
         bundler_response: JSON.stringify(bundlrResponse.data),
+        last_sort_key: contractLastSortKey
       }),
       gatewayDb('interactions').insert({
         interaction_id: transaction.id,
@@ -126,7 +144,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         interact_write: internalWrites,
         sort_key: sortKey,
         evolve: evolve,
-        testnet: testnetVersion
+        testnet: testnetVersion,
+        last_sort_key: contractLastSortKey
       }),
     ]);
 
@@ -137,14 +156,21 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     });
 
     ctx.body = bundlrResponse.data;
-    updateCache(contractTag, ctx, sortKey);
+    updateCache(contractTag, ctx, sortKey, contractLastSortKey);
+
+    await lastTxSync.updateLastSortKey(contractTag, sortKey);
 
     sLogger.info('Total sequencer processing', benchmark.elapsed());
   } catch (e) {
     sLogger.error('Error while inserting bundled transaction');
     sLogger.error(e);
     ctx.status = 500;
-    ctx.body = { message: e };
+    ctx.body = {message: e};
+  } finally {
+    if (contractMutexRelease != null) {
+      sLogger.info('Releasing contract mutex');
+      contractMutexRelease();
+    }
   }
 }
 
@@ -158,11 +184,12 @@ function createInteraction(
   sortKey: string,
   vrfData: VrfData | null,
   signature: string | null,
-  testnetVersion: string | null
+  testnetVersion: string | null,
+  lastSortKey: string | null
 ) {
   const interaction: any = {
     id: transaction.id,
-    owner: { address: originalAddress },
+    owner: {address: originalAddress},
     recipient: transaction.target,
     tags: decodedTags,
     block: {
@@ -179,7 +206,9 @@ function createInteraction(
     sortKey: sortKey,
     source: 'redstone-sequencer',
     vrf: vrfData,
-    testnet: testnetVersion
+    testnet: testnetVersion,
+    lastSortKey
+
   };
   if (signature) {
     interaction.signature = signature;
@@ -202,10 +231,10 @@ function generateVrfTags(sortKey: string, vrf: VRF, arweave: Arweave) {
 
   return {
     vrfTags: [
-      { name: 'vrf-index', value: vrfData.index },
-      { name: 'vrf-proof', value: vrfData.proof },
-      { name: 'vrf-bigint', value: vrfData.bigint },
-      { name: 'vrf-pubkey', value: vrfData.pubkey },
+      {name: 'vrf-index', value: vrfData.index},
+      {name: 'vrf-proof', value: vrfData.proof},
+      {name: 'vrf-bigint', value: vrfData.bigint},
+      {name: 'vrf-pubkey', value: vrfData.pubkey},
     ],
     vrfData,
   };
@@ -227,14 +256,11 @@ function bufToBn(buf: Array<number>) {
 }
 
 async function prepareTags(
-  logger:any,
+  logger: any,
   transaction: Transaction,
   originalOwner: string,
-  millis: number,
-  sortKey: string,
   currentHeight: number,
   currentBlockId: string,
-  vrf: VRF,
   arweave: Arweave
 ) {
   let contractTag: string = '',
@@ -249,8 +275,8 @@ async function prepareTags(
   const internalWrites: string[] = [];
 
   for (const tag of transaction.tags) {
-    const key = tag.get('name', { decode: true, string: true });
-    const value = tag.get('value', { decode: true, string: true });
+    const key = tag.get('name', {decode: true, string: true});
+    const value = tag.get('value', {decode: true, string: true});
     if (key == SmartWeaveTags.CONTRACT_TX_ID) {
       contractTag = value;
     }
@@ -283,24 +309,25 @@ async function prepareTags(
   }
 
   const tags = [
-    { name: 'Sequencer', value: 'RedStone' },
-    { name: 'Sequencer-Owner', value: originalAddress },
-    { name: 'Sequencer-Mills', value: '' + millis },
-    { name: 'Sequencer-Sort-Key', value: sortKey },
-    { name: 'Sequencer-Tx-Id', value: transaction.id },
-    { name: 'Sequencer-Block-Height', value: '' + currentHeight },
-    { name: 'Sequencer-Block-Id', value: currentBlockId },
+    {name: 'Sequencer', value: 'RedStone'},
+    {name: 'Sequencer-Owner', value: originalAddress},
+    {name: 'Sequencer-Tx-Id', value: transaction.id},
+    {name: 'Sequencer-Block-Height', value: '' + currentHeight},
+    {name: 'Sequencer-Block-Id', value: currentBlockId},
     ...decodedTags,
   ];
 
-  let vrfData = null;
-  if (requestVrfTag !== '') {
-    const vrfGen = generateVrfTags(sortKey, vrf, arweave);
-    tags.push(...vrfGen.vrfTags);
-    vrfData = vrfGen.vrfData;
-  }
-
-  return { contractTag, inputTag, requestVrfTag, internalWrites, decodedTags, tags, vrfData, originalAddress, isEvmSigner, testnetVersion };
+  return {
+    contractTag,
+    inputTag,
+    requestVrfTag,
+    internalWrites,
+    decodedTags,
+    tags,
+    originalAddress,
+    isEvmSigner,
+    testnetVersion
+  };
 }
 
 export async function uploadToBundlr(
@@ -311,7 +338,7 @@ export async function uploadToBundlr(
 ) {
   const uploadBenchmark = Benchmark.measure();
 
-  const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
+  const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
   await bTx.sign();
 
   // TODO: move uploading to a separate Worker, to increase TPS
@@ -331,7 +358,7 @@ export async function uploadToBundlr(
     );
   }
 
-  return { bTx, bundlrResponse };
+  return {bTx, bundlrResponse};
 }
 
 async function createSortKey(
