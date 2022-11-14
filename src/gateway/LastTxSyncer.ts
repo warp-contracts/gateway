@@ -1,77 +1,30 @@
-import {Mutex, MutexInterface} from "async-mutex";
 import {Knex} from "knex";
 import {LoggerFactory} from "warp-contracts";
+import { createHash } from 'crypto'
 
 export class LastTxSync {
 
   private readonly logger = LoggerFactory.INST.create(LastTxSync.name);
 
-  constructor(private readonly gatewayDb: Knex) {
-  }
-
-  // a map from contractTxId to Mutex
-  private readonly contractsMutex = new Map<string, Mutex>();
-
-  // a map from contractTxId to sortKey - i.e. the 'previous' sortKey
-  private readonly lastSortKey = new Map<string, string | null>();
-
-  // a global mutex used to acquire contract mutex from contract->mutex map
-  // for simplicity we could use only this global mutex, but this would greatly reduce tps
-  // - we could process only one transaction at any time.
-  // With per contract mutex - we can process one transaction PER contract.
-  private readonly mainMutex = new Mutex();
-
-  async acquireMutex(contractTxId: string): Promise<MutexInterface.Releaser> {
-    // note: operation of acquiring per-contract mutex is not atomic
-    // - and therefore needs to be synchronized globally - via 'mainMutex'
-    // without this synchronization it could happen that two requests would
-    // create and acquire two independent 'contract' mutexes.
-    const mainRelease = await this.mainMutex.acquire();
-    this.logger.debug('Main mutex acquired', contractTxId);
-    try {
-      let contractMutex = this.contractsMutex.get(contractTxId);
-      if (contractMutex === undefined) {
-        contractMutex = new Mutex();
-        this.contractsMutex.set(contractTxId, contractMutex);
-      }
-      const release = await contractMutex.acquire();
-      this.logger.debug(`Mutex for ${contractTxId} acquired.`);
-      return release;
-    } catch (e) {
-      this.logger.error('Error while acquiring contract mutex', e);
-      throw e;
-    } finally {
-      mainRelease();
-      this.logger.debug('Main mutex released', contractTxId);
-    }
-  }
-
-  async getLastSortKey(contractTxId: string): Promise<string | null> {
-    let contractLastTx: string | undefined | null = this.lastSortKey.get(contractTxId);
-    if (contractLastTx === undefined) {
-      contractLastTx = await this.loadLastSortKey(contractTxId);
-      // we're storing the value just in case the further processing would fail
-      // - the next request for this contract won't have to load it again from db
-      this.lastSortKey.set(contractTxId, contractLastTx);
-    }
-    this.logger.debug('Last tx', {
+  async acquireMutex(contractTxId: string, trx: Knex.Transaction): Promise<string | null> {
+    const lockId = this.strToKey(contractTxId);
+    this.logger.debug('Locking for', {
       contractTxId,
-      contractLastTx
+      lockId
     });
 
-    return contractLastTx;
+    // https://stackoverflow.com/a/20963803
+    await trx.raw(`SET LOCAL lock_timeout = '5s';`)
+
+    await trx.raw(`
+      SELECT pg_advisory_xact_lock(?, ?);
+    `, [lockId[0], lockId[1]]);
+
+    return this.loadLastSortKey(contractTxId, trx);
   }
 
-  async updateLastSortKey(contractTxId: string, sortKey: string): Promise<void> {
-    this.logger.debug('Update last tx', {
-      contractTxId,
-      sortKey
-    });
-    this.lastSortKey.set(contractTxId, sortKey);
-  }
-
-  private async loadLastSortKey(contractTxId: string): Promise<string | null> {
-    const result = await this.gatewayDb.raw(
+  private async loadLastSortKey(contractTxId: string, trx: Knex.Transaction): Promise<string | null> {
+    const result = await trx.raw(
       `SELECT max(sort_key) AS "lastSortKey"
        FROM interactions
        WHERE contract_id = ?`,
@@ -80,5 +33,13 @@ export class LastTxSync {
 
     // note: this will return null if we're registering the very first tx for the contract
     return result?.rows[0].lastSortKey;
+  }
+
+  // https://github.com/binded/advisory-lock/blob/master/src/index.js#L8
+  private strToKey(id: string) {
+    const buf = createHash('sha256').update(id).digest()
+    // Read the first 4 bytes and the next 4 bytes
+    // The parameter here is the byte offset, not the sizeof(int32) offset
+    return [buf.readInt32LE(0), buf.readInt32LE(4)]
   }
 }

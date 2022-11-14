@@ -11,6 +11,7 @@ import {VRF} from '../../init';
 import {isTxIdValid} from '../../../utils';
 import {BUNDLR_NODE2_URL} from '../../../constants';
 import {publishInteraction, updateCache} from "../../updateCache";
+import {Knex} from "knex";
 
 const {Evaluate} = require('@idena/vrf-js');
 
@@ -22,8 +23,8 @@ export type VrfData = {
 };
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {sLogger, gatewayDb, arweave, bundlr, jwk, vrf, lastTxSync} = ctx;
-  let contractMutexRelease = null;
+  const {sLogger, arweave, bundlr, jwk, vrf, lastTxSync, gatewayDb} = ctx;
+  const trx: Knex.Transaction = await gatewayDb.transaction();
 
   try {
     const cachedNetworkData = getCachedNetworkData();
@@ -71,8 +72,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       arweave
     );
 
-    contractMutexRelease = await lastTxSync.acquireMutex(contractTag);
-    const contractLastSortKey: string  | null = await lastTxSync.getLastSortKey(contractTag);
+    const contractLastSortKey: string  | null = await lastTxSync.acquireMutex(contractTag, trx);
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
@@ -116,7 +116,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     }
 
     await Promise.all([
-      gatewayDb('sequencer').insert({
+      trx('sequencer').insert({
         original_sig: originalSignature,
         original_owner: originalOwner,
         original_address: originalAddress,
@@ -129,7 +129,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         bundler_response: JSON.stringify(bundlrResponse.data),
         last_sort_key: contractLastSortKey
       }),
-      gatewayDb('interactions').insert({
+      trx('interactions').insert({
         interaction_id: transaction.id,
         interaction: JSON.stringify(interaction),
         block_height: currentHeight,
@@ -156,22 +156,17 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     });
 
     ctx.body = bundlrResponse.data;
+    await trx.commit();
+    sLogger.info('Total sequencer processing', benchmark.elapsed());
+
     updateCache(contractTag, ctx, sortKey);
     publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey);
-
-    await lastTxSync.updateLastSortKey(contractTag, sortKey);
-
-    sLogger.info('Total sequencer processing', benchmark.elapsed());
   } catch (e) {
+    await trx.rollback();
     sLogger.error('Error while inserting bundled transaction');
     sLogger.error(e);
     ctx.status = 500;
     ctx.body = {message: e};
-  } finally {
-    if (contractMutexRelease != null) {
-      sLogger.info('Releasing contract mutex');
-      contractMutexRelease();
-    }
   }
 }
 

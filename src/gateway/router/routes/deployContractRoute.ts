@@ -6,7 +6,6 @@ import {evalType} from '../../tasks/contractsMetadata';
 import {getCachedNetworkData} from '../../tasks/networkInfoCache';
 import {BUNDLR_NODE2_URL} from '../../../constants';
 import {uploadToBundlr} from './sequencerRoute';
-import {cacheableContracts} from "../../tasks/cacheableContracts";
 import {updateCache} from "../../updateCache";
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
@@ -117,19 +116,6 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     logger.error(e);
     ctx.status = 500;
     ctx.body = {message: e};
-  }
-}
-
-function isContractCacheable(srcContentType: string | undefined, src: string | undefined, srcTxId: string): boolean {
-  if (srcContentType && src) {
-    if (srcContentType === 'application/javascript') {
-      return !(src.includes('SmartWeave.unsafeClient') || src.includes('SmartWeave.contracts.'));
-    } else {
-      return true; // we assume all wasm to be safe for now.
-    }
-  } else {
-    // TODO: verify source in database - by srcTxId
-    return false;
   }
 }
 

@@ -17,7 +17,6 @@ import Bundlr from '@bundlr-network/client';
 import { initBundlr } from '../bundlr/connect';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
-import {loadCacheableContracts} from "./tasks/cacheableContracts";
 import path from "path";
 import Redis from "ioredis";
 import {LastTxSync} from "./LastTxSyncer";
@@ -95,7 +94,7 @@ export interface GatewayContext {
   app.context.jwk = jwk;
   app.context.arweaveWrapper = new ArweaveWrapper(arweave);
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
-  app.context.lastTxSync = new LastTxSync(gatewayDb);
+  app.context.lastTxSync = new LastTxSync();
   app.context.localEnv = localEnv;
   app.context.appSync = appSync;
 
@@ -151,11 +150,12 @@ export interface GatewayContext {
         fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, { flag: 'wx' });
         removeLock = true;
 
-        await loadCacheableContracts(app.context);
         await runNetworkInfoCacheTask(app.context);
         // note: only one worker in cluster runs the gateway tasks
         // all workers in cluster run the http server
-        await runGatewayTasks(app.context);
+        if (!localEnv) {
+          await runGatewayTasks(app.context);
+        }
       } catch (e: any) {
         logger.error('Error from gateway', e);
       }
