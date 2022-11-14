@@ -34,7 +34,7 @@ export class LastTxSync {
         contractMutex = new Mutex();
         this.contractsMutex.set(contractTxId, contractMutex);
       }
-      const release =  await contractMutex.acquire();
+      const release = await contractMutex.acquire();
       this.logger.debug(`Mutex for ${contractTxId} acquired.`);
       return release;
     } catch (e) {
