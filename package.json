@@ -39,6 +39,7 @@
     "pg": "8.7.3",
     "pg-query-stream": "^4.2.3",
     "warp-contracts": "1.2.13",
+    "warp-contracts-pubsub": "^1.0.3",
     "yargs": "17.3.0"
   },
   "devDependencies": {

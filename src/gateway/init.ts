@@ -21,6 +21,7 @@ import {loadCacheableContracts} from "./tasks/cacheableContracts";
 import path from "path";
 import Redis from "ioredis";
 import {LastTxSync} from "./LastTxSyncer";
+import {initPubSub} from "warp-contracts-pubsub";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -46,6 +47,7 @@ export interface GatewayContext {
   publisher: Redis;
   lastTxSync: LastTxSync;
   localEnv: boolean;
+  appSync?: string;
 }
 
 (async () => {
@@ -54,6 +56,8 @@ export interface GatewayContext {
   });
 
   let removeLock = false;
+
+  initPubSub();
 
   process.on('SIGINT', () => {
     logger.warn('SIGINT');
@@ -65,6 +69,7 @@ export interface GatewayContext {
   });
 
   const port = parseInt((process.env.PORT || 5666).toString());
+  const appSync = process.env.APP_SYNC;
 
   LoggerFactory.INST.logLevel('info');
   LoggerFactory.INST.logLevel('info', 'gateway');
@@ -92,6 +97,7 @@ export interface GatewayContext {
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
   app.context.lastTxSync = new LastTxSync(gatewayDb);
   app.context.localEnv = localEnv;
+  app.context.appSync = appSync;
 
   app.use(
     cors({
