@@ -7,7 +7,7 @@ const MAX_TRANSACTIONS_PER_PAGE = 5000;
 export async function creatorRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb } = ctx;
 
-  const { id, page, limit } = ctx.query;
+  const { id, page, limit, txType } = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -26,7 +26,7 @@ export async function creatorRoute(ctx: Router.RouterContext) {
 
   const bindings: any[] = [];
   bindings.push(id);
-  bindings.push(id);
+  !txType && bindings.push(id);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -34,22 +34,30 @@ export async function creatorRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-      WITH all_transactions AS (SELECT 
+      WITH all_transactions AS (${
+        txType != 'contract'
+          ? `SELECT 
         interaction_id AS id, 
         bundler_tx_id AS bundler_id, 
         block_height, 
         interaction->'block'->>'timestamp' AS block_timestamp, 
         'interaction' AS type 
         FROM interactions 
-        where interaction->'owner'->>'address' = ?
-      UNION all
-      SELECT 
+        where owner = ?`
+          : ''
+      }
+      ${!txType ? 'UNION all' : ''}
+      ${
+        txType != 'interaction'
+          ? `SELECT 
         contract_id AS id, 
         bundler_contract_tx_id AS bundler_id, 
         block_height, 
         block_timestamp::text AS block_timestamp, 
         'contract' AS type 
-        FROM contracts where owner = ?)
+        FROM contracts where owner = ?`
+          : ''
+      })
         SELECT *, COUNT(*) OVER() AS total FROM all_transactions ORDER BY all_transactions.block_timestamp DESC LIMIT ? OFFSET ?;`,
       bindings
     );
