@@ -21,6 +21,8 @@ import path from 'path';
 import Redis from 'ioredis';
 import { LastTxSync } from './LastTxSyncer';
 import { initPubSub } from 'warp-contracts-pubsub';
+// @ts-ignore
+import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -47,6 +49,7 @@ export interface GatewayContext {
   lastTxSync: LastTxSync;
   localEnv: boolean;
   appSync?: string;
+  signatureVerification: EvmSignatureVerificationServerPlugin;
 }
 
 (async () => {
@@ -86,6 +89,8 @@ export interface GatewayContext {
   await initGatewayDb(gatewayDb);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
+  const signatureVerification = new EvmSignatureVerificationServerPlugin();
+
   app.context.gatewayDb = gatewayDb;
   app.context.logger = logger;
   app.context.sLogger = sLogger;
@@ -97,6 +102,7 @@ export interface GatewayContext {
   app.context.lastTxSync = new LastTxSync();
   app.context.localEnv = localEnv;
   app.context.appSync = appSync;
+  app.context.signatureVerification = signatureVerification;
 
   app.use(
     cors({

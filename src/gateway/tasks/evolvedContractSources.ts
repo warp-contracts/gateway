@@ -14,7 +14,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
   const { logger, gatewayDb, arweaveWrapper, arweave } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave);
 
-  const result: { evolve: string, testnet: string | null }[] = (
+  const result: { evolve: string; testnet: string | null }[] = (
     await gatewayDb.raw(
       `
           SELECT evolve, testnet
@@ -52,7 +52,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
         contracts_src_insert = {
           ...contracts_src_insert,
           src: src,
-          testnet
+          testnet,
         };
       } else {
         const rawTxData = await arweaveWrapper.txData(srcTxId);
@@ -60,7 +60,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
           ...contracts_src_insert,
           src_binary: rawTxData,
           src_wasm_lang: srcWasmLang,
-          testnet
+          testnet,
         };
       }
 

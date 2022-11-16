@@ -1,4 +1,4 @@
-import Router from '@koa/router';
+import Router, { RouterContext } from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
@@ -21,16 +21,25 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
   logger.debug('New deploy contract transaction', contractTx.id);
 
   const originalOwner = contractTx.owner;
-  const originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
-  const { tags: contractTags, testnet: contractTestnet } = prepareTags(contractTx, originalAddress);
+  const {
+    tags: contractTags,
+    testnet: contractTestnet,
+    originalAddress,
+    isEvmSigner,
+  } = await prepareTags(contractTx, originalOwner, logger, arweave);
+
+  await verifyEvmSignature(isEvmSigner, ctx, contractTx);
 
   try {
     let srcTxId, srcContentType, src, srcBinary, srcWasmLang, bundlerSrcTxId, srcTxOwner, srcTestnet, srcBundlrResponse;
 
     if (srcTx) {
       srcTxId = srcTx.id;
-      srcTxOwner = await arweave.wallets.ownerToAddress(srcTx.owner);
-      const srcTagsData = prepareTags(srcTx, originalAddress);
+      const srcTagsData = await prepareTags(srcTx, srcTx.owner, logger, arweave);
+
+      await verifyEvmSignature(srcTagsData.isEvmSigner, ctx, srcTx);
+
+      srcTxOwner = srcTagsData.originalAddress;
       srcTestnet = srcTagsData.testnet;
       srcContentType = tagValue(SmartWeaveTags.CONTENT_TYPE, srcTagsData.tags);
       srcWasmLang = tagValue(SmartWeaveTags.WASM_LANG, srcTagsData.tags);
@@ -39,12 +48,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       } else {
         srcBinary = Buffer.from(srcTx.data);
       }
-      const { bTx: bundlrSrcTx, bundlrResponse } = await uploadToBundlr(
-        srcTx,
-        bundlr,
-        srcTagsData.tags,
-        logger
-      );
+      const { bTx: bundlrSrcTx, bundlrResponse } = await uploadToBundlr(srcTx, bundlr, srcTagsData.tags, logger);
       bundlerSrcTxId = bundlrSrcTx.id;
       srcBundlrResponse = bundlrResponse;
       logger.debug('Src Tx successfully bundled', {
@@ -94,7 +98,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_contract_tags: JSON.stringify(contractTags),
       bundler_response: JSON.stringify(contractBundlrResponse.data),
       testnet: contractTestnet,
-      deployment_type: 'warp-wrapped'
+      deployment_type: 'warp-wrapped',
     };
 
     await gatewayDb('contracts').insert(insert);
@@ -112,17 +116,19 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         bundler_response: JSON.stringify(srcBundlrResponse.data),
         src_tx: { ...srcTx.toJSON(), data: null },
         testnet: srcTestnet,
-        deployment_type: 'warp-wrapped'
+        deployment_type: 'warp-wrapped',
       };
 
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    sleep(2000).then(() => {
-      sendNotificationToCache(ctx, contractTx.id, initState);
-    }).catch((e) => {
-      logger.error(`No sleep 'till Brooklyn.`, e);
-    });
+    sleep(2000)
+      .then(() => {
+        sendNotificationToCache(ctx, contractTx.id, initState);
+      })
+      .catch((e) => {
+        logger.error(`No sleep 'till Brooklyn.`, e);
+      });
 
     logger.info('Contract successfully bundled.');
 
@@ -145,12 +151,16 @@ function tagValue(name: string, tags: GQLTagInterface[]): string | undefined {
   return tag?.value;
 }
 
-function prepareTags(
+async function prepareTags(
   transaction: Transaction,
-  originalAddress: string
-): { tags: GQLTagInterface[]; testnet: string | null } {
+  originalOwner: string,
+  logger: any,
+  arweave: Arweave
+): Promise<{ tags: GQLTagInterface[]; testnet: string | null; originalAddress: string; isEvmSigner: boolean }> {
   const decodedTags: GQLTagInterface[] = [];
-  let testnet = null;
+  let testnet = null,
+    isEvmSigner = false,
+    originalAddress = '';
 
   transaction.tags.forEach((tag) => {
     const key = tag.get('name', { decode: true, string: true });
@@ -162,7 +172,16 @@ function prepareTags(
     if (key == 'Warp-Testnet') {
       testnet = value;
     }
+    if (key == 'Signature-Type' && value == 'ethereum') {
+      logger.info(`Signature type for ${transaction.id}`, value);
+      originalAddress = originalOwner;
+      isEvmSigner = true;
+    }
   });
+
+  if (!isEvmSigner) {
+    originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
+  }
 
   const tags = [
     { name: 'Uploader', value: 'RedStone' },
@@ -172,5 +191,16 @@ function prepareTags(
     ...decodedTags,
   ];
 
-  return { tags, testnet };
+  return { tags, testnet, originalAddress, isEvmSigner };
+}
+
+async function verifyEvmSignature(isEvmSigner: boolean, ctx: RouterContext, tx: Transaction): Promise<void> {
+  if (isEvmSigner) {
+    const isSignatureCorrect = await ctx.signatureVerification.process(tx);
+    if (isSignatureCorrect) {
+      ctx.logger.info(`Transaction's EVM signature is correct.`);
+    } else {
+      throw new Error(`Transaction's EVM signature is incorrect.`);
+    }
+  }
 }

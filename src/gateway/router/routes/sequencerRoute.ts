@@ -1,19 +1,19 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
-import {parseFunctionName} from '../../tasks/syncTransactions';
+import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
-import {JWKInterface} from 'arweave/node/lib/wallet';
-import {arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger,} from 'warp-contracts';
-import {getCachedNetworkData} from '../../tasks/networkInfoCache';
+import { JWKInterface } from 'arweave/node/lib/wallet';
+import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } from 'warp-contracts';
+import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
-import {BlockData} from 'arweave/node/blocks';
-import {VRF} from '../../init';
-import {isTxIdValid} from '../../../utils';
-import {BUNDLR_NODE2_URL} from '../../../constants';
-import {publishInteraction, sendNotificationToCache} from "../../publisher";
-import {Knex} from "knex";
+import { BlockData } from 'arweave/node/blocks';
+import { VRF } from '../../init';
+import { isTxIdValid } from '../../../utils';
+import { BUNDLR_NODE2_URL } from '../../../constants';
+import { publishInteraction, sendNotificationToCache } from '../../publisher';
+import { Knex } from 'knex';
 
-const {Evaluate} = require('@idena/vrf-js');
+const { Evaluate } = require('@idena/vrf-js');
 
 export type VrfData = {
   index: string;
@@ -23,7 +23,7 @@ export type VrfData = {
 };
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const {sLogger, arweave, bundlr, jwk, vrf, lastTxSync, gatewayDb} = ctx;
+  const { sLogger, arweave, bundlr, jwk, vrf, lastTxSync, gatewayDb, signatureVerification } = ctx;
   const trx: Knex.Transaction = await gatewayDb.transaction();
 
   try {
@@ -31,7 +31,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const benchmark = Benchmark.measure();
 
-    const transaction: Transaction = new Transaction({...ctx.request.body});
+    const transaction: Transaction = new Transaction({ ...ctx.request.body });
     sLogger.debug('New sequencer tx', transaction.id);
 
     const originalSignature = transaction.signature;
@@ -62,33 +62,17 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       tags,
       originalAddress,
       isEvmSigner,
-      testnetVersion
-    } = await prepareTags(
-      sLogger,
-      transaction,
-      originalOwner,
-      currentHeight,
-      currentBlockId,
-      arweave
-    );
+      testnetVersion,
+    } = await prepareTags(sLogger, transaction, originalOwner, currentHeight, currentBlockId, arweave);
 
-    if (!isEvmSigner) {
-      const verified = await arweave.transactions.verify(transaction);
-      if (!verified) {
-        throw new Error('Naughty boy (interaction)!');
-      } else {
-        sLogger.info('Transaction verified properly');
-      }
-    }
-
-    const contractLastSortKey: string  | null = await lastTxSync.acquireMutex(contractTag, trx);
+    const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
-    tags.push({name: 'Sequencer-Mills', value: '' + millis});
-    tags.push({name: 'Sequencer-Sort-Key', value: sortKey});
-    tags.push({name: 'Sequencer-Last-Sort-Key', value: contractLastSortKey || 'null'});
+    tags.push({ name: 'Sequencer-Mills', value: '' + millis });
+    tags.push({ name: 'Sequencer-Sort-Key', value: sortKey });
+    tags.push({ name: 'Sequencer-Last-Sort-Key', value: contractLastSortKey || 'null' });
     let vrfData = null;
     if (requestVrfTag !== '') {
       const vrfGen = generateVrfTags(sortKey, vrf, arweave);
@@ -97,14 +81,14 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     }
 
     // TODO: add fallback to other bundlr nodes.
-    const {bTx, bundlrResponse} = await uploadToBundlr(transaction, bundlr, tags, sLogger);
+    const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
 
     const parsedInput = JSON.parse(inputTag);
     const functionName = parseFunctionName(inputTag, sLogger);
     let evolve: string | null;
     evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
-    sLogger.info('Original address before create interaction', originalAddress)
+    sLogger.info('Original address before create interaction', originalAddress);
     const interaction = createInteraction(
       transaction,
       originalAddress,
@@ -118,6 +102,19 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       testnetVersion,
       contractLastSortKey
     );
+
+    let verified = false;
+    if (isEvmSigner) {
+      verified = await signatureVerification.process(interaction);
+    } else {
+      verified = await arweave.transactions.verify(transaction);
+    }
+
+    if (!verified) {
+      throw new Error('Naughty boy (interaction)!');
+    } else {
+      sLogger.info('Transaction verified properly');
+    }
 
     const insertBench = Benchmark.measure();
     if (isEvmSigner) {
@@ -136,7 +133,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sequence_sort_key: sortKey,
         bundler_tx_id: bTx.id,
         bundler_response: JSON.stringify(bundlrResponse.data),
-        last_sort_key: contractLastSortKey
+        last_sort_key: contractLastSortKey,
       }),
       trx('interactions').insert({
         interaction_id: transaction.id,
@@ -155,7 +152,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         evolve: evolve,
         testnet: testnetVersion,
         last_sort_key: contractLastSortKey,
-        owner: originalOwner
+        owner: originalOwner,
       }),
     ]);
 
@@ -176,7 +173,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     sLogger.error('Error while inserting bundled transaction');
     sLogger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }
 
@@ -195,7 +192,7 @@ function createInteraction(
 ) {
   const interaction: any = {
     id: transaction.id,
-    owner: {address: originalAddress},
+    owner: { address: originalAddress },
     recipient: transaction.target,
     tags: decodedTags,
     block: {
@@ -213,7 +210,7 @@ function createInteraction(
     source: 'redstone-sequencer',
     vrf: vrfData,
     testnet: testnetVersion,
-    lastSortKey
+    lastSortKey,
   };
 
   if (signature) {
@@ -237,10 +234,10 @@ function generateVrfTags(sortKey: string, vrf: VRF, arweave: Arweave) {
 
   return {
     vrfTags: [
-      {name: 'vrf-index', value: vrfData.index},
-      {name: 'vrf-proof', value: vrfData.proof},
-      {name: 'vrf-bigint', value: vrfData.bigint},
-      {name: 'vrf-pubkey', value: vrfData.pubkey},
+      { name: 'vrf-index', value: vrfData.index },
+      { name: 'vrf-proof', value: vrfData.proof },
+      { name: 'vrf-bigint', value: vrfData.bigint },
+      { name: 'vrf-pubkey', value: vrfData.pubkey },
     ],
     vrfData,
   };
@@ -281,8 +278,8 @@ async function prepareTags(
   const internalWrites: string[] = [];
 
   for (const tag of transaction.tags) {
-    const key = tag.get('name', {decode: true, string: true});
-    const value = tag.get('value', {decode: true, string: true});
+    const key = tag.get('name', { decode: true, string: true });
+    const value = tag.get('value', { decode: true, string: true });
     if (key == SmartWeaveTags.CONTRACT_TX_ID) {
       contractTag = value;
     }
@@ -315,11 +312,11 @@ async function prepareTags(
   }
 
   const tags = [
-    {name: 'Sequencer', value: 'RedStone'},
-    {name: 'Sequencer-Owner', value: originalAddress},
-    {name: 'Sequencer-Tx-Id', value: transaction.id},
-    {name: 'Sequencer-Block-Height', value: '' + currentHeight},
-    {name: 'Sequencer-Block-Id', value: currentBlockId},
+    { name: 'Sequencer', value: 'RedStone' },
+    { name: 'Sequencer-Owner', value: originalAddress },
+    { name: 'Sequencer-Tx-Id', value: transaction.id },
+    { name: 'Sequencer-Block-Height', value: '' + currentHeight },
+    { name: 'Sequencer-Block-Id', value: currentBlockId },
     ...decodedTags,
   ];
 
@@ -332,7 +329,7 @@ async function prepareTags(
     tags,
     originalAddress,
     isEvmSigner,
-    testnetVersion
+    testnetVersion,
   };
 }
 
@@ -344,7 +341,7 @@ export async function uploadToBundlr(
 ) {
   const uploadBenchmark = Benchmark.measure();
 
-  const bTx = bundlr.createTransaction(JSON.stringify(transaction), {tags});
+  const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
   await bTx.sign();
 
   // TODO: move uploading to a separate Worker, to increase TPS
@@ -364,7 +361,7 @@ export async function uploadToBundlr(
     );
   }
 
-  return {bTx, bundlrResponse};
+  return { bTx, bundlrResponse };
 }
 
 async function createSortKey(
