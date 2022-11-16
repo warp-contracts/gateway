@@ -17,15 +17,15 @@ import Bundlr from '@bundlr-network/client';
 import { initBundlr } from '../bundlr/connect';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
-import path from "path";
-import Redis from "ioredis";
-import {LastTxSync} from "./LastTxSyncer";
-import {initPubSub} from "warp-contracts-pubsub";
+import path from 'path';
+import Redis from 'ioredis';
+import { LastTxSync } from './LastTxSyncer';
+import { initPubSub } from 'warp-contracts-pubsub';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
-const replica = argv.replica as boolean || false;
-const localEnv = argv.local as boolean || false;
+const replica = (argv.replica as boolean) || false;
+const localEnv = (argv.local as boolean) || false;
 const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
 
@@ -134,13 +134,15 @@ export interface GatewayContext {
     logger.info('vrf', app.context.vrf);
 
     const connectionOptions = readGwPubSubConfig();
-    const publisher = new Redis(connectionOptions);
-    await publisher.connect();
-    logger.info(`Publisher status`, {
-      host: connectionOptions.host,
-      status: publisher.status
-    });
-    app.context.publisher = publisher;
+    if (connectionOptions) {
+      const publisher = new Redis(connectionOptions);
+      await publisher.connect();
+      logger.info(`Publisher status`, {
+        host: connectionOptions.host,
+        status: publisher.status,
+      });
+      app.context.publisher = publisher;
+    }
 
     if (!fs.existsSync('gateway.lock')) {
       try {
@@ -173,8 +175,12 @@ function initArweave(): Arweave {
   });
 }
 
-
 function readGwPubSubConfig() {
-  const json = fs.readFileSync(path.join('.secrets', 'gw-pubsub.json'), "utf-8");
-  return JSON.parse(json);
+  const pubSubConfigPath = path.join('.secrets', 'gw-pubsub.json');
+  if (fs.existsSync(pubSubConfigPath)) {
+    const json = fs.readFileSync(path.join('.secrets', 'gw-pubsub.json'), 'utf-8');
+    return JSON.parse(json);
+  } else {
+    return false;
+  }
 }
