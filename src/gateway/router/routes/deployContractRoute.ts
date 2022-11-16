@@ -7,6 +7,7 @@ import {getCachedNetworkData} from '../../tasks/networkInfoCache';
 import {BUNDLR_NODE2_URL} from '../../../constants';
 import {uploadToBundlr} from './sequencerRoute';
 import {updateCache} from "../../updateCache";
+import {sleep} from "../../../utils";
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const {logger, gatewayDb, arweave, bundlr} = ctx;
@@ -101,7 +102,11 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    updateCache(contractTx.id, ctx);
+    sleep(2000).then(() => {
+      updateCache(contractTx.id, ctx);
+    }).catch((e) => {
+      logger.error(`No sleep 'till Brooklyn.`, e);
+    });
 
     logger.info('Contract successfully bundled.');
 
