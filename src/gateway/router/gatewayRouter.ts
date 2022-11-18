@@ -20,6 +20,7 @@ import { interactionsSortKeyRoute_v2 } from './routes/interactionsSortKeyRoute_v
 import { contractSourceRoute } from './routes/contractSourceRoute';
 import { contractsBySourceRoute } from './routes/contractsBySourceRoute';
 import { creatorRoute } from './routes/creatorRoute';
+import {interactionsSonar} from "./routes/interactionsSonar";
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
@@ -35,6 +36,7 @@ const gatewayRouter = (replica: boolean): Router => {
   router.get('/interactions/transactionId', interactionsRoute);
   router.get('/interactions', interactionsRoute);
   // adding temporarily - https://github.com/redstone-finance/redstone-sw-gateway/pull/65#discussion_r880555807
+  router.get('/interactions-sonar', interactionsSonar);
   router.get('/interactions-sort-key', interactionsSortKeyRoute);
   router.get('/v2/interactions-sort-key', interactionsSortKeyRoute_v2);
   router.get('/interactions-stream', interactionsStreamRoute);
