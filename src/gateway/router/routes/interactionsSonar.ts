@@ -63,7 +63,7 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
           FROM interactions
           WHERE (contract_id = ? OR interact_write @> ARRAY[?]);
       `,
-        contractId
+        [contractId, contractId]
       ));
 
     const total = totalInteractions.rows[0].confirmed
