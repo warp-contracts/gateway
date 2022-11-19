@@ -15,24 +15,14 @@ async function main() {
   // jwk used to create the Bundlr client instance
   const warpJwk = JSON.parse(fs.readFileSync('.secrets/warp-wallet-jwk.json').toString());
   const warpJwkAddress = await arweave.wallets.jwkToAddress(warpJwk);
-  console.log('Using warp jwk with address', warpJwkAddress);
-  const bundlr = new Bundlr("https://node2.bundlr.network", 'arweave', warpJwk, {
+  console.log('creating Bundlr with jwk address', warpJwkAddress);
+  const bundlr = new Bundlr("https://node1.bundlr.network", 'arweave', warpJwk, {
     timeout: 5000,
   });
 
-  const bTx = bundlr.createTransaction("OMG" );
-  await bTx.sign();
-  console.log(bTx.id);
-
-  const bTx2 = bundlr.createTransaction("OMG" );
-  await bTx2.sign();
-  console.log(bTx2.id);
-  //const response = await bTx.upload();
-
-  //console.log(response.data);
-
- /* // jwk used to sign the data-item
-  const userJwk = await arweave.wallets.generate();
+  // jwk used to sign the data-item
+  const userJwk = await arweave.wallets.generate()
+  console.log('User wallet', await arweave.wallets.jwkToAddress(userJwk));
 
   const tags = [
     {name: SmartWeaveTags.APP_NAME, value: 'SmartWeaveAction'},
@@ -52,32 +42,12 @@ async function main() {
     userSigner,
     {tags}
   );
-  const dataItem2 = createData(
-    Math.random().toString().slice(-4),
-    userSigner,
-    {tags}
-  );
-  const dataItem3 = createData(
-    Math.random().toString().slice(-4),
-    userSigner,
-    {tags}
-  );
   await dataItem1.sign(userSigner);
-  await dataItem2.sign(userSigner);
-  await dataItem3.sign(userSigner);
-
   console.log("dataItem1 id", dataItem1.id);
-  console.log("dataItem2 id", dataItem2.id);
-  console.log("dataItem3 id", dataItem3.id);
-
-  const bundle = await bundleAndSignData([dataItem1, dataItem2, dataItem3], warpJwk);
-
-  const result = await bundlr.uploader.upload(bundle.getRaw(), [
-    {name: 'Bundle-Format', value: 'binary'},
-    {name: 'Bundle-Version', value: '2.0'},
-    {name: 'Application', value: 'Warp-Sequencer'}
-  ]);
-  console.log(result.data);*/
+  console.log("dataItem1 owner", dataItem1.owner);
+  console.log("dataItem1 wallet address", await arweave.wallets.ownerToAddress(dataItem1.owner));
+  const result = await bundlr.uploader.transactionUploader(dataItem1);
+  console.log(result.data);
 }
 
 main().finally(() => console.log("done"));
