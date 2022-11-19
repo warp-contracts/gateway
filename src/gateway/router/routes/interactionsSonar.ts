@@ -66,10 +66,10 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
         [contractId, contractId]
       ));
 
-    const total = totalInteractions.rows[0].confirmed
-     + totalInteractions.rows[0].corrupted
-    + totalInteractions.rows[0].not_processed
-    + totalInteractions.rows[0].forked
+    const total = parseInt(totalInteractions.rows[0].confirmed)
+     + parseInt(totalInteractions.rows[0].corrupted)
+    + parseInt(totalInteractions.rows[0].not_processed)
+    + parseInt(totalInteractions.rows[0].forked)
 
     const benchmark = Benchmark.measure();
     ctx.body = {
