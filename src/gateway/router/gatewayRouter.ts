@@ -20,8 +20,8 @@ import { interactionsSortKeyRoute_v2 } from './routes/interactionsSortKeyRoute_v
 import { contractSourceRoute } from './routes/contractSourceRoute';
 import { contractsBySourceRoute } from './routes/contractsBySourceRoute';
 import { creatorRoute } from './routes/creatorRoute';
-import {interactionsSonar} from "./routes/interactionsSonar";
-import { registerRoute } from './routes/registerRoute';
+import { interactionsSonar } from './routes/interactionsSonar';
+import { registerRoute } from './routes/deployBundledRoute';
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
@@ -54,7 +54,7 @@ const gatewayRouter = (replica: boolean): Router => {
   // post
   if (!replica) {
     router.post('/contracts/deploy', deployContractRoute);
-    router.post('/contracts/register', registerRoute);
+    router.post('/contracts/deploy-bundled', registerRoute);
     router.post('/sequencer/register', sequencerRoute);
   }
 
