@@ -21,6 +21,7 @@ import { contractSourceRoute } from './routes/contractSourceRoute';
 import { contractsBySourceRoute } from './routes/contractsBySourceRoute';
 import { creatorRoute } from './routes/creatorRoute';
 import {interactionsSonar} from "./routes/interactionsSonar";
+import { registerRoute } from './routes/registerRoute';
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
@@ -53,12 +54,11 @@ const gatewayRouter = (replica: boolean): Router => {
   // post
   if (!replica) {
     router.post('/contracts/deploy', deployContractRoute);
+    router.post('/contracts/register', registerRoute);
     router.post('/sequencer/register', sequencerRoute);
   }
 
   return router;
-} 
-
-
+};
 
 export default gatewayRouter;
