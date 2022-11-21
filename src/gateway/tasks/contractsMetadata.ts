@@ -2,10 +2,10 @@ import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
 import { ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags } from 'warp-contracts';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
-import {AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion} from './syncTransactions';
+import { AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion } from './syncTransactions';
 import { Knex } from 'knex';
 import { getCachedNetworkData } from './networkInfoCache';
-import {updateCache} from "../updateCache";
+import { updateCache } from '../updateCache';
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -101,7 +101,8 @@ async function loadContractsFromGql(context: GatewayContext) {
         block_height: transaction.node.block.height,
         block_timestamp: transaction.node.block.timestamp,
         content_type: contentType || 'unknown',
-        testnet
+        deployment_type: 'arweave',
+        testnet,
       });
       contractsInsertsIds.add(contractId);
 
@@ -205,6 +206,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         owner: srcTxOwner,
         src_content_type: definition.contractType == 'js' ? 'application/javascript' : 'application/wasm',
         src_tx: definition.srcTx,
+        deployment_type: 'arweave',
       };
 
       if (definition.contractType == 'js') {
