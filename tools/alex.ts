@@ -61,7 +61,9 @@ async function main() {
     const dataItem = createData(contractData, userSigner, { tags: contractTags });
     await dataItem.sign(userSigner);
 
-    const response = await fetch(`http://localhost:5666/gateway/contracts/register`, {
+    console.log('data-item id:', dataItem.id);
+
+    const response = await fetch(`https://gateway.redstone.finance/gateway/contracts/deploy-bundled`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/octet-stream',
