@@ -5,6 +5,7 @@ import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
 import { sleep } from 'warp-contracts';
 import { updateCache } from '../../updateCache';
+import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 
 export async function registerRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -56,10 +57,10 @@ export async function registerRoute(ctx: Router.RouterContext) {
       type: type,
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
-      block_height: null,
-      block_timestamp: null,
+      block_height: getCachedNetworkData().cachedNetworkInfo.height,
+      block_timestamp: getCachedNetworkData().cachedBlockInfo.timestamp,
       content_type: contentType,
-      contract_tx: null,
+      contract_tx: dataItem.toJSON(),
       bundler_contract_tx_id: bundlrResponse.data.id,
       bundler_contract_node: BUNDLR_NODE2_URL,
       bundler_contract_tags: JSON.stringify(dataItem.tags),
