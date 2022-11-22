@@ -1,11 +1,15 @@
 import Router from "@koa/router";
 import {GatewayContext} from "./init";
 import {publish as appSyncPublish} from "warp-contracts-pubsub";
+import {InteractionMessage} from "warp-contracts-subscription-plugin";
 
 const contractsChannel = 'contracts';
 
-
-export function updateCache(contractTxId: string, ctx: Router.RouterContext | GatewayContext, sortKey?: string, lastSortKey?: string) {
+export function sendNotificationToCache(
+  ctx: Router.RouterContext | GatewayContext,
+  contractTxId: string,
+  initialState?: any,
+  interaction?: InteractionMessage) {
   const {logger} = ctx;
 
   if (ctx.localEnv) {
@@ -13,9 +17,20 @@ export function updateCache(contractTxId: string, ctx: Router.RouterContext | Ga
     return;
   }
   try {
-    const message = {contractTxId, sortKey, test: false, source: 'warp-gw'};
+    if (initialState && interaction) {
+      logger.error('Either interaction or initialState should be set, not both.');
+    }
+
+    const message: any = {contractTxId, test: false, source: 'warp-gw'};
+    if (initialState) {
+      message.initialState = initialState;
+    }
+    if (interaction) {
+      message.interaction = interaction;
+    }
+
     ctx.publisher.publish(contractsChannel, JSON.stringify(message));
-    logger.info(`Published ${contractsChannel}`, message);
+    logger.info(`Published ${contractsChannel}`);
   } catch (e) {
     logger.error('Error while publishing message', e);
   }

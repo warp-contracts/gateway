@@ -10,7 +10,7 @@ import {BlockData} from 'arweave/node/blocks';
 import {VRF} from '../../init';
 import {isTxIdValid} from '../../../utils';
 import {BUNDLR_NODE2_URL} from '../../../constants';
-import {publishInteraction, updateCache} from "../../updateCache";
+import {publishInteraction, sendNotificationToCache} from "../../publisher";
 import {Knex} from "knex";
 
 const {Evaluate} = require('@idena/vrf-js');
@@ -32,6 +32,13 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
 
     const transaction: Transaction = new Transaction({...ctx.request.body});
+    const verified = await arweave.transactions.verify(transaction);
+    if (!verified) {
+      throw new Error('Naughty boy (interaction)!');
+    } else {
+      sLogger.info('Transaction verified properly');
+    }
+
     sLogger.debug('New sequencer tx', transaction.id);
 
     const originalSignature = transaction.signature;
@@ -160,7 +167,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     await trx.commit();
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
-    updateCache(contractTag, ctx, sortKey);
+    sendNotificationToCache(ctx, contractTag, undefined, interaction);
     publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey);
   } catch (e) {
     await trx.rollback();
@@ -205,8 +212,8 @@ function createInteraction(
     vrf: vrfData,
     testnet: testnetVersion,
     lastSortKey
-
   };
+
   if (signature) {
     interaction.signature = signature;
   }

@@ -5,7 +5,8 @@ import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion } from './syncTransactions';
 import { Knex } from 'knex';
 import { getCachedNetworkData } from './networkInfoCache';
-import { updateCache } from '../updateCache';
+import { sendNotificationToCache } from "../publisher";
+import { sleep } from "../../utils";
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -239,7 +240,11 @@ async function loadContractsMetadata(context: GatewayContext) {
           'src_tx',
         ]);
 
-      updateCache(definition.txId, context);
+      sleep(2000).then(() => {
+        sendNotificationToCache(context, definition.txId, definition.initState);
+      }).catch((e) => {
+        logger.error(`No sleep 'till Brooklyn.`, e);
+      });
 
       logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {

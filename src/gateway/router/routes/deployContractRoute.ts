@@ -6,7 +6,7 @@ import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
-import { updateCache } from '../../updateCache';
+import { sendNotificationToCache } from '../../publisher';
 import { sleep } from '../../../utils';
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
@@ -17,6 +17,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
   if (ctx.request.body.srcTx) {
     srcTx = new Transaction({ ...ctx.request.body.srcTx });
   }
+
   logger.debug('New deploy contract transaction', contractTx.id);
 
   const originalOwner = contractTx.owner;
@@ -117,13 +118,11 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    sleep(2000)
-      .then(() => {
-        updateCache(contractTx.id, ctx);
-      })
-      .catch((e) => {
-        logger.error(`No sleep 'till Brooklyn.`, e);
-      });
+    sleep(2000).then(() => {
+      sendNotificationToCache(ctx, contractTx.id, initState);
+    }).catch((e) => {
+      logger.error(`No sleep 'till Brooklyn.`, e);
+    });
 
     logger.info('Contract successfully bundled.');
 

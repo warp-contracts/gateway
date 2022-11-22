@@ -7142,6 +7142,14 @@ warp-contracts-pubsub@^1.0.3:
     "@aws-amplify/api" "^4.0.61"
     "@aws-amplify/core" "4.7.12"
 
+warp-contracts-subscription-plugin@1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/warp-contracts-subscription-plugin/-/warp-contracts-subscription-plugin-1.0.4.tgz#af7a933d3b18d78cf68ee5f4e520c94733cf44b5"
+  integrity sha512-zcNNSIaHdPWB4s1LosexjQTzmnVvnlKyntY3KsP9eVWzbFrXuybvFRNQEq1oyXVl795IkWAwnlcOmRdmmSReog==
+  dependencies:
+    warp-contracts-pubsub "^1.0.3"
+    ws "^8.11.0"
+
 warp-contracts@1.2.13:
   version "1.2.13"
   resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.2.13.tgz#653841d2bbf7d50d80bd2557f8e1d9f7648ea2f7"
@@ -7297,6 +7305,11 @@ ws@^7.4.5, ws@^7.4.6:
   version "7.5.6"
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.5.6.tgz#e59fc509fb15ddfb65487ee9765c5a51dec5fe7b"
   integrity sha512-6GLgCqo2cy2A2rjCNFlxQS6ZljG/coZfZXclldI8FB/1G3CCI36Zd8xy2HrFVACi8tfk5XrgLQEk+P0Tnz9UcA==
+
+ws@^8.11.0:
+  version "8.11.0"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-8.11.0.tgz#6a0d36b8edfd9f96d8b25683db2f8d7de6e8e143"
+  integrity sha512-HPG3wQd9sNQoT9xHyNCXoDUa+Xw/VevmY9FoHyQ+g+rrMn4j6FB4np7Z0OhdTgjx6MgQLK7jwSy1YecU1+4Asg==
 
 xml-name-validator@^3.0.0:
   version "3.0.0"
