@@ -4,8 +4,8 @@ import { BUNDLR_NODE2_URL } from '../../../constants';
 import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
 import { sleep } from 'warp-contracts';
-import { updateCache } from '../../updateCache';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
+import {sendNotificationToCache} from "../../publisher";
 
 export async function registerRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -71,13 +71,11 @@ export async function registerRoute(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sleep(2000)
-      .then(() => {
-        updateCache(bundlrResponse.data.id, ctx);
-      })
-      .catch((e) => {
-        logger.error(`No sleep 'till Brooklyn.`, e);
-      });
+    sleep(2000).then(() => {
+      sendNotificationToCache(ctx, bundlrResponse.data.id, initState);
+    }).catch((e) => {
+      logger.error(`No sleep 'till Brooklyn.`, e);
+    });
 
     logger.info('Contract successfully deployed.', {
       contractTxId: bundlrResponse.data.id,
