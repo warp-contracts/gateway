@@ -79,18 +79,18 @@ export async function registerRoute(ctx: Router.RouterContext) {
         logger.error(`No sleep 'till Brooklyn.`, e);
       });
 
-    logger.info('Contract successfully registered.', {
-      registeredContractId: bundlrResponse.data.id,
+    logger.info('Contract successfully deployed.', {
+      contractTxId: bundlrResponse.data.id,
     });
 
     ctx.body = {
-      registeredContractId: bundlrResponse.data.id,
+      contractTxId: bundlrResponse.data.id,
     };
   } catch (e: any) {
     logger.error('Error while inserting bundled transaction.');
     logger.error(e);
+    ctx.body = e;
     ctx.status = e.status;
-    ctx.body = { message: e };
   }
 }
 
@@ -109,7 +109,6 @@ export async function verifyContractTags(dataItem: DataItem, ctx: Router.RouterC
     tagsIncluded.every((ti) => tags.some((t) => t.name == ti.name && t.value == ti.value)) &&
     nameTagsIncluded.every((nti) => tags.some((t) => t.name == nti));
 
-  console.log(contractTagsIncluded);
   return contractTagsIncluded;
 }
 
