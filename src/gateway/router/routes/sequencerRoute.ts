@@ -32,13 +32,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
 
     const transaction: Transaction = new Transaction({...ctx.request.body});
-    const verified = await arweave.transactions.verify(transaction);
-    if (!verified) {
-      throw new Error('Naughty boy (interaction)!');
-    } else {
-      sLogger.info('Transaction verified properly');
-    }
-
     sLogger.debug('New sequencer tx', transaction.id);
 
     const originalSignature = transaction.signature;
@@ -78,6 +71,15 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       currentBlockId,
       arweave
     );
+
+    if (!isEvmSigner) {
+      const verified = await arweave.transactions.verify(transaction);
+      if (!verified) {
+        throw new Error('Naughty boy (interaction)!');
+      } else {
+        sLogger.info('Transaction verified properly');
+      }
+    }
 
     const contractLastSortKey: string  | null = await lastTxSync.acquireMutex(contractTag, trx);
 
