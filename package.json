@@ -42,6 +42,7 @@
     "warp-contracts": "1.2.13",
     "warp-contracts-pubsub": "^1.0.3",
     "warp-contracts-subscription-plugin": "1.0.4",
+    "warp-signature": "1.0.4",
     "yargs": "17.3.0"
   },
   "devDependencies": {
