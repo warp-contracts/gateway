@@ -80,14 +80,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       vrfData = vrfGen.vrfData;
     }
 
-    // TODO: add fallback to other bundlr nodes.
-    const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
-
-    const parsedInput = JSON.parse(inputTag);
-    const functionName = parseFunctionName(inputTag, sLogger);
-    let evolve: string | null;
-    evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
-
     sLogger.info('Original address before create interaction', originalAddress);
     const interaction = createInteraction(
       transaction,
@@ -115,6 +107,14 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     } else {
       sLogger.info('Transaction verified properly');
     }
+
+    // TODO: add fallback to other bundlr nodes.
+    const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
+
+    const parsedInput = JSON.parse(inputTag);
+    const functionName = parseFunctionName(inputTag, sLogger);
+    let evolve: string | null;
+    evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
     const insertBench = Benchmark.measure();
     if (isEvmSigner) {
