@@ -24,7 +24,7 @@ export async function registerRoute(ctx: Router.RouterContext) {
       ctx.throw(400, 'Contract tags are not valid.');
     }
 
-    const bundlrResponse = await bundlr.uploader.transactionUploader(dataItem);
+    const bundlrResponse = await bundlr.uploader.transactionUploader(dataItem, { getReceiptSignature: true });
 
     if (
       bundlrResponse.status !== 200 ||
