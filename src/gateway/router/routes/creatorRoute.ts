@@ -17,13 +17,6 @@ export async function creatorRoute(ctx: Router.RouterContext) {
 
   const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
-  if (!isTxIdValid(id as string)) {
-    logger.error('Incorrect creator address.');
-    ctx.status = 500;
-    ctx.body = { message: 'Incorrect creator address.' };
-    return;
-  }
-
   const bindings: any[] = [];
   bindings.push(id);
   !txType && bindings.push(id);
