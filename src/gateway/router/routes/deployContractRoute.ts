@@ -113,7 +113,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         src_wasm_lang: srcWasmLang || null,
         bundler_src_tx_id: bundlerSrcTxId,
         bundler_src_node: BUNDLR_NODE2_URL,
-        bundler_response: JSON.stringify(srcBundlrResponse.data),
+        bundler_response: JSON.stringify(srcBundlrResponse?.data),
         src_tx: { ...srcTx.toJSON(), data: null },
         testnet: srcTestnet,
         deployment_type: 'warp-wrapped',

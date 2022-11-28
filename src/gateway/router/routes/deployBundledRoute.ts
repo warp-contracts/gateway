@@ -5,7 +5,7 @@ import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
 import { sleep } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import {sendNotificationToCache} from "../../publisher";
+import { sendNotificationToCache } from '../../publisher';
 
 export async function registerRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -24,7 +24,7 @@ export async function registerRoute(ctx: Router.RouterContext) {
       ctx.throw(400, 'Contract tags are not valid.');
     }
 
-    const bundlrResponse = await bundlr.uploader.transactionUploader(dataItem);
+    const bundlrResponse = await bundlr.uploader.uploadTransaction(dataItem, { getReceiptSignature: true });
 
     if (
       bundlrResponse.status !== 200 ||
@@ -71,11 +71,13 @@ export async function registerRoute(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sleep(2000).then(() => {
-      sendNotificationToCache(ctx, bundlrResponse.data.id, initState);
-    }).catch((e) => {
-      logger.error(`No sleep 'till Brooklyn.`, e);
-    });
+    sleep(2000)
+      .then(() => {
+        sendNotificationToCache(ctx, bundlrResponse.data.id, initState);
+      })
+      .catch((e) => {
+        logger.error(`No sleep 'till Brooklyn.`, e);
+      });
 
     logger.info('Contract successfully deployed.', {
       contractTxId: bundlrResponse.data.id,

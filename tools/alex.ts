@@ -31,11 +31,11 @@ async function main() {
       },
       paths: {
         asset: {
-          id: assetBundlrResponse.data.id,
+          id: assetBundlrResponse.id,
         },
       },
     });
-    
+
     const contractTags = [
       { name: 'Content-Type', value: 'application/x.arweave-manifest+json' },
       { name: 'App-Name', value: 'SmartWeaveContract' },

@@ -343,12 +343,13 @@ export async function uploadToBundlr(
 
   const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
   await bTx.sign();
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx, { getReceiptSignature: true });
 
-  // TODO: move uploading to a separate Worker, to increase TPS
-  const bundlrResponse = await bTx.upload();
-  logger.debug('Uploading to bundlr', uploadBenchmark.elapsed());
-  logger.debug('Bundlr response id', bundlrResponse.data.id);
-  logger.debug('Bundlr response status', bundlrResponse.status);
+  logger.debug('Uploading to bundlr', {
+    elapsed: uploadBenchmark.elapsed(),
+    id: bundlrResponse.data.id,
+    status: bundlrResponse.status
+  });
 
   if (
     bundlrResponse.status !== 200 ||
