@@ -342,7 +342,9 @@ export async function uploadToBundlr(
   const uploadBenchmark = Benchmark.measure();
 
   const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
-  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx, { getReceiptSignature: true })
+  await bTx.sign();
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx, { getReceiptSignature: true });
+
   logger.debug('Uploading to bundlr', {
     elapsed: uploadBenchmark.elapsed(),
     id: bundlrResponse.data.id,
