@@ -41,6 +41,8 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   await runLoadPeersTask(context);
 
+  await runContractsMetadataTask(context);
+
   await runSyncRecentTransactionsTask(context);
 
   await runSyncLastHourTransactionsTask(context);
@@ -52,8 +54,6 @@ export async function runGatewayTasks(context: GatewayContext) {
   await runVerifyCorruptedTransactionsTask(context);
 
   await runLoadContractsFromGqlTask(context);
-
-  await runContractsMetadataTask(context);
 
   await runEvolvedContractSourcesTask(context);
 }
