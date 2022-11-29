@@ -152,7 +152,7 @@ export interface GatewayContext {
 
     if (!fs.existsSync('gateway.lock')) {
       try {
-        logger.debug(`Creating lock file for ${cluster.worker?.id}`);
+        logger.info(`Creating lock file for ${cluster.worker?.id}`);
         // note: if another process in cluster have already created the file - writing here
         // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
         fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, { flag: 'wx' });
@@ -162,6 +162,7 @@ export interface GatewayContext {
         // note: only one worker in cluster runs the gateway tasks
         // all workers in cluster run the http server
         if (!localEnv) {
+          logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
           await runGatewayTasks(app.context);
         }
       } catch (e: any) {
