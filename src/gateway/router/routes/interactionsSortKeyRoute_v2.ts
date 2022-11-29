@@ -95,8 +95,6 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
         },
       }));
 
-    logger.info('Interactions sort key result', result?.rows.length);
-
     ctx.body = {
       paging: {
         total,
@@ -116,8 +114,6 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
       // TODO: this mapping here is kinda dumb.
       interactions: mappedInteractions,
     };
-
-    logger.info('Mapping interactions: ', benchmark.elapsed());
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
