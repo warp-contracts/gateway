@@ -80,6 +80,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     }
     const initState = JSON.parse(initStateRaw);
     const type = evalType(initState);
+    const manifest = evalManifest(contractTags);
 
     const insert = {
       contract_id: contractTx.id,
@@ -99,6 +100,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_response: JSON.stringify(contractBundlrResponse.data),
       testnet: contractTestnet,
       deployment_type: 'warp-wrapped',
+      manifest
     };
 
     await gatewayDb('contracts').insert(insert);
@@ -203,4 +205,9 @@ export async function verifyEvmSignature(isEvmSigner: boolean, ctx: RouterContex
       throw new Error(`Transaction's EVM signature is incorrect.`);
     }
   }
+}
+
+export function evalManifest(contractTags: GQLTagInterface[]) {
+  const manifestRaw = tagValue("Contract-Manifest", contractTags);
+  return manifestRaw ? JSON.parse(manifestRaw) : null;
 }
