@@ -77,6 +77,7 @@ export interface GatewayContext {
   LoggerFactory.INST.logLevel('info', 'gateway');
   LoggerFactory.INST.logLevel('debug', 'sequencer');
   LoggerFactory.INST.logLevel('debug', 'LastTxSync');
+  LoggerFactory.INST.logLevel('none', 'ArweaveWrapper');
   const logger = LoggerFactory.INST.create('gateway');
   const sLogger = LoggerFactory.INST.create('sequencer');
 
