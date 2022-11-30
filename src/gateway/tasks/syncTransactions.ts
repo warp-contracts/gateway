@@ -63,8 +63,8 @@ export async function runSyncLastHourTransactionsTask(context: GatewayContext) {
   );
 }
 
-export async function runSyncLastDayTransactionsTask(context: GatewayContext) {
-  await TaskRunner.from('[sync last day transactions]', syncLastDayTransactions, context).runAsyncEvery(
+export async function runSyncLast2HoursTransactionsTask(context: GatewayContext) {
+  await TaskRunner.from('[sync last 2 hours transactions]', syncLast2HoursTransactions, context).runAsyncEvery(
     DAY_INTERVAL_MS
   );
 }
@@ -77,8 +77,8 @@ function syncLastHourTransactions(context: GatewayContext) {
   return syncTransactions(context, AVG_BLOCKS_PER_HOUR);
 }
 
-function syncLastDayTransactions(context: GatewayContext) {
-  return syncTransactions(context, AVG_BLOCKS_PER_DAY);
+function syncLast2HoursTransactions(context: GatewayContext) {
+  return syncTransactions(context, AVG_BLOCKS_PER_HOUR * 2);
 }
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {

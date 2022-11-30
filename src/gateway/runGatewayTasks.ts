@@ -2,7 +2,7 @@ import { runLoadPeersTask } from './tasks/loadPeers';
 import { runVerifyInteractionsTask } from './tasks/verifyInteractions';
 import { runVerifyCorruptedTransactionsTask } from './tasks/verifyCorruptedTransactions';
 import {
-  runSyncLastDayTransactionsTask,
+  runSyncLast2HoursTransactionsTask,
   runSyncLastHourTransactionsTask,
   runSyncRecentTransactionsTask,
 } from './tasks/syncTransactions';
@@ -38,22 +38,16 @@ import { runEvolvedContractSourcesTask } from './tasks/evolvedContractSources';
  */
 export async function runGatewayTasks(context: GatewayContext) {
   //await runBundlrCheck(context);
-
   await runLoadPeersTask(context);
 
-  await runContractsMetadataTask(context);
-
-  await runSyncRecentTransactionsTask(context);
-
-  await runSyncLastHourTransactionsTask(context);
-
-  // await runSyncLastDayTransactionsTask(context);
-
-  await runVerifyInteractionsTask(context);
-
-  await runVerifyCorruptedTransactionsTask(context);
-
-  await runLoadContractsFromGqlTask(context);
-
-  await runEvolvedContractSourcesTask(context);
+  await Promise.allSettled([
+    runContractsMetadataTask(context),
+    runSyncRecentTransactionsTask(context),
+    runSyncLastHourTransactionsTask(context),
+    // await runSyncLastDayTransactionsTask(context);
+    runVerifyInteractionsTask(context),
+    runVerifyCorruptedTransactionsTask(context),
+    runLoadContractsFromGqlTask(context),
+    runEvolvedContractSourcesTask(context)
+  ]);
 }
