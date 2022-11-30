@@ -6,6 +6,7 @@ import rawBody from 'raw-body';
 import { sleep } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { sendNotificationToCache } from '../../publisher';
+import {evalManifest} from "./deployContractRoute";
 
 export async function registerRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -49,6 +50,7 @@ export async function registerRoute(ctx: Router.RouterContext) {
     const ownerAddress = await arweave.wallets.ownerToAddress(dataItem.owner);
     const contentType = dataItem.tags.find((t) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(dataItem.tags);
+    const manifest = evalManifest(dataItem.tags);
 
     const insert = {
       contract_id: bundlrResponse.data.id,
@@ -68,6 +70,7 @@ export async function registerRoute(ctx: Router.RouterContext) {
       bundler_response: JSON.stringify(bundlrResponse.data),
       testnet,
       deployment_type: 'warp-direct',
+      manifest
     };
 
     await gatewayDb('contracts').insert(insert);
