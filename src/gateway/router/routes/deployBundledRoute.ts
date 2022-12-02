@@ -10,10 +10,11 @@ import { sendNotificationToCache } from '../../publisher';
 export async function registerRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
 
-  const rawDataItem: Buffer = await rawBody(ctx.req);
-  const dataItem = new DataItem(rawDataItem);
+  let initStateRaw, dataItem;
 
   try {
+    const rawDataItem: Buffer = await rawBody(ctx.req);
+    dataItem = new DataItem(rawDataItem);
     const isValid = await dataItem.isValid();
     if (!isValid) {
       ctx.throw(400, 'Data item binary is not valid.');
@@ -42,7 +43,7 @@ export async function registerRoute(ctx: Router.RouterContext) {
     });
 
     const srcTxId = dataItem.tags.find((t) => t.name == 'Contract-Src')!.value;
-    const initStateRaw = dataItem.tags.find((t) => t.name == 'Init-State')!.value;
+    initStateRaw = dataItem.tags.find((t) => t.name == 'Init-State')!.value;
     const initState = JSON.parse(initStateRaw);
     const type = evalType(initState);
     const ownerAddress = await arweave.wallets.ownerToAddress(dataItem.owner);
@@ -87,10 +88,14 @@ export async function registerRoute(ctx: Router.RouterContext) {
       contractTxId: bundlrResponse.data.id,
     };
   } catch (e: any) {
-    logger.error('Error while inserting bundled transaction.');
+    logger.error('Error while inserting bundled transaction.', {
+      dataItemId: dataItem?.id,
+      contractTx: dataItem?.toJSON(),
+      initStateRaw: initStateRaw,
+    });
     logger.error(e);
     ctx.body = e;
-    ctx.status = e.status;
+    ctx.status = e.status ? e.status : 500;
   }
 }
 
