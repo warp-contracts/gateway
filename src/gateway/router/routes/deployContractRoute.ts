@@ -146,12 +146,12 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
   }
 }
 
-function tagValue(name: string, tags: GQLTagInterface[]): string | undefined {
+export function tagValue(name: string, tags: GQLTagInterface[]): string | undefined {
   const tag = tags.find((t) => t.name == name);
   return tag?.value;
 }
 
-async function prepareTags(
+export async function prepareTags(
   transaction: Transaction,
   originalOwner: string,
   logger: any,
@@ -194,7 +194,7 @@ async function prepareTags(
   return { tags, testnet, originalAddress, isEvmSigner };
 }
 
-async function verifyEvmSignature(isEvmSigner: boolean, ctx: RouterContext, tx: Transaction): Promise<void> {
+export async function verifyEvmSignature(isEvmSigner: boolean, ctx: RouterContext, tx: Transaction): Promise<void> {
   if (isEvmSigner) {
     const isSignatureCorrect = await ctx.signatureVerification.process(tx);
     if (isSignatureCorrect) {

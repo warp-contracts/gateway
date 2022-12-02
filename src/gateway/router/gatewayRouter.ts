@@ -22,6 +22,7 @@ import { contractsBySourceRoute } from './routes/contractsBySourceRoute';
 import { creatorRoute } from './routes/creatorRoute';
 import { interactionsSonar } from './routes/interactionsSonar';
 import { registerRoute } from './routes/deployBundledRoute';
+import { deploySourceRoute } from './routes/deploySourceRoute'
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
@@ -56,6 +57,7 @@ const gatewayRouter = (replica: boolean): Router => {
     router.post('/contracts/deploy', deployContractRoute);
     router.post('/contracts/deploy-bundled', registerRoute);
     router.post('/sequencer/register', sequencerRoute);
+    router.post('/sources/deploy', deploySourceRoute);
   }
 
   return router;
