@@ -39,9 +39,9 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
     const result: any = await gatewayDb.raw(
       `
           SELECT interaction, 
-                 confirmation_status, 
-                 ${shouldMinimize ? '' : 'confirming_peer, confirmations, bundler_tx_id, '} 
-                 count(*) OVER () AS total
+                 confirmation_status
+                 ${shouldMinimize ? '' : ',confirming_peer, confirmations, bundler_tx_id '}
+                 ${shouldMinimize ? '' : ',count(*) OVER () AS total'}
           FROM interactions 
             WHERE (contract_id = ? OR interact_write @> ARRAY[?]) 
           ${
@@ -53,7 +53,9 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
           ${to ? ' AND block_height <= ?' : ''} 
           ${source ? `AND source = ?` : ''} 
           ${upToTransactionId ? `AND id <= (SELECT id FROM interactions WHERE interaction_id = ?)` : ''} 
-          ORDER BY block_height DESC, interaction_id DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
+          ORDER BY block_height ${shouldMinimize ? 'ASC' : 'DESC'}, interaction_id DESC ${
+        parsedPage ? ' LIMIT ? OFFSET ?' : ''
+      };
       `,
       bindings
     );
@@ -74,6 +76,24 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
     const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
 
+    const mappedInteractions = shouldMinimize
+      ? result?.rows?.map((r: any) => ({
+          interaction: {
+            ...r.interaction,
+            bundlerTxId: r.bundler_tx_id,
+          },
+          confirmationStatus: r.confirmation_status,
+        }))
+      : result?.rows?.map((r: any) => ({
+          status: r.confirmation_status,
+          confirming_peers: r.confirming_peer,
+          confirmations: r.confirmations,
+          interaction: {
+            ...r.interaction,
+            bundlerTxId: r.bundler_tx_id,
+          },
+        }));
+
     ctx.body = {
       paging: {
         total,
@@ -90,15 +110,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
           forked: totalInteractions?.rows[0].forked,
         },
       }),
-      interactions: result?.rows?.map((r: any) => ({
-        status: r.confirmation_status,
-        confirming_peers: r.confirming_peer,
-        confirmations: r.confirmations,
-        interaction: {
-          ...r.interaction,
-          bundlerTxId: r.bundler_tx_id,
-        },
-      })),
+      interactions: mappedInteractions,
     };
   } catch (e: any) {
     ctx.logger.error(e);

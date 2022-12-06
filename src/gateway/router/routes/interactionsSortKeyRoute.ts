@@ -42,9 +42,9 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
     const query = `
           SELECT interaction, 
                  confirmation_status, 
-                 sort_key,
-                 ${shouldMinimize ? '' : 'confirming_peer, confirmations, bundler_tx_id, '} 
-                 count(*) OVER () AS total
+                 sort_key
+                 ${shouldMinimize ? '' : ',confirming_peer, confirmations, bundler_tx_id '}
+                 ${shouldMinimize ? '' : ',count(*) OVER () AS total'}
           FROM interactions 
             WHERE (contract_id = ? OR interact_write @> ARRAY[?]) 
           ${
@@ -77,6 +77,23 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
     const total = result?.rows?.length > 0 ? parseInt(result?.rows[0].total) : 0;
 
     const benchmark = Benchmark.measure();
+    const mappedInteractions = shouldMinimize
+      ? result?.rows?.map((r: any) => ({
+          ...r.interaction,
+          sortKey: r.sort_key,
+          confirmationStatus: r.confirmation_status,
+        }))
+      : result?.rows?.map((r: any) => ({
+          status: r.confirmation_status,
+          confirming_peers: r.confirming_peer,
+          confirmations: r.confirmations,
+          interaction: {
+            ...r.interaction,
+            bundlerTxId: r.bundler_tx_id,
+            sortKey: r.sort_key,
+          },
+        }));
+
     ctx.body = {
       paging: {
         total,
@@ -95,16 +112,7 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
       }),
       // TODO: this mapping here is kinda dumb.
 
-      interactions: result?.rows?.map((r: any) => ({
-        status: r.confirmation_status,
-        confirming_peers: r.confirming_peer,
-        confirmations: r.confirmations,
-        interaction: {
-          ...r.interaction,
-          bundlerTxId: r.bundler_tx_id,
-          sortKey: r.sort_key,
-        },
-      })),
+      interactions: mappedInteractions,
     };
 
     logger.info('Mapping interactions: ', benchmark.elapsed());
