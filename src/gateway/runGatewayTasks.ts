@@ -2,7 +2,7 @@ import { runLoadPeersTask } from './tasks/loadPeers';
 import { runVerifyInteractionsTask } from './tasks/verifyInteractions';
 import { runVerifyCorruptedTransactionsTask } from './tasks/verifyCorruptedTransactions';
 import {
-  runSyncLastDayTransactionsTask,
+  runSyncLastSixHoursTransactionsTask,
   runSyncLastHourTransactionsTask,
   runSyncRecentTransactionsTask,
 } from './tasks/syncTransactions';
@@ -47,8 +47,6 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   await runSyncLastHourTransactionsTask(context);
 
-  // await runSyncLastDayTransactionsTask(context);
-
   await runVerifyInteractionsTask(context);
 
   await runVerifyCorruptedTransactionsTask(context);
@@ -56,4 +54,6 @@ export async function runGatewayTasks(context: GatewayContext) {
   await runLoadContractsFromGqlTask(context);
 
   await runEvolvedContractSourcesTask(context);
+
+  await runSyncLastSixHoursTransactionsTask(context);
 }
