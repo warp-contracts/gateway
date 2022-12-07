@@ -43,8 +43,11 @@ export async function loadPages(context: GqlContext, query: string, variables: a
 
   const txInfos: GQLEdgeInterface[] = transactions.edges.filter((tx) => filterBundles(tx));
 
+  const { logger, arweaveWrapper } = context;
+
   while (transactions.pageInfo.hasNextPage) {
     const cursor = transactions.edges[MAX_GQL_REQUEST - 1].cursor;
+    logger.debug(`Cursor for ${transactions.edges[MAX_GQL_REQUEST - 1].node.id}[${transactions.edges[MAX_GQL_REQUEST - 1].node.block.height}]: ${transactions.edges[MAX_GQL_REQUEST - 1].cursor}`);
 
     variables = {
       ...variables,

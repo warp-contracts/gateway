@@ -63,8 +63,8 @@ export async function runSyncLastHourTransactionsTask(context: GatewayContext) {
   );
 }
 
-export async function runSyncLastDayTransactionsTask(context: GatewayContext) {
-  await TaskRunner.from('[sync last day transactions]', syncLastDayTransactions, context).runAsyncEvery(
+export async function runSyncLastSixHoursTransactionsTask(context: GatewayContext) {
+  await TaskRunner.from('[sync last 6 hours transactions]', syncLastSixHoursTransactionsTask, context).runAsyncEvery(
     DAY_INTERVAL_MS
   );
 }
@@ -77,8 +77,8 @@ function syncLastHourTransactions(context: GatewayContext) {
   return syncTransactions(context, AVG_BLOCKS_PER_HOUR);
 }
 
-function syncLastDayTransactions(context: GatewayContext) {
-  return syncTransactions(context, AVG_BLOCKS_PER_DAY);
+function syncLastSixHoursTransactionsTask(context: GatewayContext) {
+  return syncTransactions(context, AVG_BLOCKS_PER_HOUR * 6);
 }
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {
@@ -168,13 +168,13 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
     const contractId = tagsParser.getContractTag(interaction.node);
     const input = tagsParser.getInputTag(interaction.node, contractId)?.value;
-    const parsedInput = JSON.parse(input);
+    const parsedInput = safeParseInput(input, logger);
 
-    const functionName = parseFunctionName(input, logger);
+    const functionName = parsedInput ? parsedInput.function : '[Error during parsing function name]';
 
     let evolve: string | null;
 
-    evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
+    evolve = functionName == 'evolve' && parsedInput?.value && isTxIdValid(parsedInput?.value) ? parsedInput?.value : null;
 
     const internalWrites = tagsParser.getInteractWritesContracts(interaction.node);
 
@@ -305,5 +305,17 @@ export function parseFunctionName(input: string, logger: WarpLogger) {
       input: input,
     });
     return '[Error during parsing function name]';
+  }
+}
+
+
+function safeParseInput(input: string, logger: WarpLogger) {
+  try {
+    return JSON.parse(input);
+  } catch (e) {
+    logger.error('Could not parse input', {
+      input,
+    });
+    return null;
   }
 }
