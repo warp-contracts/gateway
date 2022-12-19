@@ -6,9 +6,9 @@ import rawBody from 'raw-body';
 import { sleep } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { sendNotificationToCache } from '../../publisher';
-import {evalManifest} from "./deployContractRoute";
+import { evalManifest, WarpDeployment } from './deployContractRoute';
 
-export async function registerRoute(ctx: Router.RouterContext) {
+export async function deployBundledRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
 
   let initStateRaw, dataItem;
@@ -69,8 +69,8 @@ export async function registerRoute(ctx: Router.RouterContext) {
       bundler_contract_tags: JSON.stringify(dataItem.tags),
       bundler_response: JSON.stringify(bundlrResponse.data),
       testnet,
-      deployment_type: 'warp-direct',
-      manifest
+      deployment_type: WarpDeployment.Direct,
+      manifest,
     };
 
     await gatewayDb('contracts').insert(insert);

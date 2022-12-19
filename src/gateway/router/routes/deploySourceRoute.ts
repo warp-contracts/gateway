@@ -4,7 +4,7 @@ import Arweave from 'arweave';
 import { SmartWeaveTags } from 'warp-contracts';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
-import { prepareTags, tagValue, verifyEvmSignature } from './deployContractRoute';
+import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
 
 export async function deploySourceRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
@@ -50,7 +50,7 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
       bundler_response: JSON.stringify(srcBundlrResponse?.data),
       src_tx: { ...srcTx.toJSON(), data: null },
       testnet: srcTestnet,
-      deployment_type: 'warp-wrapped',
+      deployment_type: WarpDeployment.Wrapped,
     };
 
     await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
