@@ -242,7 +242,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (publish) {
     for (let [key, value] of contracts) {
-      sendNotificationToCache(context, key, undefined, value);
+      await sendNotificationToCache(context, key, undefined, value);
     }
   }
 }

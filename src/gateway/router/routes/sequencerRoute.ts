@@ -166,7 +166,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     await trx.commit();
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
-    sendNotificationToCache(ctx, contractTag, undefined, interaction);
+    await sendNotificationToCache(ctx, contractTag, undefined, interaction);
     publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey);
   } catch (e) {
     await trx.rollback();

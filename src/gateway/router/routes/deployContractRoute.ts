@@ -125,8 +125,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     }
 
     sleep(2000)
-      .then(() => {
-        sendNotificationToCache(ctx, contractTx.id, initState);
+      .then(async () => {
+        await sendNotificationToCache(ctx, contractTx.id, initState);
       })
       .catch((e) => {
         logger.error(`No sleep 'till Brooklyn.`, e);

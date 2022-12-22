@@ -241,8 +241,8 @@ async function loadContractsMetadata(context: GatewayContext) {
         ]);
 
       sleep(2000)
-        .then(() => {
-          sendNotificationToCache(context, definition.txId, definition.initState);
+        .then(async () => {
+          await sendNotificationToCache(context, definition.txId, definition.initState);
         })
         .catch((e) => {
           logger.error(`No sleep 'till Brooklyn.`, e);

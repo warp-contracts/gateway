@@ -76,8 +76,8 @@ export async function registerRoute(ctx: Router.RouterContext) {
     await gatewayDb('contracts').insert(insert);
 
     sleep(2000)
-      .then(() => {
-        sendNotificationToCache(ctx, bundlrResponse.data.id, initState);
+      .then(async () => {
+        await sendNotificationToCache(ctx, bundlrResponse.data.id, initState);
       })
       .catch((e) => {
         logger.error(`No sleep 'till Brooklyn.`, e);

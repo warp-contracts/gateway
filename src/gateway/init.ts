@@ -20,9 +20,10 @@ import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
 import path from 'path';
 import Redis from 'ioredis';
 import { LastTxSync } from './LastTxSyncer';
-import { initPubSub } from 'warp-contracts-pubsub';
+import {initPubSub, StreamrWsClient} from 'warp-contracts-pubsub';
 // @ts-ignore
 import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
+import {StreamrConnectionOptions} from "warp-contracts-pubsub/lib/types/streamr/streamrWsClient";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -50,6 +51,7 @@ export interface GatewayContext {
   localEnv: boolean;
   appSync?: string;
   signatureVerification: EvmSignatureVerificationServerPlugin;
+  streamr: StreamrWsClient
 }
 
 (async () => {
@@ -72,6 +74,7 @@ export interface GatewayContext {
 
   const port = parseInt((process.env.PORT || 5666).toString());
   const appSync = process.env.APP_SYNC;
+  const streamrApiKey = process.env.STREAMR_API_KEY;
 
   LoggerFactory.INST.logLevel('info');
   LoggerFactory.INST.logLevel('info', 'gateway');
@@ -148,6 +151,15 @@ export interface GatewayContext {
         status: publisher.status,
       });
       app.context.publisher = publisher;
+    }
+    if (streamrApiKey) {
+      const connection: StreamrConnectionOptions = {
+        apiKey: streamrApiKey,
+        direction: 'pub'
+      };
+      logger.info('Connecting to StreamR', connection);
+
+      app.context.streamr = await StreamrWsClient.create(connection);
     }
 
     if (!fs.existsSync('gateway.lock')) {

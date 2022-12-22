@@ -5,7 +5,7 @@ import {InteractionMessage} from "warp-contracts-subscription-plugin";
 
 const contractsChannel = 'contracts';
 
-export function sendNotificationToCache(
+export async function sendNotificationToCache(
   ctx: Router.RouterContext | GatewayContext,
   contractTxId: string,
   initialState?: any,
@@ -28,6 +28,8 @@ export function sendNotificationToCache(
     if (interaction) {
       message.interaction = interaction;
     }
+    await ctx.streamr.pub(message);
+    logger.info(`Published to Streamr`);
 
     ctx.publisher.publish(contractsChannel, JSON.stringify(message));
     logger.info(`Published ${contractsChannel}`);
