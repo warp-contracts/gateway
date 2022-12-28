@@ -5,6 +5,7 @@ import { callbackToPromise, isTxIdValid } from '../../../utils';
 import { gunzip } from 'zlib';
 import Transaction from 'arweave/node/lib/transaction';
 import { BUNDLR_NODE2_URL } from '../../../constants';
+import { WarpDeployment } from './deployContractRoute';
 
 export async function contractDataRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, arweaveWrapper } = ctx;
@@ -25,7 +26,8 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
     const result: any = await gatewayDb.raw(
       `
           SELECT  bundler_contract_tx_id as "bundlerContractTxId",
-                  bundler_contract_tags as "bundlerContractTags"
+                  bundler_contract_tags as "bundlerContractTags",
+                  deployment_type as "deploymentType"
           FROM contracts 
           WHERE contract_id = ?;
       `,
@@ -41,7 +43,8 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
         logger,
         result?.rows[0].bundlerContractTxId,
         result?.rows[0].bundlerContractTags || null,
-        arweaveWrapper
+        arweaveWrapper,
+        result?.rows[0].deploymentType
       );
       ctx.body = data;
       ctx.set('Content-Type', contentType);
@@ -59,7 +62,8 @@ async function getContractData(
   logger: WarpLogger,
   id: string,
   tags: object[],
-  arweaveWrapper: ArweaveWrapper
+  arweaveWrapper: ArweaveWrapper,
+  deploymentType: string
 ) {
   let data: ArrayBuffer | Buffer;
 
@@ -86,21 +90,29 @@ async function getContractData(
 
   logger.debug('strData', strData);
 
-  const tx = new Transaction({ ...JSON.parse(strData) });
-  const txData = Buffer.from(tx.data);
-
-  // get contract transaction content type from its tag
-  const contentType = getContentType(tx);
-  logger.debug(`Content type for id: ${id}: `, contentType);
-
-  return { data: txData, contentType };
+  if (deploymentType == WarpDeployment.External) {
+    const contentType = getContentTypeFromTag(tags);
+    logger.debug(`Content type for id: ${id}: `, contentType);
+    return { data: strData, contentType };
+  } else {
+    const tx = new Transaction({ ...JSON.parse(strData) });
+    const txData = Buffer.from(tx.data);
+    const contentType = getContentTypeFromTx(tx);
+    logger.debug(`Content type for id: ${id}: `, contentType);
+    return { data: txData, contentType };
+  }
 }
 
-function getContentType(tx: Transaction) {
+function getContentTypeFromTx(tx: Transaction) {
   const tagContentType = tx
     .get('tags')
     // @ts-ignore
     .find((tag: BaseObject) => tag.get('name', { decode: true, string: true }) == 'Content-Type');
 
   return tagContentType.get('value', { decode: true, string: true });
+}
+
+function getContentTypeFromTag(tags: any) {
+  const tagContentType = tags.find((tag: any) => tag.name == 'Content-Type').value;
+  return tagContentType;
 }

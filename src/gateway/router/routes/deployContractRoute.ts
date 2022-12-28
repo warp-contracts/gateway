@@ -9,6 +9,19 @@ import { uploadToBundlr } from './sequencerRoute';
 import { sendNotificationToCache } from '../../publisher';
 import { sleep } from '../../../utils';
 
+/*
+- warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
+as the data of the bundled transaction, it is then indexed in the Warp Gateway
+- warp-direct - Warp Gateway receives a data item with contract and uploads it to the Bundlr network directly (without a need to wrap
+  it in another transaction), it is then indexed in the Warp Gateway
+- warp-external - contract is deployed externally (e.g. uploaded to Arweave via Bundlr) and just need to be indexed in the gateway
+*/
+export enum WarpDeployment {
+  Wrapped = 'warp-wrapped',
+  Direct = 'warp-direct',
+  External = 'warp-external',
+}
+
 export async function deployContractRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave, bundlr } = ctx;
 
@@ -99,8 +112,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundler_contract_tags: JSON.stringify(contractTags),
       bundler_response: JSON.stringify(contractBundlrResponse.data),
       testnet: contractTestnet,
-      deployment_type: 'warp-wrapped',
-      manifest
+      deployment_type: WarpDeployment.Wrapped,
+      manifest,
     };
 
     await gatewayDb('contracts').insert(insert);
@@ -118,7 +131,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         bundler_response: JSON.stringify(srcBundlrResponse?.data),
         src_tx: { ...srcTx.toJSON(), data: null },
         testnet: srcTestnet,
-        deployment_type: 'warp-wrapped',
+        deployment_type: WarpDeployment.Wrapped,
       };
 
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
@@ -208,6 +221,6 @@ export async function verifyEvmSignature(isEvmSigner: boolean, ctx: RouterContex
 }
 
 export function evalManifest(contractTags: GQLTagInterface[]) {
-  const manifestRaw = tagValue("Contract-Manifest", contractTags);
+  const manifestRaw = tagValue('Contract-Manifest', contractTags);
   return manifestRaw ? JSON.parse(manifestRaw) : null;
 }
