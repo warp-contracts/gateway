@@ -7,7 +7,7 @@ const MAX_INTERACTIONS_PER_PAGE = 5000;
 export async function contractsBySourceRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb } = ctx;
 
-  const { id, page, limit } = ctx.query;
+  const { id, page, limit, sort } = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -46,7 +46,8 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
             WHERE src_tx_id = ?
             AND c.type != 'error'
             GROUP BY c.contract_id
-            LIMIT ? OFFSET ? ;
+            ${sort == 'desc' || sort == 'asc' ? `ORDER BY c.block_height ${sort.toUpperCase()}` : ''}
+            LIMIT ? OFFSET ?; 
         `,
       bindings
     );
