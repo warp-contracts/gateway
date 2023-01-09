@@ -30,6 +30,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const cachedNetworkData = getCachedNetworkData();
 
     const benchmark = Benchmark.measure();
+    const totalBenchmark = Benchmark.measure();
 
     const transaction: Transaction = new Transaction({ ...ctx.request.body });
     sLogger.debug('New sequencer tx', transaction.id);
@@ -53,6 +54,9 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       throw new Error('Current block not set');
     }
 
+    const validationBenchmark = benchmark.elapsed(true);
+    benchmark.reset();
+
     let {
       contractTag,
       inputTag,
@@ -65,8 +69,10 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       testnetVersion,
     } = await prepareTags(sLogger, transaction, originalOwner, currentHeight, currentBlockId, arweave);
 
-    const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
+    const tagsBenchmark = benchmark.elapsed(true);
+    benchmark.reset();
 
+    const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
@@ -79,6 +85,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       tags.push(...vrfGen.vrfTags);
       vrfData = vrfGen.vrfData;
     }
+    const sortKeyBenchmark = benchmark.elapsed(true);
+    benchmark.reset();
 
     sLogger.info('Original address before create interaction', originalAddress);
     const interaction = createInteraction(
@@ -108,18 +116,23 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       sLogger.info('Transaction verified properly');
     }
 
+    const sigVerBenchmark = benchmark.elapsed(true);
+    benchmark.reset();
+
     // TODO: add fallback to other bundlr nodes.
     const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
+    const bundlrBenchmark = benchmark.elapsed(true);
 
     const parsedInput = JSON.parse(inputTag);
     const functionName = parseFunctionName(inputTag, sLogger);
     let evolve: string | null;
     evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
-    const insertBench = Benchmark.measure();
     if (isEvmSigner) {
       sLogger.info(`Interaction for ${transaction.id}`, JSON.stringify(interaction));
     }
+
+    benchmark.reset();
 
     await Promise.all([
       trx('sequencer').insert({
@@ -156,18 +169,37 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       }),
     ]);
 
-    sLogger.debug('Inserting into tables', insertBench.elapsed());
+    //sLogger.debug('Inserting into tables', insertBench.elapsed());
     sLogger.debug('Transaction successfully bundled', {
       id: transaction.id,
       bundled_tx_id: bTx.id,
     });
 
-    ctx.body = bundlrResponse.data;
     await trx.commit();
+    const insertBenchmark = benchmark.elapsed(true);
+    benchmark.reset();
+
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
     sendNotificationToCache(ctx, contractTag, undefined, interaction);
     publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey);
+
+    const publishBenchmark = benchmark.elapsed(true);
+
+    ctx.body =  {
+      ...bundlrResponse.data,
+      benchmark: {
+        validationBenchmark,
+        tagsBenchmark,
+        sortKeyBenchmark,
+        sigVerBenchmark,
+        bundlrBenchmark,
+        insertBenchmark,
+        publishBenchmark,
+        total: totalBenchmark.elapsed()
+      }
+    };
+
   } catch (e) {
     await trx.rollback();
     sLogger.error('Error while inserting bundled transaction');
