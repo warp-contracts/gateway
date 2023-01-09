@@ -73,7 +73,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     benchmark.reset();
 
     const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
-    const mutexBenchmark = benchmark.reset();
+    const mutexBenchmark = benchmark.elapsed(true);
+    benchmark.reset();
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
