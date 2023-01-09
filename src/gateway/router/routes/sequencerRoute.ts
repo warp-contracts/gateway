@@ -175,7 +175,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
                FROM interactions
                RETURNING (last_sort_key)`, {
         interaction_id: transaction.id,
-        interaction: JSON.stringify(interaction),
+        interaction: interaction,
         block_height: currentHeight,
         block_id: currentBlockId,
         contract_id: contractTag,
