@@ -137,7 +137,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     benchmark.reset();
 
-    await Promise.all([
+    const result = await Promise.all([
       /*trx('sequencer').insert({
         original_sig: originalSignature,
         original_owner: originalOwner,
@@ -228,6 +228,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     //sLogger.debug('Inserting into tables', insertBench.elapsed());
     await trx.commit();
     const insertBenchmark = benchmark.elapsed(true);
+    sLogger.info('Insert result', result);
     benchmark.reset();
 
     sLogger.info('Total sequencer processing', benchmark.elapsed());
