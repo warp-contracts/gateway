@@ -73,6 +73,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     benchmark.reset();
 
     const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
+    const mutexBenchmark = benchmark.reset();
+
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
 
@@ -120,7 +122,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     benchmark.reset();
 
     // TODO: add fallback to other bundlr nodes.
-    const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
+    // const { bTx, bundlrResponse } = await uploadToBundlr(transaction, bundlr, tags, sLogger);
     const bundlrBenchmark = benchmark.elapsed(true);
 
     const parsedInput = JSON.parse(inputTag);
@@ -144,8 +146,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         sequence_transaction_id: transaction.id,
         sequence_millis: '' + millis,
         sequence_sort_key: sortKey,
-        bundler_tx_id: bTx.id,
-        bundler_response: JSON.stringify(bundlrResponse.data),
+        bundler_tx_id: '',//bTx.id,
+        bundler_response: '',//JSON.stringify(bundlrResponse.data),
         last_sort_key: contractLastSortKey,
       }),
       trx('interactions').insert({
@@ -159,7 +161,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         confirmation_status: 'confirmed',
         confirming_peer: BUNDLR_NODE2_URL,
         source: 'redstone-sequencer',
-        bundler_tx_id: bTx.id,
+        bundler_tx_id: '',//bTx.id,
         interact_write: internalWrites,
         sort_key: sortKey,
         evolve: evolve,
@@ -170,11 +172,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     ]);
 
     //sLogger.debug('Inserting into tables', insertBench.elapsed());
-    sLogger.debug('Transaction successfully bundled', {
-      id: transaction.id,
-      bundled_tx_id: bTx.id,
-    });
-
     await trx.commit();
     const insertBenchmark = benchmark.elapsed(true);
     benchmark.reset();
@@ -189,6 +186,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const benchmarkSummary = {
       validationBenchmark,
       tagsBenchmark,
+      mutexBenchmark,
       sortKeyBenchmark,
       sigVerBenchmark,
       bundlrBenchmark,
@@ -200,7 +198,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     sLogger.info('Total sequencer summary', benchmarkSummary);
 
     ctx.body =  {
-      ...bundlrResponse.data,
+      //...bundlrResponse.data,
       benchmark: benchmarkSummary
     };
 
