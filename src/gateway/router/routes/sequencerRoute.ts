@@ -72,7 +72,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const tagsBenchmark = benchmark.elapsed(true);
     benchmark.reset();
 
-    const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
+    const contractLastSortKey: string | null = null//await lastTxSync.acquireMutex(contractTag, trx);
     const mutexBenchmark = benchmark.elapsed(true);
     benchmark.reset();
 
@@ -228,7 +228,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     //sLogger.debug('Inserting into tables', insertBench.elapsed());
     await trx.commit();
     const insertBenchmark = benchmark.elapsed(true);
-    sLogger.info('Insert result', result);
+    sLogger.info('Insert result', result[0].rows);
     benchmark.reset();
 
     sLogger.info('Total sequencer processing', benchmark.elapsed());
