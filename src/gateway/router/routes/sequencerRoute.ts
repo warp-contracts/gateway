@@ -186,18 +186,22 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const publishBenchmark = benchmark.elapsed(true);
 
+    const benchmarkSummary = {
+      validationBenchmark,
+      tagsBenchmark,
+      sortKeyBenchmark,
+      sigVerBenchmark,
+      bundlrBenchmark,
+      insertBenchmark,
+      publishBenchmark,
+      total: totalBenchmark.elapsed()
+    }
+
+    sLogger.info('Total sequencer summary', benchmarkSummary);
+
     ctx.body =  {
       ...bundlrResponse.data,
-      benchmark: {
-        validationBenchmark,
-        tagsBenchmark,
-        sortKeyBenchmark,
-        sigVerBenchmark,
-        bundlrBenchmark,
-        insertBenchmark,
-        publishBenchmark,
-        total: totalBenchmark.elapsed()
-      }
+      benchmark: benchmarkSummary
     };
 
   } catch (e) {
