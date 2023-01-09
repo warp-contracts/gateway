@@ -72,7 +72,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const tagsBenchmark = benchmark.elapsed(true);
     benchmark.reset();
 
-    const contractLastSortKey: string | null = null//await lastTxSync.acquireMutex(contractTag, trx);
+    const contractLastSortKey: string | null = null await lastTxSync.acquireMutex(contractTag, trx);
     const mutexBenchmark = benchmark.elapsed(true);
     benchmark.reset();
 
@@ -173,6 +173,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
                       MAX(sort_key),
                       :owner
                FROM interactions
+               WHERE contract_id = :contract_id
                RETURNING (last_sort_key)`, {
         interaction_id: transaction.id,
         interaction: interaction,
