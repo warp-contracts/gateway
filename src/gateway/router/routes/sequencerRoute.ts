@@ -138,38 +138,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     benchmark.reset();
 
     const result = await Promise.all([
-      /*trx('sequencer').insert({
-        original_sig: originalSignature,
-        original_owner: originalOwner,
-        original_address: originalAddress,
-        sequence_block_id: currentBlockId,
-        sequence_block_height: currentHeight,
-        sequence_transaction_id: transaction.id,
-        sequence_millis: '' + millis,
-        sequence_sort_key: sortKey,
-        bundler_tx_id: '',//bTx.id,
-        bundler_response: '',//JSON.stringify(bundlrResponse.data),
-        last_sort_key: ''//contractLastSortKey,
-      }),*/
-      /*trx('interactions').insert({
-        interaction_id: transaction.id,
-        interaction: JSON.stringify(interaction),
-        block_height: currentHeight,
-        block_id: currentBlockId,
-        contract_id: contractTag,
-        function: functionName,
-        input: inputTag,
-        confirmation_status: 'confirmed',
-        confirming_peer: BUNDLR_NODE2_URL,
-        source: 'redstone-sequencer',
-        bundler_tx_id: '',//bTx.id,
-        interact_write: internalWrites,
-        sort_key: sortKey,
-        evolve: evolve,
-        testnet: testnetVersion,
-        last_sort_key: contractLastSortKey,
-        owner: originalOwner,
-      }),*/
       trx.raw(`INSERT INTO interactions(interaction_id,
                                         interaction,
                                         block_height,
@@ -224,6 +192,20 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         owner: originalOwner
       })
     ]);
+
+    trx('sequencer').insert({
+      original_sig: originalSignature,
+      original_owner: originalOwner,
+      original_address: originalAddress,
+      sequence_block_id: currentBlockId,
+      sequence_block_height: currentHeight,
+      sequence_transaction_id: transaction.id,
+      sequence_millis: '' + millis,
+      sequence_sort_key: sortKey,
+      bundler_tx_id: '',//bTx.id,
+      bundler_response: '',//JSON.stringify(bundlrResponse.data),
+      last_sort_key: result[0].rows.last_sort_key,
+    });
 
     //sLogger.debug('Inserting into tables', insertBench.elapsed());
     await trx.commit();
