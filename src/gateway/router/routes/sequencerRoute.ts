@@ -138,7 +138,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     benchmark.reset();
 
     await Promise.all([
-      trx('sequencer').insert({
+      /*trx('sequencer').insert({
         original_sig: originalSignature,
         original_owner: originalOwner,
         original_address: originalAddress,
@@ -150,7 +150,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         bundler_tx_id: '',//bTx.id,
         bundler_response: '',//JSON.stringify(bundlrResponse.data),
         last_sort_key: contractLastSortKey,
-      }),
+      }),*/
       trx('interactions').insert({
         interaction_id: transaction.id,
         interaction: JSON.stringify(interaction),
