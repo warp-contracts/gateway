@@ -72,7 +72,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const tagsBenchmark = benchmark.elapsed(true);
     benchmark.reset();
 
-    const contractLastSortKey: string | null = null await lastTxSync.acquireMutex(contractTag, trx);
+    const contractLastSortKey: string | null = null// await lastTxSync.acquireMutex(contractTag, trx);
     const mutexBenchmark = benchmark.elapsed(true);
     benchmark.reset();
 
