@@ -5,7 +5,7 @@ import { INTERACTIONS_TABLE } from '../../db/schema';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { Knex } from 'knex';
 import { isTxIdValid } from '../../utils';
-import {sendNotificationToCache} from "../publisher";
+import { sendNotificationToCache } from '../publisher';
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -69,6 +69,12 @@ export async function runSyncLastSixHoursTransactionsTask(context: GatewayContex
   );
 }
 
+export async function runSyncLast36HoursTransactionsTask(context: GatewayContext) {
+  await TaskRunner.from('[sync last 36 hours transactions]', syncLast36HoursTransactionsTask, context).runAsyncEvery(
+    DAY_INTERVAL_MS
+  );
+}
+
 function syncLastTransactions(context: GatewayContext) {
   return syncTransactions(context, LOAD_PAST_BLOCKS, true);
 }
@@ -79,6 +85,10 @@ function syncLastHourTransactions(context: GatewayContext) {
 
 function syncLastSixHoursTransactionsTask(context: GatewayContext) {
   return syncTransactions(context, AVG_BLOCKS_PER_HOUR * 6);
+}
+
+function syncLast36HoursTransactionsTask(context: GatewayContext) {
+  return syncTransactions(context, AVG_BLOCKS_PER_HOUR * 36);
 }
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {
@@ -174,7 +184,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
     let evolve: string | null;
 
-    evolve = functionName == 'evolve' && parsedInput?.value && isTxIdValid(parsedInput?.value) ? parsedInput?.value : null;
+    evolve =
+      functionName == 'evolve' && parsedInput?.value && isTxIdValid(parsedInput?.value) ? parsedInput?.value : null;
 
     const internalWrites = tagsParser.getInteractWritesContracts(interaction.node);
 
@@ -207,7 +218,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         sort_key: sortKey,
         evolve: evolve,
         testnet,
-        owner: interaction.node.owner.address
+        owner: interaction.node.owner.address,
       });
     }
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
@@ -291,11 +302,8 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
 }
 
 export function testnetVersion(tx: GQLEdgeInterface): string | null {
-  return tx.node.tags.find(
-    (tag) => tag.name === 'Warp-Testnet'
-  )?.value || null;
+  return tx.node.tags.find((tag) => tag.name === 'Warp-Testnet')?.value || null;
 }
-
 
 export function parseFunctionName(input: string, logger: WarpLogger) {
   try {
@@ -307,7 +315,6 @@ export function parseFunctionName(input: string, logger: WarpLogger) {
     return '[Error during parsing function name]';
   }
 }
-
 
 function safeParseInput(input: string, logger: WarpLogger) {
   try {
