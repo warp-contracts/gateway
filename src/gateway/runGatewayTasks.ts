@@ -5,7 +5,6 @@ import {
   runSyncLastSixHoursTransactionsTask,
   runSyncLastHourTransactionsTask,
   runSyncRecentTransactionsTask,
-  runSyncLast36HoursTransactionsTask,
 } from './tasks/syncTransactions';
 import { GatewayContext } from './init';
 import { runContractsMetadataTask, runLoadContractsFromGqlTask } from './tasks/contractsMetadata';
