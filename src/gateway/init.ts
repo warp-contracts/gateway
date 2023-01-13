@@ -46,6 +46,7 @@ export interface GatewayContext {
   vrf: VRF;
   sorter: LexicographicalInteractionsSorter;
   publisher: Redis;
+  publisher_v2: Redis;
   lastTxSync: LastTxSync;
   localEnv: boolean;
   appSync?: string;
@@ -139,7 +140,7 @@ export interface GatewayContext {
 
     logger.info('vrf', app.context.vrf);
 
-    const connectionOptions = readGwPubSubConfig();
+    const connectionOptions = readGwPubSubConfig('gw-pubsub.json');
     if (connectionOptions) {
       const publisher = new Redis(connectionOptions);
       await publisher.connect();
@@ -148,6 +149,18 @@ export interface GatewayContext {
         status: publisher.status,
       });
       app.context.publisher = publisher;
+    }
+
+    // temporary..
+    const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
+    if (connectionOptions2) {
+      const publisher2 = new Redis(connectionOptions2);
+      await publisher2.connect();
+      logger.info(`Publisher 2 status`, {
+        host: connectionOptions2.host,
+        status: publisher2.status,
+      });
+      app.context.publisher_v2 = publisher2;
     }
 
     if (!fs.existsSync('gateway.lock')) {
@@ -182,10 +195,10 @@ function initArweave(): Arweave {
   });
 }
 
-function readGwPubSubConfig() {
-  const pubSubConfigPath = path.join('.secrets', 'gw-pubsub.json');
+function readGwPubSubConfig(filename: string) {
+  const pubSubConfigPath = path.join('.secrets', filename);
   if (fs.existsSync(pubSubConfigPath)) {
-    const json = fs.readFileSync(path.join('.secrets', 'gw-pubsub.json'), 'utf-8');
+    const json = fs.readFileSync(pubSubConfigPath, 'utf-8');
     return JSON.parse(json);
   } else {
     return false;
