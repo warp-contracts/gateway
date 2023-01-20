@@ -23,6 +23,8 @@ import { creatorRoute } from './routes/creatorRoute';
 import { interactionsSonar } from './routes/interactionsSonar';
 import { deployBundledRoute } from './routes/deployBundledRoute';
 import { deploySourceRoute } from './routes/deploySourceRoute';
+import { deploySourceRoute_v2 } from './routes/deploySourceRoute_v2';
+import { deployContractRoute_v2 } from './routes/deployContractRoute_v2';
 import { registerContractRoute } from './routes/registerContractRoute';
 
 const gatewayRouter = (replica: boolean): Router => {
@@ -59,6 +61,8 @@ const gatewayRouter = (replica: boolean): Router => {
     router.post('/contracts/deploy-bundled', deployBundledRoute);
     router.post('/sequencer/register', sequencerRoute);
     router.post('/sources/deploy', deploySourceRoute);
+    router.post('/v2/sources/deploy', deploySourceRoute_v2);
+    router.post('/v2/contracts/deploy', deployContractRoute_v2);
     router.post('/contracts/register', registerContractRoute);
   }
 
