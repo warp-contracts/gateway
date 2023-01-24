@@ -348,7 +348,7 @@ export async function uploadToBundlr(
   logger.debug('Uploading to bundlr', {
     elapsed: uploadBenchmark.elapsed(),
     id: bundlrResponse.data.id,
-    status: bundlrResponse.status
+    status: bundlrResponse.status,
   });
 
   if (
@@ -358,7 +358,9 @@ export async function uploadToBundlr(
     !bundlrResponse.data.block
   ) {
     throw new Error(
-      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
+      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}. 
+      Bundlr public: ${bundlrResponse.data.public}, bundlr sig: ${bundlrResponse.data.signature}, bundlrRes: ${bundlrResponse.data.block}
+      Bundlr res: ${bundlrResponse.data}`
     );
   }
 
