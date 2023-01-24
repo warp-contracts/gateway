@@ -28,12 +28,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
 
     const bundlrResponse = await bundlr.uploader.uploadTransaction(dataItem, { getReceiptSignature: true });
 
-    if (
-      bundlrResponse.status !== 200 ||
-      !bundlrResponse.data.public ||
-      !bundlrResponse.data.signature ||
-      !bundlrResponse.data.block
-    ) {
+    if (bundlrResponse.status !== 200 || !bundlrResponse.data.public || !bundlrResponse.data.signature) {
       throw new Error(
         `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
       );

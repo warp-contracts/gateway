@@ -351,16 +351,9 @@ export async function uploadToBundlr(
     status: bundlrResponse.status,
   });
 
-  if (
-    bundlrResponse.status !== 200 ||
-    !bundlrResponse.data.public ||
-    !bundlrResponse.data.signature ||
-    !bundlrResponse.data.block
-  ) {
+  if (bundlrResponse.status !== 200 || !bundlrResponse.data.public || !bundlrResponse.data.signature) {
     throw new Error(
-      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}. 
-      Bundlr public: ${bundlrResponse.data.public}, bundlr sig: ${bundlrResponse.data.signature}, bundlrRes: ${bundlrResponse.data.block}
-      Bundlr res: ${bundlrResponse.data}`
+      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
     );
   }
 
