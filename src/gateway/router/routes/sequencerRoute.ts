@@ -351,9 +351,9 @@ export async function uploadToBundlr(
     status: bundlrResponse.status,
   });
 
-  if (bundlrResponse.status !== 200 || !bundlrResponse.data.public || !bundlrResponse.data.signature) {
+  if (bundlrResponse.status !== 200 || !bundlrResponse.data.signature) {
     throw new Error(
-      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
+      `Bundlr did not upload transaction ${bTx?.id} correctly. Bundlr responded with status ${bundlrResponse.status}.`
     );
   }
 
