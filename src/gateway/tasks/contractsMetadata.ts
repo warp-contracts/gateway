@@ -163,7 +163,7 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
 
 async function loadContractsMetadata(context: GatewayContext) {
   const { arweave, logger, gatewayDb, arweaveWrapper } = context;
-  const definitionLoader = new ContractDefinitionLoader(arweave);
+  const definitionLoader = new ContractDefinitionLoader(arweave, 'mainnet');
 
   const result: { contract: string }[] = (
     await gatewayDb.raw(
