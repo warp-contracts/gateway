@@ -27,7 +27,7 @@ export async function contractSourceRoute(ctx: Router.RouterContext) {
                  s.bundler_src_tx_id                                                                    as "bundlerSrcTxId",
                  s.src_tx                                                                               as "srcTx"
           FROM contracts_src s 
-          WHERE src_tx_id = ?;
+          WHERE src_tx_id = ? AND src != 'error';
       `,
       [id]
     );

@@ -12,3 +12,4 @@ gateway_dump
 yarn-error.log
 .yalc
 dump_*
+cache

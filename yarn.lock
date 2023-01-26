@@ -2429,6 +2429,18 @@ arweave@1.11.6, arweave@^1.10.13, arweave@^1.11.4, arweave@^1.11.6:
     bignumber.js "^9.0.2"
     util "^0.12.4"
 
+arweave@1.11.8:
+  version "1.11.8"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.11.8.tgz#09376e0c6cec40a661cbb27a306cb11c0a663cd8"
+  integrity sha512-58ODeNPIC4OjaOCl2bXjKbOFGsiVZFs+DkQg3BvQGvFWNqw1zTJ4Jp01xGUz+GbdOaDyJcCC0g3l0HwdJfFPyw==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    axios "^0.27.2"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
+    util "^0.12.4"
+
 asn1.js@^5.4.1:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/asn1.js/-/asn1.js-5.4.1.tgz#11a980b84ebb91781ce35b0fdc2ee294e3783f07"
@@ -3813,11 +3825,6 @@ fast-base64-decode@^1.0.0:
   resolved "https://registry.yarnpkg.com/fast-base64-decode/-/fast-base64-decode-1.0.0.tgz#b434a0dd7d92b12b43f26819300d2dafb83ee418"
   integrity sha512-qwaScUgUGBYeDNRnbc/KyllVU88Jk1pRHPStuF/lO7B0/RTRLj7U0lkdTAutlBblY08rwZDff6tNU9cjv6j//Q==
 
-fast-copy@^2.1.1:
-  version "2.1.7"
-  resolved "https://registry.yarnpkg.com/fast-copy/-/fast-copy-2.1.7.tgz#affc9475cb4b555fb488572b2a44231d0c9fa39e"
-  integrity sha512-ozrGwyuCTAy7YgFCua8rmqmytECYk/JYAMXcswOcm0qvGoE3tPb7ivBeIHTOK2DiapBhDZgacIhzhQIKU5TCfA==
-
 fast-copy@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/fast-copy/-/fast-copy-3.0.0.tgz#875ebf33b13948ae012b6e51d33da5e6e7571ab8"
@@ -5170,25 +5177,6 @@ knex@0.95.14:
     tarn "^3.0.1"
     tildify "2.0.0"
 
-knex@^0.95.14:
-  version "0.95.15"
-  resolved "https://registry.yarnpkg.com/knex/-/knex-0.95.15.tgz#39d7e7110a6e2ad7de5d673d2dea94143015e0e7"
-  integrity sha512-Loq6WgHaWlmL2bfZGWPsy4l8xw4pOE+tmLGkPG0auBppxpI0UcK+GYCycJcqz9W54f2LiGewkCVLBm3Wq4ur/w==
-  dependencies:
-    colorette "2.0.16"
-    commander "^7.1.0"
-    debug "4.3.2"
-    escalade "^3.1.1"
-    esm "^3.2.25"
-    getopts "2.2.5"
-    interpret "^2.2.0"
-    lodash "^4.17.21"
-    pg-connection-string "2.5.0"
-    rechoir "0.7.0"
-    resolve-from "^5.0.0"
-    tarn "^3.0.1"
-    tildify "2.0.0"
-
 koa-bodyparser@4.3.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/koa-bodyparser/-/koa-bodyparser-4.3.0.tgz#274c778555ff48fa221ee7f36a9fbdbace22759a"
@@ -6369,11 +6357,6 @@ safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
   integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==
 
-safe-stable-stringify@2.3.1:
-  version "2.3.1"
-  resolved "https://registry.yarnpkg.com/safe-stable-stringify/-/safe-stable-stringify-2.3.1.tgz#ab67cbe1fe7d40603ca641c5e765cb942d04fc73"
-  integrity sha512-kYBSfT+troD9cDA85VDnHZ1rpHC50O0g1e6WlGHVCz/g+JS+9WKLj+XwFYyR8UbrZN8ll9HUpDAAddY58MGisg==
-
 safe-stable-stringify@2.4.1, safe-stable-stringify@^2.4.1:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/safe-stable-stringify/-/safe-stable-stringify-2.4.1.tgz#34694bd8a30575b7f94792aa51527551bd733d61"
@@ -7074,14 +7057,6 @@ vm2@3.9.11:
     acorn "^8.7.0"
     acorn-walk "^8.2.0"
 
-vm2@3.9.9:
-  version "3.9.9"
-  resolved "https://registry.yarnpkg.com/vm2/-/vm2-3.9.9.tgz#c0507bc5fbb99388fad837d228badaaeb499ddc5"
-  integrity sha512-xwTm7NLh/uOjARRBs8/95H0e8fT3Ukw5D/JJWhxMbhKzNh1Nu981jQKvkep9iKYNxzlVrdzD0mlBGkDKZWprlw==
-  dependencies:
-    acorn "^8.7.0"
-    acorn-walk "^8.2.0"
-
 w3c-hr-time@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/w3c-hr-time/-/w3c-hr-time-1.0.2.tgz#0a89cdf5cc15822df9c360543676963e0cc308cd"
@@ -7119,30 +7094,6 @@ warp-contracts-subscription-plugin@1.0.4:
     warp-contracts-pubsub "^1.0.3"
     ws "^8.11.0"
 
-warp-contracts@1.2.13:
-  version "1.2.13"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.2.13.tgz#653841d2bbf7d50d80bd2557f8e1d9f7648ea2f7"
-  integrity sha512-qSlkxb4N+5oFKUWqPDfIA5ZqsEJRyjJtmeFadI6yMgSm+HLvREDdGl3RrmBOdNAEC+ROvKv7ii4sWq0/fxrV5Q==
-  dependencies:
-    "@assemblyscript/loader" "^0.19.23"
-    "@idena/vrf-js" "^1.0.1"
-    archiver "^5.3.0"
-    arweave "1.11.6"
-    bignumber.js "^9.0.1"
-    elliptic "^6.5.4"
-    events "3.3.0"
-    fast-copy "^2.1.1"
-    knex "^0.95.14"
-    level "^8.0.0"
-    lodash "^4.17.21"
-    memory-level "^1.0.0"
-    redstone-isomorphic "1.1.8"
-    redstone-wasm-metering "1.0.3"
-    safe-stable-stringify "2.3.1"
-    stream-buffers "^3.0.2"
-    unzipit "^1.4.0"
-    vm2 "3.9.9"
-
 warp-contracts@1.2.20:
   version "1.2.20"
   resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.2.20.tgz#e83ff5ca0e74e5e846ac93aa26df144f298d1df9"
@@ -7164,6 +7115,27 @@ warp-contracts@1.2.20:
     unzipit "^1.4.0"
     vm2 "3.9.11"
 
+warp-contracts@1.2.48:
+  version "1.2.48"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.2.48.tgz#2a325e80093eb54ed59af495e21c3b2c98b796a9"
+  integrity sha512-TBZJ/VZdr+9mFjH2gjf55kTeHc9/tXQ3bsym41+ujq6m1kIreyhL1I0G7bn6qSHpAbOIZKIjP5GC5+pp9pm8Ew==
+  dependencies:
+    "@assemblyscript/loader" "^0.19.23"
+    "@idena/vrf-js" "^1.0.1"
+    archiver "^5.3.0"
+    arweave "1.11.8"
+    elliptic "^6.5.4"
+    events "3.3.0"
+    fast-copy "^3.0.0"
+    level "^8.0.0"
+    memory-level "^1.0.0"
+    redstone-isomorphic "1.1.8"
+    safe-stable-stringify "2.4.1"
+    stream-buffers "^3.0.2"
+    unzipit "^1.4.0"
+    vm2 "3.9.11"
+    warp-wasm-metering "1.0.0"
+
 warp-signature@1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/warp-signature/-/warp-signature-1.0.4.tgz#34868050192e10b3d2577db13fe1c2ec5242086f"
@@ -7175,6 +7147,23 @@ warp-signature@1.0.4:
     ethers "^5.7.2"
     safe-stable-stringify "^2.4.1"
     warp-contracts "1.2.20"
+
+warp-wasm-json-toolkit@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/warp-wasm-json-toolkit/-/warp-wasm-json-toolkit-1.0.0.tgz#f08b555b64fac2b102450e6a5e94f4bf71405508"
+  integrity sha512-pFJpP3djS6GvDu5ohgBjSjkYQrKs1Toi7hsvjW5FIJO1Q/msclbeoUY3Poiyx0Hz6oRVfuO2MZkmCreDnNaUTg==
+  dependencies:
+    buffer-pipe "0.0.3"
+    leb128 "0.0.4"
+    redstone-isomorphic "1.1.0"
+
+warp-wasm-metering@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/warp-wasm-metering/-/warp-wasm-metering-1.0.0.tgz#ff2ded687885af22c8fc6560409a582e127c3af3"
+  integrity sha512-lOlVz7BDTnTMuvhrtIbVtozGJANoVgVn6gD3dTEFyIMehC250CKHmsqenX1jy5OM2DNL/VuFNdCTLHCGaPg64w==
+  dependencies:
+    leb128 "^0.0.4"
+    warp-wasm-json-toolkit "1.0.0"
 
 wcwidth@^1.0.1:
   version "1.0.1"

@@ -31,7 +31,7 @@ export async function searchRoute(ctx: Router.RouterContext) {
           UNION ALL
           SELECT 4 as sort_order, src_tx_id as id, 'source' as type, '{}'::jsonb as interaction, '' as confirmation_status, '' as pst_ticker, '' as pst_name
           FROM contracts_src
-          WHERE src_tx_id ILIKE ? AND testnet IS ${testnet == 'true' ? `NOT NULL` : 'NULL'}
+          WHERE src_tx_id ILIKE ? AND testnet IS ${testnet == 'true' ? `NOT NULL` : 'NULL'} AND src != 'error'
           UNION ALL
           SELECT 5 as sort_order, creator_id as id, 'creator' as type, '{}'::jsonb as interaction, '' as confirmation_status, '' as pst_ticker, '' as pst_name
           FROM
