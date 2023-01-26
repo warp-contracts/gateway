@@ -151,7 +151,7 @@ export interface GatewayContext {
       app.context.publisher = publisher;
     }
 
-    // temporary..
+    /*// temporary..
     const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
     if (connectionOptions2) {
       const publisher2 = new Redis(connectionOptions2);
@@ -161,7 +161,7 @@ export interface GatewayContext {
         status: publisher2.status,
       });
       app.context.publisher_v2 = publisher2;
-    }
+    }*/
 
     if (!fs.existsSync('gateway.lock')) {
       try {
