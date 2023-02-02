@@ -5,10 +5,13 @@ import {InteractionMessage} from "warp-contracts-subscription-plugin";
 
 const contractsChannel = 'contracts';
 
-export function sendNotificationToCache(
+export function sendNotification(
   ctx: Router.RouterContext | GatewayContext,
   contractTxId: string,
-  initialState?: any,
+  contractData?: { initState: any, tags: {
+      name: string;
+      value: string;
+    }[] },
   interaction?: InteractionMessage) {
   const {logger} = ctx;
 
@@ -17,13 +20,14 @@ export function sendNotificationToCache(
     return;
   }
   try {
-    if (initialState && interaction) {
-      logger.error('Either interaction or initialState should be set, not both.');
+    if (contractData && interaction) {
+      logger.error('Either interaction or contractData should be set, not both.');
     }
 
     const message: any = {contractTxId, test: false, source: 'warp-gw'};
-    if (initialState) {
-      message.initialState = initialState;
+    if (contractData) {
+      message.initialState = contractData.initState;
+      message.tags = contractData.tags;
     }
     if (interaction) {
       message.interaction = interaction;

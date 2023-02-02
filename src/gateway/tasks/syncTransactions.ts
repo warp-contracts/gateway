@@ -5,7 +5,7 @@ import { INTERACTIONS_TABLE } from '../../db/schema';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { Knex } from 'knex';
 import { isTxIdValid } from '../../utils';
-import { sendNotificationToCache } from '../publisher';
+import { sendNotification } from '../publisher';
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -243,7 +243,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (publish) {
     for (let [key, value] of contracts) {
-      sendNotificationToCache(context, key, undefined, value);
+      sendNotification(context, key, undefined, value);
     }
   }
 }

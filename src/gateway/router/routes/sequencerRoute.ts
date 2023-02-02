@@ -10,7 +10,7 @@ import { BlockData } from 'arweave/node/blocks';
 import { VRF } from '../../init';
 import { isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE2_URL } from '../../../constants';
-import { publishInteraction, sendNotificationToCache } from '../../publisher';
+import { publishInteraction, sendNotification } from '../../publisher';
 import { Knex } from 'knex';
 
 const { Evaluate } = require('@idena/vrf-js');
@@ -166,7 +166,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     await trx.commit();
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
-    sendNotificationToCache(ctx, contractTag, undefined, interaction);
+    sendNotification(ctx, contractTag, undefined, interaction);
     publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey);
   } catch (e) {
     await trx.rollback();

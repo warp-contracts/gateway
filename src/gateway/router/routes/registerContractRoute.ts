@@ -3,7 +3,7 @@ import { evalType } from '../../tasks/contractsMetadata';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { sleep } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { sendNotificationToCache } from '../../publisher';
+import { sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import { Tag } from 'arweave/node/lib/transaction';
 import { stringToB64Url } from 'arweave/node/lib/utils';
@@ -103,13 +103,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sleep(2000)
-      .then(() => {
-        sendNotificationToCache(ctx, txId, initState);
-      })
-      .catch((e) => {
-        logger.error(`No sleep 'till Brooklyn.`, e);
-      });
+    sendNotification(ctx, txId, {initState, tags});
 
     logger.info('Contract successfully registered.', {
       contractTxId: txId,

@@ -4,7 +4,7 @@ import { BUNDLR_NODE2_URL } from '../../../constants';
 import { Bundle, DataItem } from 'arbundles';
 import { sleep, SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { sendNotificationToCache } from '../../publisher';
+import { sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import Arweave from 'arweave';
 import { SignatureConfig } from 'arbundles/src/constants';
@@ -121,13 +121,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sleep(2000)
-      .then(() => {
-        sendNotificationToCache(ctx, bundlrResponse.data.id, initState);
-      })
-      .catch((e) => {
-        logger.error(`No sleep 'till Brooklyn.`, e);
-      });
+    sendNotification(ctx, bundlrResponse.data.id, {initState, tags: contractDataItem.tags});
 
     logger.info('Contract successfully deployed.', {
       contractTxId: contractDataItem.id,
