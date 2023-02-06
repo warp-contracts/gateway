@@ -33,9 +33,11 @@ export function sendNotification(
       message.interaction = interaction;
     }
 
-    ctx.publisher.publish(contractsChannel, JSON.stringify(message));
+    const stringified = JSON.stringify(message);
+
+    ctx.publisher.publish(contractsChannel, stringified);
     logger.info(`Published ${contractsChannel}`);
-    ctx.publisher_v2.publish(contractsChannel, JSON.stringify(message));
+    ctx.publisher_v2.publish(contractsChannel, stringified);
     logger.info(`Published v2 ${contractsChannel}`);
   } catch (e) {
     logger.error('Error while publishing message', e);
