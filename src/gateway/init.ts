@@ -154,6 +154,16 @@ export interface GatewayContext {
     // temporary..
     const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
     if (connectionOptions2) {
+      console.log({
+        ...connectionOptions2,
+        tls: {
+          ca: [process.env.GW_TLS_CA_CERT],
+          checkServerIdentity: () => {
+            return null;
+          },
+        }
+      });
+
       const publisher2 = new Redis({
         ...connectionOptions2,
         tls: {
