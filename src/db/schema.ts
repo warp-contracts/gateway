@@ -4,6 +4,7 @@ export type INTERACTIONS_TABLE = {
   interaction_id: string;
   interaction: string;
   block_height: number;
+  block_timestamp: number;
   block_id: string;
   contract_id: string;
   function: string;
@@ -23,6 +24,7 @@ export async function initGatewayDb(db: Knex) {
       table.string('interaction_id', 64).notNullable().unique().index();
       table.jsonb('interaction').notNullable();
       table.bigInteger('block_height').notNullable().index();
+      table.bigInteger('block_timestamp').nullable().index();
       table.string('block_id').notNullable();
       table.string('contract_id').notNullable().index();
       table.string('function').index();

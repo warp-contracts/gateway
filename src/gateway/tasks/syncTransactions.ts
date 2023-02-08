@@ -199,6 +199,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         interaction_id: interaction.node.id,
         interaction: JSON.stringify(interaction.node),
         block_height: interaction.node.block.height,
+        block_timestamp: interaction.node.block.timestamp,
         block_id: blockId,
         contract_id: contractId,
         function: functionName,
@@ -268,7 +269,7 @@ async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsI
   return gatewayDb('interactions')
     .insert(interactionsInserts)
     .onConflict('interaction_id')
-    .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'interaction', 'sort_key']);
+    .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'block_timestamp', 'interaction', 'sort_key']);
 }
 
 // TODO: verify internalWrites
