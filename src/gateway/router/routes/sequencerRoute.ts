@@ -41,11 +41,16 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       throw new Error('Network or block info not yet cached.');
     }
 
-    const currentHeight = cachedNetworkData.cachedNetworkInfo.height;
+    const currentHeight = cachedNetworkData.cachedBlockInfo.height;
     sLogger.debug(`Sequencer height: ${transaction.id}: ${currentHeight}`);
 
     if (!currentHeight) {
       throw new Error('Current height not set');
+    }
+
+    const currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
+    if (!currentBlockTimestamp) {
+      throw new Error('Current block timestamp not set');
     }
 
     const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
@@ -139,6 +144,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
         interaction_id: transaction.id,
         interaction: JSON.stringify(interaction),
         block_height: currentHeight,
+        block_timestamp: currentBlockTimestamp,
         block_id: currentBlockId,
         contract_id: contractTag,
         function: functionName,
