@@ -5,6 +5,7 @@ import { searchRoute } from './routes/searchRoute';
 import { totalTxsRoute } from './routes/stats/totalTxsRoute';
 import { contractRoute } from './routes/contractRoute';
 import { contractWithSourceRoute } from './routes/contractWithSourceRoute';
+import { contractWithSourceRoute_v2 } from './routes/contractWithSourceRoute_v2';
 import { interactionRoute } from './routes/interactionRoute';
 import { safeContractsRoute } from './routes/safeContractsRoute';
 import { sequencerRoute } from './routes/sequencerRoute';
@@ -26,13 +27,14 @@ import { deploySourceRoute } from './routes/deploySourceRoute';
 import { deploySourceRoute_v2 } from './routes/deploySourceRoute_v2';
 import { deployContractRoute_v2 } from './routes/deployContractRoute_v2';
 import { registerContractRoute } from './routes/registerContractRoute';
-import {dashboardRoute} from "./routes/dashboardRoute";
+import { dashboardRoute } from './routes/dashboardRoute';
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
   // get
   router.get('/contracts', contractsRoute);
   router.get('/contract', contractWithSourceRoute);
+  router.get('/v2/contract', contractWithSourceRoute_v2);
   router.get('/contract-data/:id', contractDataRoute);
   router.get('/contracts/:id', contractRoute);
   router.get('/contracts-safe', safeContractsRoute);
