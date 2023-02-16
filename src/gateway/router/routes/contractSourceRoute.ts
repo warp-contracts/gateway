@@ -27,12 +27,18 @@ export async function contractSourceRoute(ctx: Router.RouterContext) {
                  s.bundler_src_tx_id                                                                    as "bundlerSrcTxId",
                  s.src_tx                                                                               as "srcTx"
           FROM contracts_src s 
-          WHERE src_tx_id = ? AND src != 'error';
+          WHERE src_tx_id = ? AND src IS DISTINCT FROM 'error';
       `,
       [id]
     );
 
-    ctx.body = result?.rows[0];
+    if (!result?.rows[0]) {
+      ctx.status = 500;
+      ctx.body = { message: 'Could not load contract source.' };
+      logger.error('Could not load contract source.')
+    } else {
+      ctx.body = result?.rows[0];
+    }
 
     logger.debug('Source loaded in', benchmark.elapsed());
   } catch (e: any) {
