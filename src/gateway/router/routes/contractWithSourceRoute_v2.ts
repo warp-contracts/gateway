@@ -31,7 +31,8 @@ export async function contractWithSourceRoute_v2(ctx: Router.RouterContext) {
                  c.contract_tx                                                                     as "contractTx",
                  s.src_tx                                                                          as "srcTx",
                  c.testnet                                                                         as "testnet",
-                 c.manifest                                                                        as "manifest" 
+                 c.manifest                                                                        as "manifest",
+                 c.block_timestamp                                                                 as "blockTimestamp" 
           FROM contracts c 
           JOIN contracts_src s on c.src_tx_id = s.src_tx_id
           WHERE contract_id = ?;
