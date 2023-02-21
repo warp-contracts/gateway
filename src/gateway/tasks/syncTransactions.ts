@@ -5,7 +5,7 @@ import { INTERACTIONS_TABLE } from '../../db/schema';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { Knex } from 'knex';
 import { isTxIdValid } from '../../utils';
-import { sendNotification } from '../publisher';
+import { publishInteraction, sendNotification } from '../publisher';
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -226,7 +226,13 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         return;
       }
     }
-    contracts.set(contractId, interaction.node);
+    contracts.set(interaction.node.id, {
+      contractId,
+      interaction: interaction.node,
+      blockHeight: interaction.node.block.height,
+      sortKey,
+      source: 'arweave',
+    });
   }
 
   // 4. inserting the rest interactions into DB
@@ -244,7 +250,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (publish) {
     for (let [key, value] of contracts) {
-      sendNotification(context, key, undefined, value);
+      sendNotification(context, value.contractId, undefined, value.interaction);
+      publishInteraction(context, value.contractId, value.interaction, value.sortKey, null, value.source);
     }
   }
 }
@@ -269,7 +276,16 @@ async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsI
   return gatewayDb('interactions')
     .insert(interactionsInserts)
     .onConflict('interaction_id')
-    .merge(['block_id', 'function', 'input', 'contract_id', 'block_height', 'block_timestamp', 'interaction', 'sort_key']);
+    .merge([
+      'block_id',
+      'function',
+      'input',
+      'contract_id',
+      'block_height',
+      'block_timestamp',
+      'interaction',
+      'sort_key',
+    ]);
 }
 
 // TODO: verify internalWrites
