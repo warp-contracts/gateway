@@ -187,7 +187,7 @@ export async function bundleAndUpload(dataItem: DataItem, ctx: Router.RouterCont
   const bundlrTx = bundlr.createTransaction(bundle.getRaw(), {
     tags: [
       { name: 'Bundle-Format', value: 'binary' },
-      { name: 'Bundle-Version', value: '2.0' },
+      { name: 'Bundle-Version', value: '2.0.0' },
       { name: 'App-Name', value: 'Warp' },
       { name: 'Action', value: opts?.contract ? 'ContractDeployment' : 'ContractSrcDeployment' },
       { name: opts?.contract ? 'Contract-Id' : 'Contract-Src-Id', value: dataItem.id },
