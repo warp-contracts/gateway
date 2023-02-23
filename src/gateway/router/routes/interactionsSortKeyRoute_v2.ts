@@ -6,9 +6,13 @@ const MAX_INTERACTIONS_PER_PAGE = 5000;
 export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
   const {gatewayDb, logger} = ctx;
 
-  logger.info('interactionsSortKeyRoute');
-
   const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk} = ctx.query;
+
+  logger.info('interactionsSortKeyRoute', {
+    ip: ctx.request?.ip,
+    contractId,
+    fromSdk
+  });
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
