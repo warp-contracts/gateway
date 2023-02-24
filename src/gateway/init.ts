@@ -152,9 +152,10 @@ export interface GatewayContext {
     }
 
     // temporary..
-    const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
+   /* const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
     if (connectionOptions2) {
-      console.log({
+
+      const effectiveOptions2 = {
         ...connectionOptions2,
         tls: {
           ca: [process.env.GW_TLS_CA_CERT],
@@ -162,22 +163,18 @@ export interface GatewayContext {
             return null;
           },
         }
-      });
+      };
 
-      const publisher2 = new Redis({
-        ...connectionOptions2,
-        tls: {
-          ca: [process.env.GW_TLS_CA_CERT],
-          checkServerIdentity: () => { return null; },
-        }
-      });
+      console.log(effectiveOptions2);
+
+      const publisher2 = new Redis(effectiveOptions2);
       await publisher2.connect();
       logger.info(`Publisher 2 status`, {
         host: connectionOptions2.host,
         status: publisher2.status,
       });
       app.context.publisher_v2 = publisher2;
-    }
+    }*/
 
     if (!fs.existsSync('gateway.lock')) {
       try {
