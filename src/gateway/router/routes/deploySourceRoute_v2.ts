@@ -40,7 +40,7 @@ export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
     } else {
       srcBinary = Buffer.from(dataItem.data);
     }
-    const bundlrResponse = await bundleAndUpload(dataItem, ctx);
+    const bundlrResponse = await bundleAndUpload({ contract: null, src: dataItem }, ctx);
 
     bundlrSrcTxId = bundlrResponse.data.id;
     srcBundlrResponse = bundlrResponse;

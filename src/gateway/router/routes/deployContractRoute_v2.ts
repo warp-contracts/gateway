@@ -14,7 +14,7 @@ import { longTo32ByteArray } from 'arbundles/src/utils';
 export async function deployContractRoute_v2(ctx: Router.RouterContext) {
   const { logger, gatewayDb, arweave } = ctx;
 
-  let initStateRaw, contractDataItem, srcDataItem, srcBundlrResponse;
+  let initStateRaw, contractDataItem, srcDataItem, contracts_src_insert;
 
   try {
     contractDataItem = new DataItem(Buffer.from(ctx.request.body.contract));
@@ -54,37 +54,34 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
         srcBinary = Buffer.from(srcDataItem.data);
       }
 
-      const bundlrResponse = await bundleAndUpload(srcDataItem, ctx);
-
-      bundlrSrcTxId = bundlrResponse.data.id;
-      srcBundlrResponse = bundlrResponse;
-      logger.debug('Contract source successfully uploaded to Bundlr.', {
-        id: srcId,
-        bundled_tx_id: bundlrSrcTxId,
-      });
-
-      let contracts_src_insert: any = {
+      contracts_src_insert = {
         src_tx_id: srcId,
         owner: srcOwner,
         src: src || null,
         src_content_type: srcContentType,
         src_binary: srcBinary || null,
         src_wasm_lang: srcWasmLang || null,
-        bundler_src_tx_id: bundlrSrcTxId,
         bundler_src_node: BUNDLR_NODE2_URL,
-        bundler_response: JSON.stringify(srcBundlrResponse?.data),
         src_tx: srcDataItem.toJSON(),
         testnet: srcTestnet,
         deployment_type: WarpDeployment.Direct,
       };
-
-      await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
-    const bundlrResponse = await bundleAndUpload(contractDataItem, ctx, { contract: true });
+    const bundlrResponse = await bundleAndUpload({ contract: contractDataItem, src: srcDataItem || null }, ctx);
     logger.debug('Contract successfully uploaded to Bundlr.', {
-      id: contractDataItem.id,
+      contract_id: contractDataItem.id,
+      src_id: srcDataItem?.id,
       bundled_tx_id: bundlrResponse.data.id,
     });
+
+    if (srcDataItem) {
+      contracts_src_insert = {
+        ...contracts_src_insert,
+        bundler_response: JSON.stringify(bundlrResponse?.data),
+        bundler_src_tx_id: bundlrResponse.data.id,
+      };
+      await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
+    }
 
     const srcId = contractDataItem.tags.find((t) => t.name == 'Contract-Src')!.value;
     initStateRaw = contractDataItem.tags.find((t) => t.name == 'Init-State')?.value;
@@ -121,17 +118,18 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sendNotification(ctx, bundlrResponse.data.id, {initState, tags: contractDataItem.tags});
+    sendNotification(ctx, bundlrResponse.data.id, { initState, tags: contractDataItem.tags });
 
     logger.info('Contract successfully deployed.', {
       contractTxId: contractDataItem.id,
-      bundlrContractTxId: bundlrResponse.data.id,
       srcTxId: srcDataItem?.id || srcId,
-      bundlrSrcTxId: srcBundlrResponse?.data.id,
+      bundlrTxId: bundlrResponse?.data.id,
     });
 
     ctx.body = {
       contractTxId: contractDataItem.id,
+      srcTxId: srcDataItem?.id || srcId,
+      bundlrTxId: bundlrResponse.data.id,
     };
   } catch (e: any) {
     logger.error('Error while inserting bundled transaction.', {
@@ -180,17 +178,23 @@ export async function determineOwner(dataItem: DataItem, arweave: Arweave) {
   }
 }
 
-export async function bundleAndUpload(dataItem: DataItem, ctx: Router.RouterContext, opts?: { contract: boolean }) {
+export async function bundleAndUpload(
+  dataItems: { contract: DataItem | null; src: DataItem | null },
+  ctx: Router.RouterContext
+) {
   const { bundlr } = ctx;
-  const bundle = await bundleData([dataItem]);
+  const { contract, src } = dataItems;
+  const dataItemsToUpload = [];
+  contract && dataItemsToUpload.push(contract);
+  src && dataItemsToUpload.push(src);
+  const bundle = await bundleData(dataItemsToUpload);
 
   const bundlrTx = bundlr.createTransaction(bundle.getRaw(), {
     tags: [
       { name: 'Bundle-Format', value: 'binary' },
       { name: 'Bundle-Version', value: '2.0.0' },
       { name: 'App-Name', value: 'Warp' },
-      { name: 'Action', value: opts?.contract ? 'ContractDeployment' : 'ContractSrcDeployment' },
-      { name: opts?.contract ? 'Contract-Id' : 'Contract-Src-Id', value: dataItem.id },
+      { name: 'Action', value: 'WarpContractDeployment' },
     ],
   });
   await bundlrTx.sign();
