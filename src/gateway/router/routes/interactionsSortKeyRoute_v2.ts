@@ -1,18 +1,14 @@
 import Router from '@koa/router';
-import {Benchmark} from 'warp-contracts';
+import { Benchmark } from 'warp-contracts';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
-  const {gatewayDb, logger} = ctx;
+  const { gatewayDb, logger } = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk} = ctx.query;
+  const { contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk } = ctx.query;
 
-  logger.info('interactionsSortKeyRoute', {
-    ip: ctx.request?.ip,
-    contractId,
-    fromSdk
-  });
+  logger.info(`interactionsSortKeyRoute`, `ip: ${ctx.request?.ip}, contractId: ${contractId}`);
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -54,10 +50,10 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
         FROM interactions
         WHERE (contract_id = ?
             OR interact_write @> ARRAY [?]) ${
-                parsedConfirmationStatus
-                        ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
-                        : ''
-        } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
+              parsedConfirmationStatus
+                ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
+                : ''
+            } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
         ORDER BY sort_key ${isFromSdk ? 'ASC' : 'DESC'}
         LIMIT ? OFFSET ?;
     `;
@@ -82,22 +78,22 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
     const benchmark = Benchmark.measure();
 
-    const mappedInteractions = isFromSdk ?
-      result?.rows?.map((r: any) => ({
-        ...r.interaction,
-        sortKey: r.sort_key,
-        confirmationStatus: r.confirmation_status
-      })) :
-      result?.rows?.map((r: any) => ({
-        status: r.confirmation_status,
-        confirming_peers: r.confirming_peer,
-        confirmations: r.confirmations,
-        interaction: {
+    const mappedInteractions = isFromSdk
+      ? result?.rows?.map((r: any) => ({
           ...r.interaction,
-          bundlerTxId: r.bundler_tx_id,
           sortKey: r.sort_key,
-        },
-      }));
+          confirmationStatus: r.confirmation_status,
+        }))
+      : result?.rows?.map((r: any) => ({
+          status: r.confirmation_status,
+          confirming_peers: r.confirming_peer,
+          confirmations: r.confirmations,
+          interaction: {
+            ...r.interaction,
+            bundlerTxId: r.bundler_tx_id,
+            sortKey: r.sort_key,
+          },
+        }));
 
     ctx.body = {
       paging: {
@@ -121,6 +117,6 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }
