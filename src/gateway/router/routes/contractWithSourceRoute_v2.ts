@@ -44,6 +44,7 @@ export async function contractWithSourceRoute_v2(ctx: Router.RouterContext) {
       `
         SELECT  s.src_tx_id                                                                         as "srcTxId", 
                 i.sort_key                                                                          as "sortKey",
+                i.block_timestamp                                                                   as "blockTimestamp",
                 (case when s.src_content_type = 'application/javascript' then s.src else null end)  as src,
                 (case when s.src_content_type = 'application/wasm' then s.src_binary else null end) as "srcBinary",
                 s.src_wasm_lang                                                                     as "srcWasmLang"
