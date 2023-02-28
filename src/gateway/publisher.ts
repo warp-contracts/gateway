@@ -37,8 +37,8 @@ export function sendNotification(
 
     ctx.publisher.publish(contractsChannel, stringified);
     logger.info(`Published ${contractsChannel}`);
-    /*ctx.publisher_v2.publish(contractsChannel, stringified);
-    logger.info(`Published v2 ${contractsChannel}`);*/
+    ctx.publisher_v2.publish(contractsChannel, stringified);
+    logger.info(`Published v2 ${contractsChannel}`);
   } catch (e) {
     logger.error('Error while publishing message', e);
   }
