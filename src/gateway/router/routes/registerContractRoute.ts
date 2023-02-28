@@ -1,7 +1,5 @@
 import Router from '@koa/router';
 import { evalType } from '../../tasks/contractsMetadata';
-import { BUNDLR_NODE2_URL } from '../../../constants';
-import { sleep } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
@@ -45,7 +43,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
 
     const txMetadata = ((await getBundlrGqlMetadata(txId, bundlrNode)) as any).transactions.edges[0].node;
 
-    const { contractTagsIncluded, tags, signature } = await verifyContractTags(txId);
+    const { contractTagsIncluded, tags, signature } = await verifyContractTags(txId, bundlrNode);
     if (!contractTagsIncluded) {
       ctx.throw(400, 'Bundlr transaction is not valid contract transaction.');
     }
@@ -103,7 +101,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sendNotification(ctx, txId, {initState, tags});
+    sendNotification(ctx, txId, { initState, tags });
 
     logger.info('Contract successfully registered.', {
       contractTxId: txId,
@@ -124,10 +122,10 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
   }
 }
 
-export async function verifyContractTags(id: string) {
+export async function verifyContractTags(id: string, bundlrNode: string) {
   let response: any;
   const request = async () => {
-    return fetch(`${BUNDLR_NODE2_URL}/tx/${id}`).then((res) => {
+    return fetch(`https://${bundlrNode}.bundlr.network/tx/${id}`).then((res) => {
       return res.ok ? res.json() : Promise.reject(res);
     });
   };
