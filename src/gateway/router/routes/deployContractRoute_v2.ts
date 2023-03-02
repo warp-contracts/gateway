@@ -4,7 +4,7 @@ import { BUNDLR_NODE2_URL } from '../../../constants';
 import { Bundle, DataItem } from 'arbundles';
 import { sleep, SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { sendNotification } from '../../publisher';
+import { publishContract, sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import Arweave from 'arweave';
 import { SignatureConfig } from 'arbundles/src/constants';
@@ -94,6 +94,8 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
     const contentType = contractDataItem.tags.find((t) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(contractDataItem.tags);
     const manifest = evalManifest(contractDataItem.tags);
+    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
+    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
     const insert = {
       contract_id: contractDataItem.id,
@@ -103,8 +105,8 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       type: type,
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
-      block_height: getCachedNetworkData().cachedNetworkInfo.height,
-      block_timestamp: getCachedNetworkData().cachedBlockInfo.timestamp,
+      block_height: blockHeight,
+      block_timestamp: blockTimestamp,
       content_type: contentType,
       contract_tx: contractDataItem.toJSON(),
       bundler_contract_tx_id: bundlrResponse.data.id,
@@ -119,6 +121,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
     await gatewayDb('contracts').insert(insert);
 
     sendNotification(ctx, bundlrResponse.data.id, { initState, tags: contractDataItem.tags });
+    publishContract(ctx, contractDataItem.id, ownerAddress!!, type, blockHeight, WarpDeployment.Direct);
 
     logger.info('Contract successfully deployed.', {
       contractTxId: contractDataItem.id,

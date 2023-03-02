@@ -1,7 +1,7 @@
 import Router from '@koa/router';
 import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { sendNotification } from '../../publisher';
+import { publishContract, sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import { Tag } from 'arweave/node/lib/transaction';
 import { stringToB64Url } from 'arweave/node/lib/utils';
@@ -68,6 +68,8 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
     const contentType = tags.find((t: Tag) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(tags);
     const manifest = evalManifest(tags);
+    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
+    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
     contractTx = {
       id: txId,
@@ -86,8 +88,8 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       type: type,
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
-      block_height: getCachedNetworkData().cachedNetworkInfo.height,
-      block_timestamp: getCachedNetworkData().cachedBlockInfo.timestamp,
+      block_height: blockHeight,
+      block_timestamp: blockTimestamp,
       content_type: contentType,
       contract_tx: contractTx,
       bundler_contract_tx_id: txId,
@@ -102,6 +104,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
     await gatewayDb('contracts').insert(insert);
 
     sendNotification(ctx, txId, { initState, tags });
+    publishContract(ctx, txId, ownerAddress, type, blockHeight, WarpDeployment.External);
 
     logger.info('Contract successfully registered.', {
       contractTxId: txId,

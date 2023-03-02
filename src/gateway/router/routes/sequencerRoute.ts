@@ -173,7 +173,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
     sendNotification(ctx, contractTag, undefined, interaction);
-    publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey);
+    publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey, 'redstone-sequencer');
   } catch (e) {
     await trx.rollback();
     sLogger.error('Error while inserting bundled transaction');

@@ -6,8 +6,7 @@ import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
-import { sendNotification } from '../../publisher';
-import { sleep } from '../../../utils';
+import { publishContract, sendNotification } from '../../publisher';
 
 /*
 - warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
@@ -94,6 +93,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     const initState = JSON.parse(initStateRaw);
     const type = evalType(initState);
     const manifest = evalManifest(contractTags);
+    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
+    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
     const insert = {
       contract_id: contractTx.id,
@@ -103,8 +104,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       type: type,
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
-      block_height: getCachedNetworkData().cachedNetworkInfo.height,
-      block_timestamp: getCachedNetworkData().cachedBlockInfo.timestamp,
+      block_height: blockHeight,
+      block_timestamp: blockTimestamp,
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
       contract_tx: { ...contractTx.toJSON(), data: null },
       bundler_contract_tx_id: bundlerContractTx.id,
@@ -137,7 +138,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
     }
 
-    sendNotification(ctx, contractTx.id, {initState, tags: contractTags});
+    sendNotification(ctx, contractTx.id, { initState, tags: contractTags });
+    publishContract(ctx, contractTx.id, originalAddress, type, blockHeight, WarpDeployment.Wrapped);
 
     logger.info('Contract successfully bundled.');
 

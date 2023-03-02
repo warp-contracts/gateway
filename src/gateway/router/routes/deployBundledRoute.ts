@@ -1,14 +1,14 @@
 import Router from '@koa/router';
-import {evalType} from '../../tasks/contractsMetadata';
-import {BUNDLR_NODE2_URL} from '../../../constants';
-import {DataItem} from 'arbundles';
+import { evalType } from '../../tasks/contractsMetadata';
+import { BUNDLR_NODE2_URL } from '../../../constants';
+import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
-import {getCachedNetworkData} from '../../tasks/networkInfoCache';
-import {sendNotification} from '../../publisher';
-import {evalManifest, WarpDeployment} from './deployContractRoute';
+import { getCachedNetworkData } from '../../tasks/networkInfoCache';
+import { publishContract, sendNotification } from '../../publisher';
+import { evalManifest, WarpDeployment } from './deployContractRoute';
 
 export async function deployBundledRoute(ctx: Router.RouterContext) {
-  const {logger, gatewayDb, arweave, bundlr} = ctx;
+  const { logger, gatewayDb, arweave, bundlr } = ctx;
 
   let initStateRaw, dataItem;
 
@@ -25,7 +25,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       ctx.throw(400, 'Contract tags are not valid.');
     }
 
-    const bundlrResponse = await bundlr.uploader.uploadTransaction(dataItem, {getReceiptSignature: true});
+    const bundlrResponse = await bundlr.uploader.uploadTransaction(dataItem, { getReceiptSignature: true });
 
     if (bundlrResponse.status !== 200 || !bundlrResponse.data.public || !bundlrResponse.data.signature) {
       throw new Error(
@@ -45,6 +45,8 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     const contentType = dataItem.tags.find((t) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(dataItem.tags);
     const manifest = evalManifest(dataItem.tags);
+    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
+    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
     const insert = {
       contract_id: bundlrResponse.data.id,
@@ -54,8 +56,8 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       type: type,
       pst_ticker: type == 'pst' ? initState?.ticker : null,
       pst_name: type == 'pst' ? initState?.name : null,
-      block_height: getCachedNetworkData().cachedNetworkInfo.height,
-      block_timestamp: getCachedNetworkData().cachedBlockInfo.timestamp,
+      block_height: blockHeight,
+      block_timestamp: blockTimestamp,
       content_type: contentType,
       contract_tx: dataItem.toJSON(),
       bundler_contract_tx_id: bundlrResponse.data.id,
@@ -68,7 +70,8 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     };
 
     await gatewayDb('contracts').insert(insert);
-    sendNotification(ctx, bundlrResponse.data.id, {initState, tags: dataItem.tags});
+    sendNotification(ctx, bundlrResponse.data.id, { initState, tags: dataItem.tags });
+    publishContract(ctx, bundlrResponse.data.id, ownerAddress, type, blockHeight, WarpDeployment.Direct);
 
     logger.info('Contract successfully deployed.', {
       contractTxId: bundlrResponse.data.id,
@@ -92,9 +95,9 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
 export async function verifyContractTags(dataItem: DataItem, ctx: Router.RouterContext) {
   const tags = dataItem.tags;
   const tagsIncluded = [
-    {name: 'App-Name', value: 'SmartWeaveContract'},
-    {name: 'App-Version', value: '0.3.0'},
-    {name: 'Content-Type', value: 'application/x.arweave-manifest+json'},
+    { name: 'App-Name', value: 'SmartWeaveContract' },
+    { name: 'App-Version', value: '0.3.0' },
+    { name: 'Content-Type', value: 'application/x.arweave-manifest+json' },
   ];
   const nameTagsIncluded = ['Contract-Src', 'Init-State', 'Title', 'Description', 'Type'];
   if (tags.some((t) => t.name == tagsIncluded[2].name && t.value != tagsIncluded[2].value)) {
