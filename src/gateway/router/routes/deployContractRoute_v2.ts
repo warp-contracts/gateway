@@ -51,7 +51,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       if (srcContentType == 'application/javascript') {
         src = Arweave.utils.bufferToString(srcDataItem.rawData);
       } else {
-        srcBinary = Buffer.from(srcDataItem.data);
+        srcBinary = srcDataItem.rawData;
       }
 
       contracts_src_insert = {
