@@ -6,9 +6,10 @@ import rawBody from 'raw-body';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
+import { ContractInsert } from '../../../db/insertInterfaces';
 
 export async function deployBundledRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb, arweave, bundlr } = ctx;
+  const { logger, dbSource, arweave, bundlr } = ctx;
 
   let initStateRaw, dataItem;
 
@@ -48,7 +49,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
     const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
-    const insert = {
+    const insert: ContractInsert = {
       contract_id: bundlrResponse.data.id,
       src_tx_id: srcTxId,
       init_state: initState,
@@ -69,7 +70,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       manifest,
     };
 
-    await gatewayDb('contracts').insert(insert);
+    await dbSource.insertContract(insert);
     sendNotification(ctx, bundlrResponse.data.id, { initState, tags: dataItem.tags });
     publishContract(ctx, bundlrResponse.data.id, ownerAddress, type, blockHeight, WarpDeployment.Direct);
 

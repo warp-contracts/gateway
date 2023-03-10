@@ -5,11 +5,9 @@ import Koa from 'koa';
 import Application from 'koa';
 import bodyParser from 'koa-bodyparser';
 import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger } from 'warp-contracts';
-import { connect } from '../db/connect';
 import Arweave from 'arweave';
 import { runGatewayTasks } from './runGatewayTasks';
 import gatewayRouter from './router/gatewayRouter';
-import { initGatewayDb } from '../db/schema';
 import * as fs from 'fs';
 import cluster from 'cluster';
 import welcomeRouter from './router/welcomeRouter';
@@ -23,6 +21,7 @@ import { LastTxSync } from './LastTxSyncer';
 import { initPubSub } from 'warp-contracts-pubsub';
 // @ts-ignore
 import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
+import { DatabaseSource } from '../db/databaseSource';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -37,6 +36,7 @@ export type VRF = { pubKeyHex: string; privKey: any; ec: any };
 
 export interface GatewayContext {
   gatewayDb: Knex;
+  dbSource: DatabaseSource;
   logger: WarpLogger;
   sLogger: WarpLogger;
   arweave: Arweave;
@@ -86,13 +86,24 @@ export interface GatewayContext {
   const arweave = initArweave();
   const { bundlr, jwk } = initBundlr(logger);
 
-  const gatewayDb = connect();
-  await initGatewayDb(gatewayDb);
+  const dbSource = new DatabaseSource([
+    { client: 'pg', url: process.env.DB_URL as string },
+    {
+      client: 'pg',
+      url: process.env.DB_URL_MIGRATED as string,
+      ssl: {
+        rejectUnauthorized: false,
+        ca: fs.readFileSync('.secrets/ca.pem'),
+        cert: fs.readFileSync('.secrets/cert_user.pem'),
+        key: fs.readFileSync('.secrets/key_user.pem'),
+      },
+    },
+  ]);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
   const signatureVerification = new EvmSignatureVerificationServerPlugin();
 
-  app.context.gatewayDb = gatewayDb;
+  app.context.dbSource = dbSource;
   app.context.logger = logger;
   app.context.sLogger = sLogger;
   app.context.arweave = arweave;
@@ -161,15 +172,17 @@ export interface GatewayContext {
           checkServerIdentity: () => {
             return null;
           },
-        }
+        },
       });
 
       const publisher2 = new Redis({
         ...connectionOptions2,
         tls: {
           ca: [process.env.GW_TLS_CA_CERT],
-          checkServerIdentity: () => { return null; },
-        }
+          checkServerIdentity: () => {
+            return null;
+          },
+        },
       });
       await publisher2.connect();
       logger.info(`Publisher 2 status`, {
@@ -184,7 +197,9 @@ export interface GatewayContext {
         logger.info(`Creating lock file for ${cluster.worker?.id}`);
         // note: if another process in cluster have already created the file - writing here
         // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
-        fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, { flag: 'wx' });
+        fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, {
+          flag: 'wx',
+        });
         removeLock = true;
 
         await runNetworkInfoCacheTask(app.context);

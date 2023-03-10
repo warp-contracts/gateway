@@ -8,7 +8,7 @@ import { BUNDLR_NODE2_URL } from '../../../constants';
 import { WarpDeployment } from './deployContractRoute';
 
 export async function contractDataRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb, arweave, arweaveWrapper } = ctx;
+  const { logger, dbSource, arweave, arweaveWrapper } = ctx;
 
   const { id } = ctx.params;
 
@@ -23,7 +23,7 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     logger.debug('ContractDataRoute id: ', id);
 
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT  bundler_contract_tx_id as "bundlerContractTxId",
                   bundler_contract_tags as "bundlerContractTags",

@@ -5,7 +5,7 @@ import { isTxIdValid } from '../../../utils';
 const MAX_TRANSACTIONS_PER_PAGE = 5000;
 
 export async function creatorRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { id, page, limit, txType } = ctx.query;
 
@@ -25,7 +25,7 @@ export async function creatorRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
       WITH all_transactions AS (${
         txType != 'contract'

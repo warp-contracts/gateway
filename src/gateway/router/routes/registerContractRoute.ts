@@ -8,6 +8,7 @@ import { stringToB64Url } from 'arweave/node/lib/utils';
 import { fetch } from 'undici';
 import { backOff } from 'exponential-backoff';
 import { getTestnetTag } from './deployBundledRoute';
+import { ContractInsert } from '../../../db/insertInterfaces';
 
 const BUNDLR_QUERY = `query Transactions($ids: [String!]) {
     transactions(ids: $ids) {
@@ -23,7 +24,7 @@ const BUNDLR_NODES = ['node1', 'node2'] as const;
 type BundlrNodeType = typeof BUNDLR_NODES[number];
 
 export async function registerContractRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   let initStateRaw = '';
   let contractTx = null;
@@ -80,7 +81,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       tags: encodedTags,
     };
 
-    const insert = {
+    const insert: ContractInsert = {
       contract_id: txId,
       src_tx_id: srcTxId,
       init_state: initState,
@@ -101,7 +102,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       manifest,
     };
 
-    await gatewayDb('contracts').insert(insert);
+    await dbSource.insertContract(insert);
 
     sendNotification(ctx, txId, { initState, tags });
     publishContract(ctx, txId, ownerAddress, type, blockHeight, WarpDeployment.External);

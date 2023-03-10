@@ -2,12 +2,12 @@ import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
 
 export async function txsPerDayRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
   const { testnet } = ctx.query;
 
   try {
     const benchmark = Benchmark.measure();
-    const contracts: any = await gatewayDb.raw(
+    const contracts: any = await dbSource.raw(
       `
         WITH contracts_per_day AS (
             SELECT date(to_timestamp((block_timestamp)::integer)) as date, contract_id as interaction
@@ -19,7 +19,7 @@ export async function txsPerDayRoute(ctx: Router.RouterContext) {
         ORDER BY date ASC;
       `
     );
-    const interactions: any = await gatewayDb.raw(
+    const interactions: any = await dbSource.raw(
       `
         WITH transactions_per_day AS (
             SELECT date(to_timestamp((block_timestamp)::integer)) as date, interaction_id as interaction

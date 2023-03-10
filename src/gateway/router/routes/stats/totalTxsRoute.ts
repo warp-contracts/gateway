@@ -2,12 +2,12 @@ import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
 
 export async function totalTxsRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, gatewayDb, dbSource } = ctx;
   const { testnet } = ctx.query;
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT 1 AS sort_order, count(i.id) AS total
           FROM interactions i 
