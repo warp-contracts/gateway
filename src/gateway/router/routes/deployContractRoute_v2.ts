@@ -120,7 +120,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
 
-    sendNotification(ctx, bundlrResponse.data.id, { initState, tags: contractDataItem.tags });
+    sendNotification(ctx, contractDataItem.id, { initState, tags: contractDataItem.tags });
     publishContract(ctx, contractDataItem.id, ownerAddress!!, type, blockHeight, WarpDeployment.Direct);
 
     logger.info('Contract successfully deployed.', {
