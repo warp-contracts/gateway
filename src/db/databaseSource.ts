@@ -26,12 +26,42 @@ export class DatabaseSource {
     this.mailClient = client();
   }
 
-  public async insertSequencer(sequencerInsert: SequencerInsert, trx: Knex.Transaction) {
+  public async insertSequencer(sequencerInsert: SequencerInsert, trx: Knex.Transaction, loop?: number) {
     await trx('sequencer').insert(sequencerInsert);
+    // if (loop == 0) {
+    //   console.log(loop);
+    //   // throw new Error('0');
+    //   await trx('sequencer').insert(sequencerInsert);
+    // } else if (loop == 1) {
+    //   console.log(loop);
+    //   throw new Error('1');
+    // } else if (loop == 2) {
+    //   console.log(loop);
+    //   throw new Error('2');
+    // } else if (loop == 3) {
+    //   console.log(loop);
+    //   // throw new Error('3');
+    //   await trx('sequencer').insert(sequencerInsert);
+    // }
   }
 
-  public async insertInteraction(interactionInsert: InteractionInsert, trx: Knex.Transaction) {
-    await trx('interactions').insert(interactionInsert);
+  public async insertInteraction(interactionInsert: InteractionInsert, trx: Knex.Transaction, loop?: number) {
+    // await trx('interactions').insert(interactionInsert);
+    if (loop == 0) {
+      console.log(loop);
+      // throw new Error('0');
+      await trx('interactions').insert(interactionInsert);
+    } else if (loop == 1) {
+      console.log(loop);
+      throw new Error('1');
+    } else if (loop == 2) {
+      console.log(loop);
+      throw new Error('2');
+    } else if (loop == 3) {
+      console.log(loop);
+      throw new Error('3');
+      // await trx('interactions').insert(interactionInsert);
+    }
   }
 
   public async insertSequencerAndInteraction(
@@ -41,8 +71,8 @@ export class DatabaseSource {
   ): Promise<void> {
     try {
       await Promise.all([
-        await this.insertSequencer(sequencerInsert, primaryDbTx),
-        await this.insertInteraction(interactionInsert, primaryDbTx),
+        await this.insertSequencer(sequencerInsert, primaryDbTx, 0),
+        await this.insertInteraction(interactionInsert, primaryDbTx, 0),
       ]);
       await primaryDbTx.commit();
     } catch (e: any) {
@@ -55,10 +85,10 @@ export class DatabaseSource {
       for (let i = 0; i < dbWithoutPrimary.length; i++) {
         try {
           await this.loopDbAndHandleError(
-            async (db: Knex, trx: Knex.Transaction) => {
+            async (db: Knex, trx: Knex.Transaction, loop: number) => {
               await Promise.all([
-                await this.insertSequencer(sequencerInsert, trx),
-                await this.insertInteraction(interactionInsert, trx),
+                await this.insertSequencer(sequencerInsert, trx, loop),
+                await this.insertInteraction(interactionInsert, trx, loop),
               ]);
             },
             interactionInsert.interaction_id,
@@ -91,7 +121,7 @@ export class DatabaseSource {
 
   public async loopThroughDb(callback: any, id: string) {
     try {
-      await callback(this.primaryDb);
+      await callback(this.primaryDb, null, 0);
     } catch (e: any) {
       throw new Error(e);
     }
@@ -150,7 +180,7 @@ export class DatabaseSource {
           transaction = await db?.transaction();
         }
         try {
-          await callback(db, transaction);
+          await callback(db, transaction, count + 2);
           await transaction?.commit();
           break;
         } catch (e: any) {
@@ -164,7 +194,7 @@ export class DatabaseSource {
 
             this.mailClient.sendMail({
               from: 'notifications@warp.cc',
-              to: ['asia@warp.cc', 'ppe@warp.cc', 'jan@warp.cc'],
+              to: 'asia@warp.cc',
               subject: `Error from Warp Gateway database. Transaction id: ${id}`,
               text: `Error while inserting transaction: ${id}. Please refer to the 'db_error_log' directory. ${e.message}`,
             });
