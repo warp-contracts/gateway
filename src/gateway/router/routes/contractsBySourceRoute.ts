@@ -25,6 +25,7 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
 
   const bindings: any = [];
   id && bindings.push(id);
+  id && bindings.push(id);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -43,7 +44,7 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
             FROM contracts c
             LEFT JOIN interactions i
             ON c.contract_id = i.contract_id
-            WHERE src_tx_id = ?
+            WHERE c.src_tx_id = ? OR i.evolve = ?
             AND c.type != 'error'
             GROUP BY c.contract_id
             ${sort == 'desc' || sort == 'asc' ? `ORDER BY c.block_height ${sort.toUpperCase()}` : ''}
