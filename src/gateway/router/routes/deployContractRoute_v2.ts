@@ -2,19 +2,23 @@ import Router from '@koa/router';
 import { evalType } from '../../tasks/contractsMetadata';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { Bundle, DataItem } from 'arbundles';
-import { sleep, SmartWeaveTags } from 'warp-contracts';
+import { ContractSource, sleep, SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import Arweave from 'arweave';
 import { SignatureConfig } from 'arbundles/src/constants';
-import { utils } from 'ethers';
+import { Contract, utils } from 'ethers';
 import { longTo32ByteArray } from 'arbundles/src/utils';
+import { ContractInsert, ContractSourceInsert } from '../../../db/insertInterfaces';
 
 export async function deployContractRoute_v2(ctx: Router.RouterContext) {
-  const { logger, gatewayDb, arweave } = ctx;
+  const { logger, arweave, dbSource } = ctx;
 
-  let initStateRaw, contractDataItem, srcDataItem, contracts_src_insert;
+  let initStateRaw,
+    contractDataItem,
+    srcDataItem,
+    contracts_src_insert: Partial<ContractSourceInsert> = {};
 
   try {
     contractDataItem = new DataItem(Buffer.from(ctx.request.body.contract));
@@ -80,7 +84,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
         bundler_response: JSON.stringify(bundlrResponse?.data),
         bundler_src_tx_id: bundlrResponse.data.id,
       };
-      await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
+      await dbSource.insertContractSource(contracts_src_insert);
     }
 
     const srcId = contractDataItem.tags.find((t) => t.name == 'Contract-Src')!.value;
@@ -97,7 +101,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
     const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
     const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
-    const insert = {
+    const insert: ContractInsert = {
       contract_id: contractDataItem.id,
       src_tx_id: srcId,
       init_state: initState,
@@ -118,7 +122,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       manifest,
     };
 
-    await gatewayDb('contracts').insert(insert);
+    await dbSource.insertContract(insert);
 
     sendNotification(ctx, contractDataItem.id, { initState, tags: contractDataItem.tags });
     publishContract(ctx, contractDataItem.id, ownerAddress!!, type, blockHeight, blockTimestamp, WarpDeployment.Direct);

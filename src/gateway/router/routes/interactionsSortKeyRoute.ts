@@ -4,7 +4,7 @@ import { Benchmark } from 'warp-contracts';
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
-  const { gatewayDb, logger } = ctx;
+  const { dbSource, logger } = ctx;
 
   const { contractId, confirmationStatus, page, limit, from, to, totalCount, source, minimize } = ctx.query;
 
@@ -58,11 +58,11 @@ export async function interactionsSortKeyRoute(ctx: Router.RouterContext) {
           ORDER BY sort_key ${shouldMinimize ? 'ASC' : 'DESC'} ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `;
 
-    const result: any = await gatewayDb.raw(query, bindings);
+    const result: any = await dbSource.raw(query, bindings);
 
     const totalInteractions: any =
       totalCount == 'true' &&
-      (await gatewayDb.raw(
+      (await dbSource.raw(
         `
           SELECT count(case when confirmation_status = 'corrupted' then 1 else null end)     AS corrupted,
                  count(case when confirmation_status = 'confirmed' then 1 else null end)     AS confirmed,

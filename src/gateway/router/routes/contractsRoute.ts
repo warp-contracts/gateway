@@ -4,7 +4,7 @@ import { Benchmark } from 'warp-contracts';
 const MAX_CONTRACTS_PER_PAGE = 100;
 
 export async function contractsRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { contractType, sourceType, page, limit, testnet } = ctx.query;
 
@@ -22,7 +22,7 @@ export async function contractsRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT c.contract_id                                                   AS contract,
                  c.owner                                                         AS owner,

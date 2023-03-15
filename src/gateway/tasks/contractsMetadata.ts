@@ -8,6 +8,8 @@ import { getCachedNetworkData } from './networkInfoCache';
 import { publishContract, sendNotification } from '../publisher';
 import { sleep } from '../../utils';
 import { WarpDeployment } from '../router/routes/deployContractRoute';
+import { DatabaseSource } from '../../db/databaseSource';
+import { ContractSourceInsert } from '../../db/insertInterfaces';
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -48,16 +50,11 @@ export async function runLoadContractsFromGqlTask(context: GatewayContext) {
 }
 
 async function loadContractsFromGql(context: GatewayContext) {
-  const { logger, gatewayDb } = context;
+  const { logger, dbSource } = context;
 
   let result: any;
   try {
-    result = await gatewayDb('contracts')
-      .select('block_height')
-      .whereNotNull('block_height')
-      .orderBy('block_height', 'desc')
-      .limit(1)
-      .first();
+    result = await dbSource.selectLastContract();
   } catch (e: any) {
     logger.error('Error while checking new blocks', e.message);
     return;
@@ -111,7 +108,7 @@ async function loadContractsFromGql(context: GatewayContext) {
       if (contractsInserts.length === MAX_BATCH_INSERT) {
         try {
           logger.info(`Batch insert ${MAX_BATCH_INSERT} interactions.`);
-          await insertContracts(gatewayDb, contractsInserts);
+          await insertContracts(dbSource, contractsInserts);
           contractsInserts = [];
         } catch (e) {
           logger.error(e);
@@ -125,7 +122,7 @@ async function loadContractsFromGql(context: GatewayContext) {
 
   if (contractsInserts.length > 0) {
     try {
-      await insertContracts(gatewayDb, contractsInserts);
+      await insertContracts(dbSource, contractsInserts);
     } catch (e) {
       logger.error(e);
       return;
@@ -135,8 +132,8 @@ async function loadContractsFromGql(context: GatewayContext) {
   logger.info(`Inserted ${contractsInserts.length} contracts`);
 }
 
-async function insertContracts(gatewayDb: Knex<any, unknown[]>, contractsInserts: any[]) {
-  await gatewayDb('contracts').insert(contractsInserts).onConflict('contract_id').ignore();
+async function insertContracts(dbSource: DatabaseSource, contractsInserts: any[]) {
+  await dbSource.insertContractsMetadata(contractsInserts);
 }
 
 function getContentTypeTag(interactionTransaction: GQLEdgeInterface): string | undefined {
@@ -163,11 +160,11 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
 }
 
 async function loadContractsMetadata(context: GatewayContext) {
-  const { arweave, logger, gatewayDb, arweaveWrapper } = context;
+  const { arweave, logger, dbSource, arweaveWrapper } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave, 'mainnet');
 
   const result: { contract: string; blockHeight: number; blockTimestamp: number }[] = (
-    await gatewayDb.raw(
+    await dbSource.raw(
       `
         SELECT  contract_id AS contract,
                 block_height AS blockHeight,
@@ -229,20 +226,9 @@ async function loadContractsMetadata(context: GatewayContext) {
       }
 
       logger.debug(`Inserting ${row.contract} metadata into db`);
-      await gatewayDb('contracts').where('contract_id', '=', definition.txId).update(update);
+      await dbSource.updateContractMetadata(definition.txId, update);
 
-      await gatewayDb('contracts_src')
-        .insert(contracts_src_insert)
-        .onConflict('src_tx_id')
-        .merge([
-          'src',
-          'src_content_type',
-          'src_binary',
-          'src_wasm_lang',
-          'bundler_src_tx_id',
-          'bundler_src_node',
-          'src_tx',
-        ]);
+      await dbSource.updateContractSrc(contracts_src_insert);
 
       // TODO: add tags to ContractDefinition type in the SDK
       sendNotification(context, definition.txId, { initState: definition.initState, tags: [] });
@@ -251,9 +237,7 @@ async function loadContractsMetadata(context: GatewayContext) {
       logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {
       logger.error(`Error while loading contract ${row.contract} definition`, e);
-      await gatewayDb('contracts').where('contract_id', '=', row.contract.trim()).update({
-        type: 'error',
-      });
+      await dbSource.updateContractError(row);
     }
   }
 }

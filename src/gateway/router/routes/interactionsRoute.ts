@@ -3,7 +3,7 @@ import Router from '@koa/router';
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsRoute(ctx: Router.RouterContext) {
-  const { gatewayDb } = ctx;
+  const { dbSource } = ctx;
 
   const { contractId, confirmationStatus, page, limit, from, to, totalCount, source, upToTransactionId, minimize } =
     ctx.query;
@@ -36,7 +36,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
   parsedPage && bindings.push(offset);
 
   try {
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT interaction, 
                  confirmation_status
@@ -62,7 +62,7 @@ export async function interactionsRoute(ctx: Router.RouterContext) {
 
     const totalInteractions: any =
       totalCount == 'true' &&
-      (await gatewayDb.raw(
+      (await dbSource.raw(
         `
           SELECT count(case when confirmation_status = 'corrupted' then 1 else null end)     AS corrupted,
                  count(case when confirmation_status = 'confirmed' then 1 else null end)     AS confirmed,

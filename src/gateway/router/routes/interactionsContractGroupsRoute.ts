@@ -1,12 +1,18 @@
 import Router from '@koa/router';
-import {Knex} from "knex";
-import {isTxIdValid} from "../../../utils";
-import {Benchmark} from "warp-contracts";
+import { isTxIdValid } from '../../../utils';
+import { Benchmark } from 'warp-contracts';
+import { DatabaseSource } from '../../../db/databaseSource';
 
 const MAX_INTERACTIONS_PER_PAGE = 50000;
 
 function loadInteractionsForSrcTx(
-  gatewayDb: Knex, group: string, fromSortKey: string, fromBlockHeight: number | null, limit: number, offset: number) {
+  dbSource: DatabaseSource,
+  group: string,
+  fromSortKey: string,
+  fromBlockHeight: number | null,
+  limit: number,
+  offset: number
+) {
   const bindings: any[] = [];
 
   const parsedGroup = group.split(',');
@@ -26,7 +32,7 @@ function loadInteractionsForSrcTx(
              i.confirmation_status                                as "confirmationStatus"
       FROM contracts c
                LEFT JOIN interactions i ON c.contract_id = i.contract_id
-      WHERE c.src_tx_id IN (${parsedGroup.map(group => `'${group}'`).join(', ')})
+      WHERE c.src_tx_id IN (${parsedGroup.map((group) => `'${group}'`).join(', ')})
         AND (
               (i.sort_key is not null AND i.confirmation_status IN ('confirmed', 'not_processed')
                   ${fromSortKey ? ' AND i.sort_key > ?' : ''})
@@ -38,11 +44,17 @@ function loadInteractionsForSrcTx(
       LIMIT ? OFFSET ?;
   `;
 
-  return gatewayDb.raw(query, bindings);
+  return dbSource.raw(query, bindings);
 }
 
 function loadInteractionsForGroup(
-  gatewayDb: Knex, group: string, fromSortKey: string, fromBlockHeight: number | null, limit: number, offset: number) {
+  dbSource: DatabaseSource,
+  group: string,
+  fromSortKey: string,
+  fromBlockHeight: number | null,
+  limit: number,
+  offset: number
+) {
   const bindings: any[] = [];
   if (group != 'all_pst') {
     throw new Error(`Unknown group ${group}`);
@@ -93,12 +105,12 @@ function loadInteractionsForGroup(
       LIMIT ? OFFSET ?;
   `;
 
-  return gatewayDb.raw(query, bindings);
+  return dbSource.raw(query, bindings);
 }
 
 export async function interactionsContractGroupsRoute(ctx: Router.RouterContext) {
-  const {gatewayDb, logger} = ctx;
-  const {group, fromSortKey, fromBlockHeight, page, limit} = ctx.query;
+  const { dbSource, logger } = ctx;
+  const { group, fromSortKey, fromBlockHeight, page, limit } = ctx.query;
   const parsedPage = page ? parseInt(page as string) : 1;
   const parsedLimit = limit
     ? Math.min(parseInt(limit as string), MAX_INTERACTIONS_PER_PAGE)
@@ -112,8 +124,22 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
   try {
     const benchmark = Benchmark.measure();
     result = isTxIdValid(parsedGroup)
-      ? await loadInteractionsForSrcTx(gatewayDb, parsedGroup, fromSortKey as string, parsedBlockHeight, parsedLimit, offset)
-      : await loadInteractionsForGroup(gatewayDb, parsedGroup, fromSortKey as string, parsedBlockHeight, parsedLimit, offset);
+      ? await loadInteractionsForSrcTx(
+          dbSource,
+          parsedGroup,
+          fromSortKey as string,
+          parsedBlockHeight,
+          parsedLimit,
+          offset
+        )
+      : await loadInteractionsForGroup(
+          dbSource,
+          parsedGroup,
+          fromSortKey as string,
+          parsedBlockHeight,
+          parsedLimit,
+          offset
+        );
 
     logger.info(`Loading contract groups interactions: ${benchmark.elapsed()}`);
 
@@ -126,7 +152,7 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
         sortKey: row.sortKey,
         contractCreation: row.contractCreation,
         initState: row.initState,
-        contractSourceId: row.contractSourceId
+        contractSourceId: row.contractSourceId,
       });
     }
 
@@ -134,13 +160,13 @@ export async function interactionsContractGroupsRoute(ctx: Router.RouterContext)
       paging: {
         limit: parsedLimit,
         items: result?.rows.length,
-        page: parsedPage
+        page: parsedPage,
       },
       interactions,
     };
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }

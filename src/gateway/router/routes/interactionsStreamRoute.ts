@@ -2,7 +2,7 @@ import Router from '@koa/router';
 import { stringify } from 'JSONStream';
 
 export async function interactionsStreamRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { contractId, confirmationStatus, from, to } = ctx.query;
 
@@ -25,7 +25,7 @@ export async function interactionsStreamRoute(ctx: Router.RouterContext) {
   to && bindings.push(to as string);
 
   try {
-    const result: any = gatewayDb
+    const result: any = dbSource
       .raw(
         `
           SELECT interaction

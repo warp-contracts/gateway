@@ -2,7 +2,7 @@ import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
 
 export async function dashboardRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { contractLimit, interactionLimit, testnet } = ctx.query;
 
@@ -14,7 +14,7 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           with contract as (select 'contract'       AS contract_or_interaction,
                                    contract_id      AS contract_id,

@@ -3,9 +3,10 @@ import { Benchmark } from 'warp-contracts';
 import { isTxIdValid } from '../../../utils';
 import { utils } from 'ethers';
 import { Knex } from 'knex';
+import { DatabaseSource } from '../../../db/databaseSource';
 
 export async function searchRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const phrase = ctx.params.phrase.trim();
   const testnet = ctx.query.testnet as string;
@@ -22,11 +23,11 @@ export async function searchRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     let result: any;
     if (isEthWallet) {
-      result = await fetchCreatorOnly(gatewayDb, phrase);
+      result = await fetchCreatorOnly(dbSource, phrase);
     } else if (validTs) {
-      result = await fetchTransaction(gatewayDb, phrase, testnet);
+      result = await fetchTransaction(dbSource, phrase, testnet);
     } else {
-      result = await fetchPst(gatewayDb, phrase, testnet);
+      result = await fetchPst(dbSource, phrase, testnet);
     }
 
     ctx.body = result?.rows;
@@ -34,12 +35,12 @@ export async function searchRoute(ctx: Router.RouterContext) {
   } catch (e: any) {
     ctx.logger.error(e);
     ctx.status = 500;
-    ctx.body = {message: e};
+    ctx.body = { message: e };
   }
 }
 
-async function fetchCreatorOnly(gatewayDb: Knex, wallet: string) {
-  return gatewayDb.raw(
+async function fetchCreatorOnly(dbSource: DatabaseSource, wallet: string) {
+  return dbSource.raw(
     `
         SELECT 5          as sort_order,
                creator_id as id,
@@ -61,8 +62,8 @@ async function fetchCreatorOnly(gatewayDb: Knex, wallet: string) {
   );
 }
 
-async function fetchTransaction(gatewayDb: Knex, phrase: string, testnet: string) {
-  return gatewayDb.raw(
+async function fetchTransaction(dbSource: DatabaseSource, phrase: string, testnet: string) {
+  return dbSource.raw(
     `
         SELECT 2           as sort_order,
                contract_id as id,
@@ -119,8 +120,8 @@ async function fetchTransaction(gatewayDb: Knex, phrase: string, testnet: string
   );
 }
 
-async function fetchPst(gatewayDb: Knex, phrase: string, testnet: string) {
-  return gatewayDb.raw(
+async function fetchPst(dbSource: DatabaseSource, phrase: string, testnet: string) {
+  return dbSource.raw(
     `
         SELECT 1           as sort_order,
                contract_id as id,

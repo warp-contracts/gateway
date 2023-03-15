@@ -2,11 +2,11 @@ import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
 
 export async function safeContractsRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT i.contract_id, count(i) AS interactions
           FROM contracts c

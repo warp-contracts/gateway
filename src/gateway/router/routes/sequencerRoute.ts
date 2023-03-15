@@ -23,8 +23,8 @@ export type VrfData = {
 };
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
-  const { sLogger, arweave, bundlr, jwk, vrf, lastTxSync, gatewayDb, signatureVerification } = ctx;
-  const trx: Knex.Transaction = await gatewayDb.transaction();
+  const { sLogger, arweave, bundlr, jwk, vrf, lastTxSync, dbSource, signatureVerification } = ctx;
+  const trx: Knex.Transaction = await dbSource.primaryDb.transaction();
 
   try {
     const cachedNetworkData = getCachedNetworkData();
@@ -129,61 +129,62 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     let evolve: string | null;
     evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
-    const insertBench = Benchmark.measure();
     if (isEvmSigner) {
       sLogger.info(`Interaction for ${transaction.id}`, JSON.stringify(interaction));
     }
 
-    await Promise.all([
-      trx('sequencer').insert({
-        original_sig: originalSignature,
-        original_owner: originalOwner,
-        original_address: originalAddress,
-        sequence_block_id: currentBlockId,
-        sequence_block_height: currentHeight,
-        sequence_transaction_id: transaction.id,
-        sequence_millis: '' + millis,
-        sequence_sort_key: sortKey,
-        bundler_tx_id: bTx.id,
-        bundler_response: JSON.stringify(bundlrResponse.data),
-        last_sort_key: contractLastSortKey,
-      }),
-      trx('interactions').insert({
-        interaction_id: transaction.id,
-        interaction: JSON.stringify(interaction),
-        block_height: currentHeight,
-        block_timestamp: currentBlockTimestamp,
-        block_id: currentBlockId,
-        contract_id: contractTag,
-        function: functionName,
-        input: inputTag,
-        confirmation_status: 'confirmed',
-        confirming_peer: BUNDLR_NODE2_URL,
-        source: 'redstone-sequencer',
-        bundler_tx_id: bTx.id,
-        interact_write: internalWrites,
-        sort_key: sortKey,
-        evolve: evolve,
-        testnet: testnetVersion,
-        last_sort_key: contractLastSortKey,
-        owner: originalOwner,
-      }),
-    ]);
+    const sequencerInsert = {
+      original_sig: originalSignature,
+      original_owner: originalOwner,
+      original_address: originalAddress,
+      sequence_block_id: currentBlockId,
+      sequence_block_height: currentHeight,
+      sequence_transaction_id: transaction.id,
+      sequence_millis: '' + millis,
+      sequence_sort_key: sortKey,
+      bundler_tx_id: bTx.id,
+      bundler_response: JSON.stringify(bundlrResponse.data),
+      last_sort_key: contractLastSortKey,
+    };
 
-    sLogger.debug('Inserting into tables', insertBench.elapsed());
+    const interactionsInsert = {
+      interaction_id: transaction.id,
+      interaction: JSON.stringify(interaction),
+      block_height: currentHeight,
+      block_timestamp: currentBlockTimestamp,
+      block_id: currentBlockId,
+      contract_id: contractTag,
+      function: functionName,
+      input: inputTag,
+      confirmation_status: 'confirmed',
+      confirming_peer: BUNDLR_NODE2_URL,
+      source: 'redstone-sequencer',
+      bundler_tx_id: bTx.id,
+      interact_write: internalWrites,
+      sort_key: sortKey,
+      evolve: evolve,
+      testnet: testnetVersion,
+      last_sort_key: contractLastSortKey,
+      owner: originalOwner,
+    };
+
+    await dbSource.insertSequencerAndInteraction(sequencerInsert, interactionsInsert, trx, sLogger);
+
     sLogger.debug('Transaction successfully bundled', {
       id: transaction.id,
       bundled_tx_id: bTx.id,
     });
 
     ctx.body = bundlrResponse.data;
-    await trx.commit();
+
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
     sendNotification(ctx, contractTag, undefined, interaction);
     publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey, functionName, 'redstone-sequencer');
   } catch (e) {
-    await trx.rollback();
+    if (!trx.isCompleted()) {
+      await trx.rollback();
+    }
     sLogger.error('Error while inserting bundled transaction');
     sLogger.error(e);
     ctx.status = 500;

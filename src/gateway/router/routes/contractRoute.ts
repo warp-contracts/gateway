@@ -8,7 +8,7 @@ import { Benchmark } from 'warp-contracts';
  */
 
 export async function contractRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { id } = ctx.params;
 
@@ -19,7 +19,7 @@ export async function contractRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT c.contract_id                                                                     as "txId",
                  c.src_tx_id                                                                       as "srcTxId",

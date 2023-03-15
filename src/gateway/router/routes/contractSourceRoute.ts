@@ -3,7 +3,7 @@ import { Benchmark } from 'warp-contracts';
 import { isTxIdValid } from '../../../utils';
 
 export async function contractSourceRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { id } = ctx.query;
 
@@ -16,7 +16,7 @@ export async function contractSourceRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT s.src_tx_id                                                                            as "srcTxId",
                  (case when not s.owner = 'error' then s.owner else null end)                           as "owner",
@@ -35,7 +35,7 @@ export async function contractSourceRoute(ctx: Router.RouterContext) {
     if (!result?.rows[0]) {
       ctx.status = 500;
       ctx.body = { message: 'Could not load contract source.' };
-      logger.error('Could not load contract source.')
+      logger.error('Could not load contract source.');
     } else {
       ctx.body = result?.rows[0];
     }

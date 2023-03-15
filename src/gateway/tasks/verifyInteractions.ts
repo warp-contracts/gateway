@@ -23,7 +23,7 @@ export async function runVerifyInteractionsTask(context: GatewayContext) {
 }
 
 async function verifyInteractions(context: GatewayContext) {
-  const { logger, gatewayDb, arweaveWrapper } = context;
+  const { logger, dbSource, arweaveWrapper } = context;
 
   let currentNetworkHeight;
   try {
@@ -47,7 +47,7 @@ async function verifyInteractions(context: GatewayContext) {
   let peers: { peer: string }[];
   try {
     peers = (
-      await gatewayDb.raw(`
+      await dbSource.raw(`
         SELECT peer
         FROM peers
         WHERE height > 0
@@ -74,7 +74,7 @@ async function verifyInteractions(context: GatewayContext) {
   let interactionsToCheck: { block_height: number; interaction_id: string }[];
   try {
     interactionsToCheck = (
-      await gatewayDb.raw(
+      await dbSource.raw(
         `
             SELECT block_height, interaction_id
             FROM interactions
@@ -272,13 +272,12 @@ async function verifyInteractions(context: GatewayContext) {
         }
         try {
           logger.trace('Updating confirmation status in db');
-          await gatewayDb('interactions')
-            .where('interaction_id', interactionsToCheck[i].interaction_id)
-            .update({
-              confirmation_status: status,
-              confirming_peer: confirmingPeers.join(','),
-              confirmations: confirmations.join(','),
-            });
+          await dbSource.updateInteractionConfirmationStatus(
+            interactionsToCheck[i].interaction_id,
+            status,
+            confirmingPeers,
+            confirmations
+          );
         } catch (e) {
           logger.error(e);
           lastVerificationHeight = prevVerificationHeight;
