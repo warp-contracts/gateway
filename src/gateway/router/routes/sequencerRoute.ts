@@ -68,7 +68,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       originalAddress,
       isEvmSigner,
       testnetVersion,
-    } = await prepareTags(sLogger, transaction, originalOwner, currentHeight, currentBlockId, arweave);
+    } = await prepareTags(sLogger, transaction, originalOwner, currentHeight, currentBlockId, currentBlockTimestamp, arweave);
 
     const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
 
@@ -270,6 +270,7 @@ async function prepareTags(
   originalOwner: string,
   currentHeight: number,
   currentBlockId: string,
+  currentBlockTimestamp: number,
   arweave: Arweave
 ) {
   let contractTag: string = '',
@@ -323,6 +324,7 @@ async function prepareTags(
     { name: 'Sequencer-Tx-Id', value: transaction.id },
     { name: 'Sequencer-Block-Height', value: '' + currentHeight },
     { name: 'Sequencer-Block-Id', value: currentBlockId },
+    { name: 'Sequencer-Block-Timestamp', value: '' + currentBlockTimestamp },
     ...decodedTags,
   ];
 
