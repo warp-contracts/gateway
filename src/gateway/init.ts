@@ -87,17 +87,18 @@ export interface GatewayContext {
   const { bundlr, jwk } = initBundlr(logger);
 
   const dbSource = new DatabaseSource([
-    { client: 'pg', url: process.env.DB_URL as string },
-    {
-      client: 'pg',
-      url: process.env.DB_URL_MIGRATED as string,
-      ssl: {
-        rejectUnauthorized: false,
-        ca: fs.readFileSync('.secrets/ca.pem'),
-        cert: fs.readFileSync('.secrets/cert_user.pem'),
-        key: fs.readFileSync('.secrets/key_user.pem'),
-      },
-    },
+    { client: 'pg', url: process.env.DB_URL as string, primaryDb: true },
+    // {
+    //   client: 'pg',
+    //   url: process.env.DB_URL_MIGRATED as string,
+    //   ssl: {
+    //     rejectUnauthorized: false,
+    //     ca: fs.readFileSync('.secrets/ca.pem'),
+    //     cert: fs.readFileSync('.secrets/cert_user.pem'),
+    //     key: fs.readFileSync('.secrets/key_user.pem'),
+    //   },
+    //   primaryDb: true,
+    // },
   ]);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();

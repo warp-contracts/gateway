@@ -11,18 +11,27 @@ interface DbData {
   url: string;
   ssl?: { ca: string | Buffer; cert: string | Buffer; key: string | Buffer; rejectUnauthorized: boolean };
   options?: Partial<Knex.Config>;
+  primaryDb?: boolean;
 }
 
 export class DatabaseSource {
   public db: Knex[] = [];
-  private primaryDb: Knex;
+  private primaryDb: Knex | null = null;
   private mailClient: Transporter<SMTPTransport.SentMessageInfo>;
 
-  constructor(dbData: DbData[], primaryDb?: number) {
+  constructor(dbData: DbData[]) {
     for (let i = 0; i < dbData.length; i++) {
       this.db[i] = this.connectDb(dbData[i]);
+      if (dbData[i].primaryDb) {
+        if (this.primaryDb != null) {
+          throw new Error('Only one db can be set primary!');
+        }
+        this.primaryDb = this.db[i];
+      }
     }
-    this.primaryDb = primaryDb ? this.db[primaryDb] : this.db[0];
+    if (this.primaryDb == null) {
+      throw new Error('Exactly one db must be set as primary');
+    }
     this.mailClient = client();
   }
 
@@ -46,22 +55,22 @@ export class DatabaseSource {
   }
 
   public async insertInteraction(interactionInsert: InteractionInsert, trx: Knex.Transaction, loop?: number) {
-    // await trx('interactions').insert(interactionInsert);
-    if (loop == 0) {
-      console.log(loop);
-      // throw new Error('0');
-      await trx('interactions').insert(interactionInsert);
-    } else if (loop == 1) {
-      console.log(loop);
-      throw new Error('1');
-    } else if (loop == 2) {
-      console.log(loop);
-      throw new Error('2');
-    } else if (loop == 3) {
-      console.log(loop);
-      throw new Error('3');
-      // await trx('interactions').insert(interactionInsert);
-    }
+    await trx('interactions').insert(interactionInsert);
+    // if (loop == 0) {
+    //   console.log(loop);
+    //   // throw new Error('0');
+    //   await trx('interactions').insert(interactionInsert);
+    // } else if (loop == 1) {
+    //   console.log(loop);
+    //   throw new Error('1');
+    // } else if (loop == 2) {
+    //   console.log(loop);
+    //   throw new Error('2');
+    // } else if (loop == 3) {
+    //   console.log(loop);
+    //   throw new Error('3');
+    //   // await trx('interactions').insert(interactionInsert);
+    // }
   }
 
   public async insertSequencerAndInteraction(
@@ -115,7 +124,7 @@ export class DatabaseSource {
   }
 
   public raw(query: string, bindings: any, dbIndex?: number) {
-    const db = dbIndex ? this.db[dbIndex] : this.primaryDb;
+    const db = dbIndex ? this.db[dbIndex] : this.primaryDb!!;
     return db.raw(query, bindings);
   }
 
