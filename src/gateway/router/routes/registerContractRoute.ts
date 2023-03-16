@@ -104,7 +104,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
     await gatewayDb('contracts').insert(insert);
 
     sendNotification(ctx, txId, { initState, tags });
-    publishContract(ctx, txId, ownerAddress, type, blockHeight, WarpDeployment.External);
+    publishContract(ctx, txId, ownerAddress, type, blockHeight, blockTimestamp, WarpDeployment.External);
 
     logger.info('Contract successfully registered.', {
       contractTxId: txId,

@@ -251,7 +251,15 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
   if (publish) {
     for (let [key, value] of contracts) {
       sendNotification(context, value.contractId, undefined, value.interaction);
-      publishInteraction(context, value.contractId, value.interaction, value.sortKey, null, value.source);
+      publishInteraction(
+        context,
+        value.contractId,
+        value.interaction,
+        value.sortKey,
+        null,
+        value.functionName,
+        value.source
+      );
     }
   }
 }

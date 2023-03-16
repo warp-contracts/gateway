@@ -139,7 +139,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     }
 
     sendNotification(ctx, contractTx.id, { initState, tags: contractTags });
-    publishContract(ctx, contractTx.id, originalAddress, type, blockHeight, WarpDeployment.Wrapped);
+    publishContract(ctx, contractTx.id, originalAddress, type, blockHeight, blockTimestamp, WarpDeployment.Wrapped);
 
     logger.info('Contract successfully bundled.');
 

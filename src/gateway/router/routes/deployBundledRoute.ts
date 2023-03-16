@@ -71,7 +71,15 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
 
     await gatewayDb('contracts').insert(insert);
     sendNotification(ctx, bundlrResponse.data.id, { initState, tags: dataItem.tags });
-    publishContract(ctx, bundlrResponse.data.id, ownerAddress, type, blockHeight, WarpDeployment.Direct);
+    publishContract(
+      ctx,
+      bundlrResponse.data.id,
+      ownerAddress,
+      type,
+      blockHeight,
+      blockTimestamp,
+      WarpDeployment.Direct
+    );
 
     logger.info('Contract successfully deployed.', {
       contractTxId: bundlrResponse.data.id,
