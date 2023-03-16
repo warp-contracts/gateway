@@ -91,12 +91,12 @@ export interface GatewayContext {
     {
       client: 'pg',
       url: process.env.DB_URL_MIGRATED as string,
-       ssl: {
+       /*ssl: {
          rejectUnauthorized: false,
          ca: fs.readFileSync('.secrets/ca.pem'),
          cert: fs.readFileSync('.secrets/cert_user.pem'),
          key: fs.readFileSync('.secrets/key_user.pem'),
-       },
+       },*/
        primaryDb: true,
      },
   ]);
