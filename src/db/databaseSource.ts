@@ -147,8 +147,7 @@ export class DatabaseSource {
     const options = {
       client: dbData.client,
       connection: {
-        connectionString: dbData.url,
-        ...(dbData.ssl ? { ssl: dbData.ssl } : ''),
+        connectionString: dbData.url
       },
       useNullAsDefault: true,
       pool: {
