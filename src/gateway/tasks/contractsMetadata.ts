@@ -166,11 +166,12 @@ async function loadContractsMetadata(context: GatewayContext) {
   const { arweave, logger, gatewayDb, arweaveWrapper } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave, 'mainnet');
 
-  const result: { contract: string, blockHeight: number }[] = (
+  const result: { contract: string; blockHeight: number; blockTimestamp: number }[] = (
     await gatewayDb.raw(
       `
         SELECT  contract_id AS contract,
-                block_height AS blockHeight
+                block_height AS blockHeight,
+                block_timestamp AS blockTimestamp
         FROM contracts
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
@@ -245,7 +246,7 @@ async function loadContractsMetadata(context: GatewayContext) {
 
       // TODO: add tags to ContractDefinition type in the SDK
       sendNotification(context, definition.txId, { initState: definition.initState, tags: [] });
-      publishContract(context, contractId, definition.owner, type, row.blockHeight, 'arweave');
+      publishContract(context, contractId, definition.owner, type, row.blockHeight, row.blockTimestamp, 'arweave');
 
       logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {

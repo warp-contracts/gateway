@@ -1,7 +1,6 @@
 import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
 
-
 export async function dashboardRoute(ctx: Router.RouterContext) {
   const { logger, gatewayDb } = ctx;
 
@@ -17,13 +16,15 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
     const benchmark = Benchmark.measure();
     const result: any = await gatewayDb.raw(
       `
-          with contract as (select 'contract'   AS contract_or_interaction,
-                                   contract_id  AS contract_id,
-                                   ''           AS interaction_id,
-                                   owner        AS owner,
-                                   type         AS contract_type,
-                                   ''           AS function,
-                                   block_height AS block_height,
+          with contract as (select 'contract'       AS contract_or_interaction,
+                                   contract_id      AS contract_id,
+                                   ''               AS interaction_id,
+                                   owner            AS owner,
+                                   type             AS contract_type,
+                                   ''               AS function,
+                                   block_height     AS block_height,
+                                   block_timestamp  AS block_timestamp,
+                                   ''               AS sort_key,
                                    CASE contracts.deployment_type
                                        WHEN 'warp-external' THEN 'warp'
                                        WHEN 'warp-direct' THEN 'warp'
@@ -35,15 +36,17 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
                             AND type != 'error'
                             AND testnet IS ${testnet ? ' NOT NULL ' : ' NULL '}
                           order by block_height desc 
-                              LIMIT ${ contractLimit ? ' ? ' : ' 100' }
+                              LIMIT ${contractLimit ? ' ? ' : ' 100'}
             ),
               interaction as (select 'interaction'  AS contract_or_interaction,
-                                  contract_id    AS contract_id,
-                                  interaction_id AS interaction_id,
-                                  owner          AS owner,
-                                  ''             AS contract_type,
-                                  function       AS function,
-                                  block_height   AS block_height,
+                                  contract_id       AS contract_id,
+                                  interaction_id    AS interaction_id,
+                                  owner             AS owner,
+                                  ''                AS contract_type,
+                                  function          AS function,
+                                  block_height      AS block_height,
+                                  block_timestamp   AS block_timestamp,
+                                  sort_key          AS sort_key,
                                   CASE source
                                   WHEN 'redstone-sequencer' THEN 'sequencer'
                                   ELSE source
@@ -52,7 +55,7 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
                             where contract_id != ''
                                 AND testnet IS ${testnet ? ' NOT NULL ' : ' NULL '}
                                 order by sort_key desc 
-                                LIMIT ${ interactionLimit ? ' ? ' : ' 100' }
+                                LIMIT ${interactionLimit ? ' ? ' : ' 100'}
                                 )
                                 select * from contract
                                 union all
@@ -65,7 +68,7 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
       summary: {
         contractLimit: contractLimit,
         interactionLimit: interactionLimit,
-        itemsCount: result?.rows.length
+        itemsCount: result?.rows.length,
       },
       contracts: result?.rows,
     };
