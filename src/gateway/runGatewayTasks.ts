@@ -39,7 +39,7 @@ import { runEvolvedContractSourcesTask } from './tasks/evolvedContractSources';
 export async function runGatewayTasks(context: GatewayContext) {
   //await runBundlrCheck(context);
 
-  await runLoadPeersTask(context);
+  /*await runLoadPeersTask(context);
 
   await runContractsMetadataTask(context);
 
@@ -55,5 +55,5 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   await runEvolvedContractSourcesTask(context);
 
-  await runSyncLastSixHoursTransactionsTask(context);
+  await runSyncLastSixHoursTransactionsTask(context);*/
 }

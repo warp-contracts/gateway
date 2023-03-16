@@ -94,8 +94,8 @@ export interface GatewayContext {
        ssl: {
          rejectUnauthorized: false,
          ca: fs.readFileSync('.secrets/ca.pem'),
-         cert: fs.readFileSync('.secrets/cert.pem'),
-         key: fs.readFileSync('.secrets/key.pem'),
+         cert: fs.readFileSync('.secrets/cert_user.pem'),
+         key: fs.readFileSync('.secrets/key_user.pem'),
        },
        primaryDb: true,
      },
