@@ -148,7 +148,7 @@ export async function verifyContractTags(id: string, bundlrNode: string) {
     { name: 'App-Version', value: '0.3.0' },
   ];
 
-  const nameTagsIncluded = ['Contract-Src', 'Init-State', 'Title', 'Description', 'Type', 'Content-Type'];
+  const nameTagsIncluded = ['Contract-Src', 'Init-State', 'Content-Type'];
 
   const contractTagsIncluded =
     tagsIncluded.every((ti) => tags.some((t: Tag) => t.name == ti.name && t.value == ti.value)) &&
