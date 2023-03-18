@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node
+  labels:
+    name: node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node
+  template:
+    metadata:
+      labels:
+        app: node
+    spec:
+      containers:
+        - name: node
+          image: gcr.io/warp-372209/docker-image:2
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5666
+              protocol: TCP
+      restartPolicy: Always

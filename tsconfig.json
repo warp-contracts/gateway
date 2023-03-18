@@ -5,10 +5,11 @@
     "esModuleInterop": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
-    "allowJs": true
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "ts-node": {
     "files": true
   },
-  "files": ["src/TsLogFactory.d.ts", "src/JSONStream.d.ts", "src/gateway/init.ts"]
+  "files": ["src/TsLogFactory.d.ts", "src/JSONStream.d.ts", "src/gateway/init.ts"],
 }

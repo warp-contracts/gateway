@@ -28,6 +28,7 @@ import { deploySourceRoute_v2 } from './routes/deploySourceRoute_v2';
 import { deployContractRoute_v2 } from './routes/deployContractRoute_v2';
 import { registerContractRoute } from './routes/registerContractRoute';
 import { dashboardRoute } from './routes/dashboardRoute';
+import {gcpRoute} from "./routes/gcpRoute";
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
@@ -58,6 +59,7 @@ const gatewayRouter = (replica: boolean): Router => {
   router.get('/contract-source', contractSourceRoute);
   router.get('/contracts-by-source', contractsBySourceRoute);
   router.get('/creator', creatorRoute);
+  router.get('/gcp/test', gcpRoute);
 
   // post
   if (!replica) {

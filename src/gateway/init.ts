@@ -26,6 +26,7 @@ import { DatabaseSource } from '../db/databaseSource';
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
 const replica = (argv.replica as boolean) || false;
+const noSync = (argv.noSync as boolean) || false;
 const localEnv = (argv.local as boolean) || false;
 const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
@@ -81,7 +82,7 @@ export interface GatewayContext {
   const logger = LoggerFactory.INST.create('gateway');
   const sLogger = LoggerFactory.INST.create('sequencer');
 
-  logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode.`);
+  logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode. noSync = ${noSync}`);
 
   const arweave = initArweave();
   const { bundlr, jwk } = initBundlr(logger);
@@ -101,7 +102,6 @@ export interface GatewayContext {
   ]);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
-  const signatureVerification = new EvmSignatureVerificationServerPlugin();
 
   app.context.dbSource = dbSource;
   app.context.logger = logger;
@@ -121,7 +121,7 @@ export interface GatewayContext {
   app.context.lastTxSync = new LastTxSync();
   app.context.localEnv = localEnv;
   app.context.appSync = appSync;
-  app.context.signatureVerification = signatureVerification;
+  app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
 
   app.use(
     cors({
@@ -201,24 +201,25 @@ export interface GatewayContext {
     }
 
     if (!fs.existsSync('gateway.lock')) {
-      try {
-        logger.info(`Creating lock file for ${cluster.worker?.id}`);
-        // note: if another process in cluster have already created the file - writing here
-        // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
-        fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, {
-          flag: 'wx',
-        });
-        removeLock = true;
+      await runNetworkInfoCacheTask(app.context);
 
-        await runNetworkInfoCacheTask(app.context);
-        // note: only one worker in cluster runs the gateway tasks
-        // all workers in cluster run the http server
-        if (!localEnv) {
-          logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
-          await runGatewayTasks(app.context);
+      if (!noSync) {
+        try {
+          logger.info(`Creating lock file for ${cluster.worker?.id}`);
+          // note: if another process in cluster have already created the file - writing here
+          // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
+          fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, {flag: 'wx'});
+          removeLock = true;
+
+          // note: only one worker in cluster runs the gateway tasks
+          // all workers in cluster run the http server
+          if (!localEnv) {
+            logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
+            await runGatewayTasks(app.context);
+          }
+        } catch (e: any) {
+          logger.error('Error from gateway', e);
         }
-      } catch (e: any) {
-        logger.error('Error from gateway', e);
       }
     }
   }

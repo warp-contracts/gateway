@@ -37,7 +37,6 @@ export class TaskRunner {
       // https://developer.mozilla.org/en-US/docs/Web/API/setInterval#ensure_that_execution_duration_is_shorter_than_interval_frequency
       setTimeout(async function () {
         if (initialRunDone) {
-          context.logger.info(`Starting ${name} task.`);
           await worker(context);
           context.logger.info(`Task ${name} completed.`);
         }
