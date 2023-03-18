@@ -1,4 +1,4 @@
-FROM node:14.18.2-alpine
+FROM node:18
 
 RUN mkdir /app
 WORKDIR /app
@@ -17,4 +17,4 @@ RUN yarn build
 EXPOSE 5666
 
 # Running the gateway
-CMD yarn start:prod --env_path .secrets/.env
+CMD [ "node", "dist/gateway/init.js", "--noSync" ]

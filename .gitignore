@@ -3,8 +3,6 @@ node_modules
 .idea
 db*.sqlite
 .secrets
-.secrets/.env
-.secrets/local.env
 gateway.lock
 network-cache.json
 .DS_Store
