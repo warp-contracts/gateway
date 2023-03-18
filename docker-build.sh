@@ -1,1 +1,1 @@
-docker build -t redstone-sw-gateway .
+docker build -t warp-gateway .

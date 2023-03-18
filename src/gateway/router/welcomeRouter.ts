@@ -1,12 +1,12 @@
 import Router from '@koa/router';
-import { createReadStream } from 'fs';
-import * as path from 'path';
 
 const welcomeRouter = new Router();
 
 welcomeRouter.get('/', (ctx: Router.RouterContext) => {
-  ctx.type = 'text/html';
-  ctx.body = createReadStream('welcome.html');
+  ctx.body = {
+    name: 'Warp Gateway',
+    id: process.env.pm_id,
+  };
 });
 
 export default welcomeRouter;
