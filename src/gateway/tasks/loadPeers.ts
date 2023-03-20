@@ -3,13 +3,14 @@ import { Benchmark } from 'warp-contracts';
 import axios from 'axios';
 import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
+import { PeerInsert } from '../../db/insertInterfaces';
 
 const MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS = 3000;
 const PEERS_CHECK_INTERVAL_MS = 1000 * 60 * 60;
 
 export async function runLoadPeersTask(context: GatewayContext) {
-  const { logger } = context;
-  const currentPeers: { peer: string }[] = await context.gatewayDb('peers').select('peer');
+  const { logger, dbSource } = context;
+  const currentPeers: { peer: string }[] = await dbSource.raw(`SELECT peer from peers;`);
   if (currentPeers.length < 200) {
     logger.info('Pre-loading peers...');
     await loadPeers(context);
@@ -19,12 +20,12 @@ export async function runLoadPeersTask(context: GatewayContext) {
 }
 
 async function loadPeers(context: GatewayContext) {
-  const { logger, arweave, gatewayDb } = context;
+  const { logger, arweave, dbSource } = context;
 
   logger.info('Updating peers...');
 
   const newPeers: PeerList = await arweave.network.getPeers();
-  const currentPeers: { peer: string }[] = await gatewayDb('peers').select('peer');
+  const currentPeers: { peer: string }[] = await dbSource.raw(`SELECT peer FROM peers;`);
 
   const peersToRemove: string[] = [];
   currentPeers.forEach((currentPeer) => {
@@ -35,7 +36,7 @@ async function loadPeers(context: GatewayContext) {
 
   logger.debug('Removing no longer available peers', peersToRemove);
 
-  const removedCount = await gatewayDb('peers').whereIn('peer', peersToRemove).delete();
+  const removedCount = await dbSource.deletePeers(peersToRemove);
 
   logger.debug(`Removed ${removedCount} elements.`);
 
@@ -47,28 +48,19 @@ async function loadPeers(context: GatewayContext) {
         timeout: MAX_ARWEAVE_PEER_INFO_TIMEOUT_MS,
       });
       const elapsed = benchmark.elapsed(true);
-      await gatewayDb('peers')
-        .insert({
-          peer: peer,
-          blocks: result.data.blocks,
-          height: result.data.height,
-          response_time: elapsed,
-          blacklisted: false,
-        })
-        .onConflict(['peer'])
-        .merge();
+
+      const peerInsert: PeerInsert = {
+        peer: peer,
+        blocks: result.data.blocks,
+        height: result.data.height,
+        response_time: elapsed,
+        blacklisted: false,
+      };
+
+      await dbSource.insertPeer(peerInsert);
     } catch (e: any) {
       logger.error(`Error from ${peer}`, e.message);
-      await gatewayDb('peers')
-        .insert({
-          peer: peer,
-          blocks: 0,
-          height: 0,
-          response_time: 0,
-          blacklisted: true,
-        })
-        .onConflict(['peer'])
-        .merge();
+      await dbSource.insertPeerEror(peer);
     }
   }
 }

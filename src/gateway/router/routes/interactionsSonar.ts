@@ -4,7 +4,7 @@ import { Benchmark } from 'warp-contracts';
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSonar(ctx: Router.RouterContext) {
-  const { gatewayDb, logger } = ctx;
+  const { dbSource, logger } = ctx;
 
   const { contractId, confirmationStatus, page, limit, from, to, source } = ctx.query;
 
@@ -51,11 +51,10 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
           ORDER BY sort_key DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
       `;
 
-    const result: any = await gatewayDb.raw(query, bindings);
+    const result: any = await dbSource.raw(query, bindings);
 
-    const totalInteractions: any =
-      (await gatewayDb.raw(
-        `
+    const totalInteractions: any = await dbSource.raw(
+      `
           SELECT count(case when confirmation_status = 'corrupted' then 1 else null end)     AS corrupted,
                  count(case when confirmation_status = 'confirmed' then 1 else null end)     AS confirmed,
                  count(case when confirmation_status = 'not_processed' then 1 else null end) AS not_processed,
@@ -63,13 +62,14 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
           FROM interactions
           WHERE (contract_id = ? OR interact_write @> ARRAY[?]);
       `,
-        [contractId, contractId]
-      ));
+      [contractId, contractId]
+    );
 
-    const total = parseInt(totalInteractions.rows[0].confirmed)
-     + parseInt(totalInteractions.rows[0].corrupted)
-    + parseInt(totalInteractions.rows[0].not_processed)
-    + parseInt(totalInteractions.rows[0].forked)
+    const total =
+      parseInt(totalInteractions.rows[0].confirmed) +
+      parseInt(totalInteractions.rows[0].corrupted) +
+      parseInt(totalInteractions.rows[0].not_processed) +
+      parseInt(totalInteractions.rows[0].forked);
 
     const benchmark = Benchmark.measure();
     ctx.body = {

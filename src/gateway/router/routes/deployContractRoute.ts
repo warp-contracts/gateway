@@ -7,6 +7,7 @@ import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
 import { publishContract, sendNotification } from '../../publisher';
+import { ContractInsert, ContractSourceInsert } from '../../../db/insertInterfaces';
 
 /*
 - warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
@@ -22,7 +23,7 @@ export enum WarpDeployment {
 }
 
 export async function deployContractRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb, arweave, bundlr } = ctx;
+  const { logger, arweave, bundlr, dbSource } = ctx;
 
   const contractTx: Transaction = new Transaction({ ...ctx.request.body.contractTx });
   let srcTx: Transaction | null = null;
@@ -43,7 +44,15 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
   await verifyEvmSignature(isEvmSigner, ctx, contractTx);
 
   try {
-    let srcTxId, srcContentType, src, srcBinary, srcWasmLang, bundlerSrcTxId, srcTxOwner, srcTestnet, srcBundlrResponse;
+    let srcTxId,
+      srcContentType,
+      src,
+      srcBinary,
+      srcWasmLang,
+      bundlerSrcTxId,
+      srcTxOwner,
+      srcTestnet = null,
+      srcBundlrResponse;
 
     if (srcTx) {
       srcTxId = srcTx.id;
@@ -96,7 +105,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
     const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
 
-    const insert = {
+    const insert: ContractInsert = {
       contract_id: contractTx.id,
       src_tx_id: srcTxId,
       init_state: initState,
@@ -117,17 +126,17 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       manifest,
     };
 
-    await gatewayDb('contracts').insert(insert);
+    await dbSource.insertContract(insert);
 
     if (srcTx) {
-      let contracts_src_insert: any = {
+      let contracts_src_insert: ContractSourceInsert = {
         src_tx_id: srcTxId,
         owner: srcTxOwner,
         src: src || null,
         src_content_type: srcContentType,
         src_binary: srcBinary || null,
         src_wasm_lang: srcWasmLang || null,
-        bundler_src_tx_id: bundlerSrcTxId,
+        bundler_src_tx_id: bundlerSrcTxId as string,
         bundler_src_node: BUNDLR_NODE2_URL,
         bundler_response: JSON.stringify(srcBundlrResponse?.data),
         src_tx: { ...srcTx.toJSON(), data: null },
@@ -135,7 +144,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         deployment_type: WarpDeployment.Wrapped,
       };
 
-      await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
+      await dbSource.insertContractSource(contracts_src_insert);
     }
 
     sendNotification(ctx, contractTx.id, { initState, tags: contractTags });

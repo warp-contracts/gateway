@@ -5,9 +5,10 @@ import { SmartWeaveTags } from 'warp-contracts';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
 import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
+import { ContractSourceInsert } from '../../../db/insertInterfaces';
 
 export async function deploySourceRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb, arweave, bundlr } = ctx;
+  const { logger, arweave, bundlr, dbSource } = ctx;
 
   const srcTx: Transaction = new Transaction({ ...ctx.request.body.srcTx });
 
@@ -38,7 +39,7 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
       bundled_tx_id: bundlrSrcTxId,
     });
 
-    let contracts_src_insert: any = {
+    let contracts_src_insert: ContractSourceInsert = {
       src_tx_id: srcTxId,
       owner: srcTxOwner,
       src: src || null,
@@ -53,7 +54,7 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
       deployment_type: WarpDeployment.Wrapped,
     };
 
-    await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
+    await dbSource.insertContractSource(contracts_src_insert);
 
     logger.info('Contract source successfully bundled and inserted.', {
       srcTxId,

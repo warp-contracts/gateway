@@ -12,13 +12,13 @@ export async function runVerifyCorruptedTransactionsTask(context: GatewayContext
 }
 
 async function verifyCorruptedTransactions(context: GatewayContext) {
-  const { arweave, logger, gatewayDb } = context;
+  const { arweave, logger, dbSource } = context;
 
   let corruptedTransactions: { id: string }[];
 
   try {
     corruptedTransactions = (
-      await gatewayDb.raw(`
+      await dbSource.raw(`
         SELECT interaction_id as id
         FROM interactions
         WHERE confirmation_status = 'corrupted';
@@ -45,11 +45,7 @@ async function verifyCorruptedTransactions(context: GatewayContext) {
         );
 
         // returning transaction to "not_processed" pool.
-        await gatewayDb('interactions').where('interaction_id', corrupted.id).update({
-          confirmation_status: 'not_processed',
-          confirming_peer: null,
-          confirmations: null,
-        });
+        await dbSource.updateNotProcessedInteraction(corrupted.id);
       } else {
         logger.info(`Transaction ${corrupted.id} confirmed as corrupted`);
       }

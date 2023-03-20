@@ -1,9 +1,9 @@
 import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
-import {isTxIdValid} from "../../../utils";
+import { isTxIdValid } from '../../../utils';
 
 export async function nftsOwnedByAddressRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { address } = ctx.params;
 
@@ -22,7 +22,7 @@ export async function nftsOwnedByAddressRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           WITH wallet_balances AS (
               SELECT contract_id as contract,

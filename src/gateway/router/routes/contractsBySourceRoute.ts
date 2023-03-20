@@ -5,7 +5,7 @@ import { isTxIdValid } from '../../../utils';
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function contractsBySourceRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { id, page, limit, sort } = ctx.query;
 
@@ -31,7 +31,7 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
   try {
     const benchmark = Benchmark.measure();
 
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
             SELECT  c.contract_id                                                                       as "contractId",
                     c.owner                                                                             as "owner",

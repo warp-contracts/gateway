@@ -1,6 +1,7 @@
 import Arweave from 'arweave';
 import Transaction from 'arweave/node/lib/transaction';
-import { ContractDefinitionLoader, SmartWeaveTags, TagsParser, WasmSrc } from 'warp-contracts';
+import { ContractDefinitionLoader, ContractSource, SmartWeaveTags, TagsParser, WasmSrc } from 'warp-contracts';
+import { ContractSourceInsert } from '../../db/insertInterfaces';
 import { GatewayContext } from '../init';
 import { TaskRunner } from './TaskRunner';
 
@@ -13,12 +14,12 @@ export async function runEvolvedContractSourcesTask(context: GatewayContext) {
 }
 
 async function loadEvolvedContractSources(context: GatewayContext) {
-  const { logger, gatewayDb, arweave } = context;
+  const { logger, dbSource, arweave } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave, 'mainnet');
   const tagsParser = new TagsParser();
 
   const result: { evolve: string }[] = (
-    await gatewayDb.raw(
+    await dbSource.raw(
       `
           SELECT evolve
           FROM interactions
@@ -71,7 +72,7 @@ async function loadEvolvedContractSources(context: GatewayContext) {
           src: 'error',
         };
 
-        await gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
+        await dbSource.insertContractSource(contracts_src_insert);
         logger.debug(`${row.evolve} evolved contract source inserted into db as errored.`);
       } catch (e) {
         logger.error(`Error while loading evolved contract source ${srcTxId}`, e);
@@ -149,7 +150,7 @@ export async function insertSourceToDb(
 
   ctx.logger.debug(`Inserting ${srcTxId} evolved contract source into db`);
 
-  await ctx.gatewayDb('contracts_src').insert(contracts_src_insert).onConflict('src_tx_id').ignore();
+  await ctx.dbSource.insertContractSource(contracts_src_insert);
 
   ctx.logger.debug(`${srcTxId} evolved contract source inserted into db`);
 }

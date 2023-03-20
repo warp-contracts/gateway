@@ -3,7 +3,7 @@ import { Benchmark } from 'warp-contracts';
 import { isTxIdValid } from '../../../utils';
 
 export async function contractWithSourceRoute(ctx: Router.RouterContext) {
-  const { logger, gatewayDb } = ctx;
+  const { logger, dbSource } = ctx;
 
   const { txId, srcTxId } = ctx.query;
 
@@ -27,7 +27,7 @@ export async function contractWithSourceRoute(ctx: Router.RouterContext) {
 
   try {
     const benchmark = Benchmark.measure();
-    const result: any = await gatewayDb.raw(
+    const result: any = await dbSource.raw(
       `
           SELECT c.contract_id                                                                     as "txId",
                  c.bundler_contract_tx_id                                                          as "bundlerTxId",

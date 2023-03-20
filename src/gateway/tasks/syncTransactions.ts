@@ -1,11 +1,11 @@
 import { GQLEdgeInterface, WarpLogger, SmartWeaveTags, TagsParser } from 'warp-contracts';
 import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
-import { INTERACTIONS_TABLE } from '../../db/schema';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
-import { Knex } from 'knex';
 import { isTxIdValid } from '../../utils';
 import { publishInteraction, sendNotification } from '../publisher';
+import { DatabaseSource } from '../../db/databaseSource';
+import { InteractionInsert } from '../../db/insertInterfaces';
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -82,17 +82,14 @@ function syncLastSixHoursTransactionsTask(context: GatewayContext) {
 }
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {
-  const { gatewayDb, logger, arweaveWrapper, sorter } = context;
+  const { dbSource, logger, arweaveWrapper, sorter } = context;
 
   logger.info('Syncing blocks');
 
   // 1. find last processed block height and current Arweave network height
   let results: any[];
   try {
-    results = await Promise.allSettled([
-      gatewayDb('interactions').select('block_height').orderBy('block_height', 'desc').limit(1).first(),
-      arweaveWrapper.info(),
-    ]);
+    results = await Promise.allSettled([await dbSource.selectLastProcessedInteraction(), arweaveWrapper.info()]);
   } catch (e: any) {
     logger.error('Error while checking new blocks', e.message);
     return;
@@ -157,7 +154,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
   logger.info(`Found ${gqlInteractions.length} interactions`);
 
   // 3. map interactions into inserts to "interactions" table
-  let interactionsInserts: INTERACTIONS_TABLE[] = [];
+  let interactionsInserts: InteractionInsert[] = [];
   const interactionsInsertsIds = new Set<string>();
 
   const contracts = new Map();
@@ -215,7 +212,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
       try {
         logger.info(`Batch insert ${MAX_BATCH_INSERT} interactions.`);
-        const interactionsInsertResult: any = await insertInteractions(gatewayDb, interactionsInserts);
+        const interactionsInsertResult: any = await insertInteractions(dbSource, interactionsInserts);
 
         logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
         interactionsInserts = [];
@@ -240,7 +237,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (interactionsInserts.length > 0) {
     try {
-      const interactionsInsertResult: any = await insertInteractions(gatewayDb, interactionsInserts);
+      const interactionsInsertResult: any = await insertInteractions(dbSource, interactionsInserts);
       logger.debug(`Inserted ${interactionsInsertResult.rowCount}`);
     } catch (e) {
       logger.error(e);
@@ -264,7 +261,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
   }
 }
 
-async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsInserts: INTERACTIONS_TABLE[]) {
+async function insertInteractions(dbSource: DatabaseSource, interactionsInserts: InteractionInsert[]) {
   // why using onConflict.merge()?
   // because it happened once that GQL endpoint returned the exact same transactions
   // twice - for different block heights (827991 and then 827993)
@@ -281,19 +278,7 @@ async function insertInteractions(gatewayDb: Knex<any, unknown[]>, interactionsI
 
   // note: the same issue occurred recently for tx IoGSPjQ--LY2KRgCBioaX0GTlohCq64IYSFolayuEPg
   // it was first returned for block 868561, and then moved to 868562 - probably due to fork
-  return gatewayDb('interactions')
-    .insert(interactionsInserts)
-    .onConflict('interaction_id')
-    .merge([
-      'block_id',
-      'function',
-      'input',
-      'contract_id',
-      'block_height',
-      'block_timestamp',
-      'interaction',
-      'sort_key',
-    ]);
+  return await dbSource.insertInteractionsSync(interactionsInserts);
 }
 
 // TODO: verify internalWrites
