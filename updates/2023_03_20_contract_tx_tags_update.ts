@@ -18,7 +18,7 @@ async function updateContractTxTags() {
     const result = await dbSource.raw(`SELECT contract_id
                                        FROM contracts
                                        WHERE contract_tx -> 'id' is not null
-                                       limit 500;`);
+                                       limit 100;`);
     // console.log('select done');
     if (result.rows.length == 0) {
       break;
