@@ -3,7 +3,7 @@ import { Benchmark } from 'warp-contracts';
 
 async function updateContractTxTags() {
   require('dotenv').config({
-    path: '.secrets/local.env',
+    path: '.secrets/prod.env',
   });
 
   const dbSource = new DatabaseSource([{ client: 'pg', url: process.env.DB_URL as string, primaryDb: true }]);
@@ -15,7 +15,7 @@ async function updateContractTxTags() {
   while (true) {
     const result = await dbSource.raw(`SELECT contract_id
   FROM contracts
-  WHERE contract_tx->'id' is not null limit 1000;`);
+  WHERE contract_tx is not null limit 2000;`);
 
     if (result.rows.length == 0) {
       break;
