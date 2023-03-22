@@ -17,8 +17,8 @@ async function updateContractTxTags() {
     benchmark.reset();
     const result = await dbSource.raw(`SELECT contract_id
                                        FROM contracts
-                                       WHERE contract_tx -> 'signature' is not null
-                                       limit 100;`);
+                                       WHERE contract_tx -> 'id' is not null
+                                       limit 500;`);
     // console.log('select done');
     if (result.rows.length == 0) {
       break;
