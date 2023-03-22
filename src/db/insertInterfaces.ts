@@ -1,4 +1,4 @@
-import { GQLTagInterface } from 'warp-contracts';
+import { GQLTagInterface, Tags } from 'warp-contracts';
 import { WarpDeployment } from '../gateway/router/routes/deployContractRoute';
 
 export interface SequencerInsert {
@@ -48,17 +48,10 @@ export interface ContractInsert {
   block_timestamp: number;
   content_type: string | undefined;
   contract_tx: {
-    owner: string;
-    data: string | null;
-    signature: string;
-    target: string;
-    tags: { name: string; value: string }[];
-    id?: string;
+    tags: Tags[];
   };
   bundler_contract_tx_id: string;
   bundler_contract_node: string;
-  bundler_contract_tags: string;
-  bundler_response: string;
   testnet: string | null;
   deployment_type: WarpDeployment;
   manifest: string;

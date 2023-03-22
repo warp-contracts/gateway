@@ -200,7 +200,7 @@ async function loadContractsMetadata(context: GatewayContext) {
         type,
         pst_ticker: type == 'pst' ? definition.initState?.ticker : null,
         pst_name: type == 'pst' ? definition.initState?.name : null,
-        contract_tx: definition.contractTx,
+        contract_tags: { tags: definition.contractTx.tags },
       };
 
       let contracts_src_insert: any = {

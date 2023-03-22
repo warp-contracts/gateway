@@ -1,8 +1,7 @@
 import Router from '@koa/router';
 import Arweave from 'arweave';
-import { ArweaveWrapper, Benchmark, WarpLogger } from 'warp-contracts';
-import { callbackToPromise, isTxIdValid } from '../../../utils';
-import { gunzip } from 'zlib';
+import { ArweaveWrapper, Benchmark, Tags, WarpLogger } from 'warp-contracts';
+import { decodeTags, getTagByName, isTxIdValid } from '../../../utils';
 import Transaction from 'arweave/node/lib/transaction';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { WarpDeployment } from './deployContractRoute';
@@ -26,23 +25,27 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
     const result: any = await dbSource.raw(
       `
           SELECT  bundler_contract_tx_id as "bundlerContractTxId",
-                  bundler_contract_tags as "bundlerContractTags",
+                  contract_tx -> 'tags' as "contractTags",
                   deployment_type as "deploymentType"
           FROM contracts 
           WHERE contract_id = ?;
       `,
       [id]
     );
-
     if (result?.rows[0] == null || result?.rows[0].bundlerContractTxId == null) {
       ctx.status = 500;
       ctx.body = { message: 'Contract not indexed as bundled.' };
     } else {
+      let tags: Tags = [];
+      if (result?.rows[0].contractTags) {
+        tags = decodeTags(result?.rows[0].contractTags);
+      }
+
       const { data, contentType } = await getContractData(
         arweave,
         logger,
         result?.rows[0].bundlerContractTxId,
-        result?.rows[0].bundlerContractTags || null,
+        tags,
         arweaveWrapper,
         result?.rows[0].deploymentType
       );
@@ -61,7 +64,7 @@ async function getContractData(
   arweave: Arweave,
   logger: WarpLogger,
   id: string,
-  tags: object[],
+  tags: { name: string; value: string }[],
   arweaveWrapper: ArweaveWrapper,
   deploymentType: string
 ) {
@@ -76,22 +79,12 @@ async function getContractData(
       return res.arrayBuffer();
     });
   }
-
-  // decompress and decode contract transction data
-  let bufData: ArrayBuffer | Buffer;
-  // only txs which were not zipped have bundler contract tags
-  if (!tags) {
-    const gunzipPromisified = callbackToPromise(gunzip);
-    bufData = await gunzipPromisified(data);
-  } else {
-    bufData = data;
-  }
-  const strData = arweave.utils.bufferToString(bufData);
+  const strData = arweave.utils.bufferToString(data);
 
   logger.debug('strData', strData);
 
   if (deploymentType == WarpDeployment.External) {
-    const contentType = getContentTypeFromTag(tags);
+    const contentType = getTagByName(tags, 'Content-Type');
     logger.debug(`Content type for id: ${id}: `, contentType);
     return { data: strData, contentType };
   } else {
@@ -110,9 +103,4 @@ function getContentTypeFromTx(tx: Transaction) {
     .find((tag: BaseObject) => tag.get('name', { decode: true, string: true }) == 'Content-Type');
 
   return tagContentType.get('value', { decode: true, string: true });
-}
-
-function getContentTypeFromTag(tags: any) {
-  const tagContentType = tags.find((tag: any) => tag.name == 'Content-Type').value;
-  return tagContentType;
 }
