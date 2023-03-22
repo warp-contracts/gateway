@@ -23,6 +23,8 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
     return;
   }
 
+  logger.info(`contractsBySourceRoute [ip: ${ctx.request?.ip}, srcId: ${id}]`);
+
   const bindings: any = [];
   id && bindings.push(id);
   parsedPage && bindings.push(parsedLimit);
