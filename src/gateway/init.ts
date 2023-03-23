@@ -86,7 +86,7 @@ export interface GatewayContext {
   const { bundlr, jwk } = initBundlr(logger);
 
   const dbSource = new DatabaseSource([
-    { client: 'pg', url: process.env.DB_URL as string, primaryDb: true },
+    { client: 'pg', url: process.env.DB_URL as string },
     {
       client: 'pg',
       url: process.env.DB_URL_MIGRATED as string,
@@ -96,6 +96,7 @@ export interface GatewayContext {
         cert: fs.readFileSync('.secrets/cert.pem'),
         key: fs.readFileSync('.secrets/key.pem'),
       },
+      primaryDb: true,
     },
   ]);
 
