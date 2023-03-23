@@ -204,10 +204,10 @@ export interface GatewayContext {
         await runNetworkInfoCacheTask(app.context);
         // note: only one worker in cluster runs the gateway tasks
         // all workers in cluster run the http server
-        // if (!localEnv) {
-        logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
-        await runGatewayTasks(app.context);
-        // }
+        if (!localEnv) {
+          logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
+          await runGatewayTasks(app.context);
+        }
       } catch (e: any) {
         logger.error('Error from gateway', e);
       }
