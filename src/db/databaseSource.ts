@@ -248,6 +248,7 @@ export class DatabaseSource {
   public async loopThroughDb(callback: any, recordName: string): Promise<any> {
     let result: any;
     try {
+      console.log(`Primary db:`, { db: this.primaryDb!!.client.config.connection.connectionString });
       result = await callback(this.primaryDb, null);
     } catch (e: any) {
       throw new Error(e);
