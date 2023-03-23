@@ -87,16 +87,16 @@ export interface GatewayContext {
 
   const dbSource = new DatabaseSource([
     { client: 'pg', url: process.env.DB_URL as string, primaryDb: true },
-    // {
-    //   client: 'pg',
-    //   url: process.env.DB_URL_MIGRATED as string,
-    //   ssl: {
-    //     rejectUnauthorized: false,
-    //     ca: fs.readFileSync('.secrets/ca.pem'),
-    //     cert: fs.readFileSync('.secrets/cert_user.pem'),
-    //     key: fs.readFileSync('.secrets/key_user.pem'),
-    //   },
-    // },
+    {
+      client: 'pg',
+      url: process.env.DB_URL_MIGRATED as string,
+      ssl: {
+        rejectUnauthorized: false,
+        ca: fs.readFileSync('.secrets/ca.pem'),
+        cert: fs.readFileSync('.secrets/cert.pem'),
+        key: fs.readFileSync('.secrets/key.pem'),
+      },
+    },
   ]);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
@@ -204,10 +204,10 @@ export interface GatewayContext {
         await runNetworkInfoCacheTask(app.context);
         // note: only one worker in cluster runs the gateway tasks
         // all workers in cluster run the http server
-        if (!localEnv) {
-          logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
-          await runGatewayTasks(app.context);
-        }
+        // if (!localEnv) {
+        logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
+        await runGatewayTasks(app.context);
+        // }
       } catch (e: any) {
         logger.error('Error from gateway', e);
       }
