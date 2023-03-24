@@ -1,5 +1,5 @@
 import {Knex} from "knex";
-import {LoggerFactory} from "warp-contracts";
+import {Benchmark, LoggerFactory} from "warp-contracts";
 import { createHash } from 'crypto'
 
 export class LastTxSync {
@@ -14,22 +14,26 @@ export class LastTxSync {
     });
 
     // https://stackoverflow.com/a/20963803
-    await trx.raw(`SET LOCAL lock_timeout = '5s';`)
+    const benchmark = Benchmark.measure();
+    await trx.raw(`SET LOCAL lock_timeout = '2s';`)
 
     await trx.raw(`
       SELECT pg_advisory_xact_lock(?, ?);
     `, [lockId[0], lockId[1]]);
+    this.logger.debug("Acquiring pg_advisory_xact_lock", benchmark.elapsed());
 
     return this.loadLastSortKey(contractTxId, trx);
   }
 
   private async loadLastSortKey(contractTxId: string, trx: Knex.Transaction): Promise<string | null> {
+    const benchmark = Benchmark.measure();
     const result = await trx.raw(
       `SELECT max(sort_key) AS "lastSortKey"
        FROM interactions
        WHERE contract_id = ?`,
       [contractTxId]
-    )
+    );
+    this.logger.debug("Loading lastSortKey", benchmark.elapsed());
 
     // note: this will return null if we're registering the very first tx for the contract
     return result?.rows[0].lastSortKey;

@@ -151,6 +151,7 @@ export interface GatewayContext {
     logger.info('vrf', app.context.vrf);
 
     const connectionOptions = readGwPubSubConfig('gw-pubsub.json');
+    logger.info('Redis connection options', connectionOptions);
     if (connectionOptions) {
       const publisher = new Redis(connectionOptions);
       await publisher.connect();
