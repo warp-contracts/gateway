@@ -29,7 +29,6 @@ export class DatabaseSource {
   constructor(dbData: DbData[]) {
     for (let i = 0; i < dbData.length; i++) {
       this.db[i] = this.connectDb(dbData[i]);
-      console.log(`Db set in constructor: ${i}`, this.db[i].client.config.connection.connectionString);
       if (dbData[i].primaryDb) {
         if (this.primaryDb != null) {
           throw new Error('Only one db can be set primary!');
@@ -40,7 +39,6 @@ export class DatabaseSource {
     if (this.primaryDb == null) {
       throw new Error('Exactly one db must be set as primary');
     }
-    console.log(`Primary db from constructor:`, this.primaryDb!!.client.config.connection.connectionString);
     this.mailClient = client();
   }
 
@@ -250,7 +248,6 @@ export class DatabaseSource {
   public async loopThroughDb(callback: any, recordName: string): Promise<any> {
     let result: any;
     try {
-      console.log(`Primary db:`, this.primaryDb!!.client.config.connection.connectionString);
       result = await callback(this.primaryDb, null);
     } catch (e: any) {
       throw new Error(e);

@@ -86,10 +86,9 @@ export interface GatewayContext {
   const { bundlr, jwk } = initBundlr(logger);
 
   const dbSource = new DatabaseSource([
-    { client: 'pg', url: process.env.DB_URL as string },
     {
       client: 'pg',
-      url: process.env.DB_URL_MIGRATED as string,
+      url: process.env.DB_URL_GCP as string,
       ssl: {
         rejectUnauthorized: false,
         ca: fs.readFileSync('.secrets/ca.pem'),
