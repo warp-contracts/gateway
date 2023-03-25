@@ -63,15 +63,15 @@ async function loadContractsFromGql(context: GatewayContext) {
   const currentNetworkHeight = getCachedNetworkData().cachedNetworkInfo.height;
   const lastProcessedBlockHeight = result?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
   const from = lastProcessedBlockHeight - AVG_BLOCKS_PER_HOUR;
-
+  const to = currentNetworkHeight - from <= 10 ? currentNetworkHeight : from + 10;
   logger.debug('Load contracts params', {
     from,
-    to: currentNetworkHeight,
+    to,
   });
 
   let transactions: GQLEdgeInterface[];
   try {
-    transactions = await load(context, from, currentNetworkHeight);
+    transactions = await load(context, from, to);
   } catch (e: any) {
     logger.error('Error while loading contracts', e.message);
     logger.error(e);
