@@ -138,7 +138,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       heightTo
     );
   } catch (e: any) {
-    logger.error('Error while loading interactions', e.message);
+    logger.error('Error while loading interactions', e);
     return;
   }
 
