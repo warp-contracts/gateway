@@ -118,7 +118,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     heightTo = heightFrom + 5000;
   }
 
-  logger.debug('Loading interactions for blocks', {
+  logger.info('Loading interactions for blocks', {
     heightFrom,
     heightTo,
   });
