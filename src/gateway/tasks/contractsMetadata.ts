@@ -88,6 +88,7 @@ async function loadContractsFromGql(context: GatewayContext) {
 
   if (transactions.length === 0) {
     logger.info('No new contracts');
+    fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
     return;
   }
 
@@ -136,7 +137,7 @@ async function loadContractsFromGql(context: GatewayContext) {
       logger.error(e);
       return;
     } finally {
-      fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8')
+      fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
     }
   } else {
     fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
