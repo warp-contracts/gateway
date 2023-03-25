@@ -70,7 +70,7 @@ async function loadContractsFromGql(context: GatewayContext) {
 
   const currentNetworkHeight = getCachedNetworkData().cachedNetworkInfo.height;
   lastProcessedBlockHeight = lastProcessedBlockHeight || FIRST_SW_TX_BLOCK_HEIGHT;
-  const from = lastProcessedBlockHeight - 5;
+  const from = lastProcessedBlockHeight - 1;
   const to = currentNetworkHeight - from <= 10 ? currentNetworkHeight : from + 10;
   logger.debug('Load contracts params', {
     from,
