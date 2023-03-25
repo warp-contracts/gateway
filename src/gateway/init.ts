@@ -74,7 +74,7 @@ export interface GatewayContext {
   const appSync = process.env.APP_SYNC;
 
   LoggerFactory.INST.logLevel('info');
-  LoggerFactory.INST.logLevel('info', 'gateway');
+  LoggerFactory.INST.logLevel('debug', 'gateway');
   LoggerFactory.INST.logLevel('debug', 'sequencer');
   LoggerFactory.INST.logLevel('debug', 'LastTxSync');
   const logger = LoggerFactory.INST.create('gateway');

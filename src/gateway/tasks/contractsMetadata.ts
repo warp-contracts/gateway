@@ -74,6 +74,7 @@ async function loadContractsFromGql(context: GatewayContext) {
     transactions = await load(context, from, currentNetworkHeight);
   } catch (e: any) {
     logger.error('Error while loading contracts', e.message);
+    logger.error(e);
     return;
   }
 
