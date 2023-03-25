@@ -218,6 +218,7 @@ export class DatabaseSource {
       return await db('contracts')
         .select('block_height')
         .whereNotNull('block_height')
+        .andWhere('deployment_type', '=', 'arweave')
         .orderBy('block_height', 'desc')
         .limit(1)
         .first();
