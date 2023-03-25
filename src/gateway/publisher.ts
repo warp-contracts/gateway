@@ -123,7 +123,7 @@ function publish(
 
   appSyncPublish(`${ctx.localEnv ? 'local/' : ''}${channel}`, txToPublish, appSync)
     .then((r) => {
-      logger.info(infoMessage);
+      logger.debug(infoMessage);
     })
     .catch((e) => {
       logger.error('Error while publishing transaction', e);
