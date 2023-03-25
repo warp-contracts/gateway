@@ -42,6 +42,7 @@ export interface GatewayContext {
   bundlr: Bundlr;
   jwk: JWKInterface;
   arweaveWrapper: ArweaveWrapper;
+  arweaveWrapperGqlGoldsky: ArweaveWrapper;
   vrf: VRF;
   sorter: LexicographicalInteractionsSorter;
   publisher: Redis;
@@ -109,6 +110,13 @@ export interface GatewayContext {
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
   app.context.arweaveWrapper = new ArweaveWrapper(arweave);
+  app.context.arweaveWrapperGqlGoldsky = new ArweaveWrapper(Arweave.init({
+    host: 'arweave-search.goldsky.com',
+    port: 443,
+    protocol: 'https',
+    timeout: 20000,
+    logging: false,
+  }));
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
   app.context.lastTxSync = new LastTxSync();
   app.context.localEnv = localEnv;

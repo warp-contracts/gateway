@@ -155,6 +155,7 @@ function getContentTypeTag(interactionTransaction: GQLEdgeInterface): string | u
 
 async function load(context: GatewayContext, from: number, to: number): Promise<GQLEdgeInterface[]> {
   const variables: ReqVariables = {
+    bundledIn: null,
     tags: [
       {
         name: SmartWeaveTags.APP_NAME,
@@ -168,8 +169,8 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
     first: MAX_GQL_REQUEST,
   };
 
-  const { logger, arweaveWrapper } = context;
-  return await loadPages({ logger, arweaveWrapper }, CONTRACTS_QUERY, variables);
+  const { logger, arweaveWrapperGqlGoldsky } = context;
+  return await loadPages({ logger, arweaveWrapper: arweaveWrapperGqlGoldsky }, CONTRACTS_QUERY, variables);
 }
 
 async function loadContractsMetadata(context: GatewayContext) {

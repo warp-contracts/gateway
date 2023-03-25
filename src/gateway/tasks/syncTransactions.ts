@@ -72,7 +72,7 @@ export async function runSyncLastSixHoursTransactionsTask(context: GatewayContex
 }
 
 function syncLastTransactions(context: GatewayContext) {
-  return syncTransactions(context, LOAD_PAST_BLOCKS, true);
+  return syncTransactions(context, 5, true);
 }
 
 function syncLastHourTransactions(context: GatewayContext) {

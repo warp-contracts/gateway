@@ -23,6 +23,7 @@ export interface BlockFilter {
 }
 
 export interface ReqVariables {
+  bundledIn?: string | null;
   tags: TagFilter[];
   blockFilter: BlockFilter;
   first: number;
