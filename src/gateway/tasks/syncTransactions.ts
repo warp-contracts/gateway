@@ -6,6 +6,8 @@ import { isTxIdValid } from '../../utils';
 import { publishInteraction, sendNotification } from '../publisher';
 import { DatabaseSource } from '../../db/databaseSource';
 import { InteractionInsert } from '../../db/insertInterfaces';
+import fs from "fs";
+import {getCachedNetworkData} from "./networkInfoCache";
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -84,32 +86,26 @@ function syncLastSixHoursTransactionsTask(context: GatewayContext) {
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {
   const { dbSource, logger, arweaveWrapper, sorter } = context;
 
-  logger.info('Syncing blocks');
+  logger.info('Syncing L1 interactions');
 
-  // 1. find last processed block height and current Arweave network height
-  let results: any[];
-  try {
-    results = await Promise.allSettled([await dbSource.selectLastProcessedInteraction(), arweaveWrapper.info()]);
-  } catch (e: any) {
-    logger.error('Error while checking new blocks', e.message);
-    return;
+  let lastProcessedBlockHeight;
+  if (fs.existsSync('interactions-sync-l1.json')) {
+    const data = JSON.parse(fs.readFileSync('interactions-sync-l1.json', 'utf-8'));
+    lastProcessedBlockHeight = data?.lastProcessedBlockHeight;
+  } else {
+    let result: any;
+    try {
+      result = await dbSource.selectLastProcessedArweaveInteraction();
+      lastProcessedBlockHeight = result?.block_height;
+    } catch (e: any) {
+      logger.error('Error while loading last loaded arweave interaction', e.message);
+      return;
+    }
   }
 
-  const rejections = results.filter((r) => {
-    return r.status === 'rejected';
-  });
-
-  if (rejections.length > 0) {
-    logger.error(
-      'Error while processing next block',
-      rejections.map((r) => r.message)
-    );
-    return;
-  }
-
-  const currentNetworkHeight = results[1].value.height;
+  const currentNetworkHeight = getCachedNetworkData().cachedNetworkInfo.height;
   // note: the first SW interaction was registered at 472810 block height
-  const lastProcessedBlockHeight = results[0].value?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
+  lastProcessedBlockHeight = lastProcessedBlockHeight || FIRST_SW_TX_BLOCK_HEIGHT;
 
   logger.debug('Network info', {
     currentNetworkHeight,
@@ -148,6 +144,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (gqlInteractions.length === 0) {
     logger.info('Now new interactions');
+    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
     return;
   }
 
@@ -242,7 +239,11 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     } catch (e) {
       logger.error(e);
       return;
+    } finally {
+      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
     }
+  } else {
+    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
   }
 
   if (publish) {

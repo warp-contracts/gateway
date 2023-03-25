@@ -207,9 +207,14 @@ export class DatabaseSource {
 
   // SELECT
 
-  public async selectLastProcessedInteraction() {
+  public async selectLastProcessedArweaveInteraction() {
     return await this.loopThroughDb(async (db: Knex) => {
-      return db('interactions').select('block_height').orderBy('block_height', 'desc').limit(1).first();
+      return db('interactions')
+        .select('block_height')
+        .where('source', '=', 'arweave')
+        .orderBy('block_height', 'desc')
+        .limit(1)
+        .first();
     }, 'select_last_processed_interaction');
   }
 

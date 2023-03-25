@@ -55,7 +55,7 @@ async function loadContractsFromGql(context: GatewayContext) {
 
   let lastProcessedBlockHeight;
   if (fs.existsSync('contracts-sync-l1.json')) {
-    const data = JSON.parse(fs.readFileSync('contracts-sync-l1.json', 'utf-8'))
+    const data = JSON.parse(fs.readFileSync('contracts-sync-l1.json', 'utf-8'));
     lastProcessedBlockHeight = data?.lastProcessedBlockHeight;
   } else {
     let result: any;
@@ -82,7 +82,6 @@ async function loadContractsFromGql(context: GatewayContext) {
     transactions = await load(context, from, to);
   } catch (e: any) {
     logger.error('Error while loading contracts', e.message);
-    logger.error(e);
     return;
   }
 
