@@ -4,12 +4,13 @@ import { ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWe
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
 import { AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion } from './syncTransactions';
 import { Knex } from 'knex';
-import { getCachedNetworkData } from './networkInfoCache';
+import {getCachedNetworkData, NetworkCacheType} from './networkInfoCache';
 import { publishContract, sendNotification } from '../publisher';
 import { sleep } from '../../utils';
 import { WarpDeployment } from '../router/routes/deployContractRoute';
 import { DatabaseSource } from '../../db/databaseSource';
 import { ContractSourceInsert } from '../../db/insertInterfaces';
+import fs from "fs";
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -52,17 +53,24 @@ export async function runLoadContractsFromGqlTask(context: GatewayContext) {
 async function loadContractsFromGql(context: GatewayContext) {
   const { logger, dbSource } = context;
 
-  let result: any;
-  try {
-    result = await dbSource.selectLastContract();
-  } catch (e: any) {
-    logger.error('Error while checking new blocks', e.message);
-    return;
+  let lastProcessedBlockHeight;
+  if (fs.existsSync('contracts-sync-l1.json')) {
+    const data = JSON.parse(fs.readFileSync('contracts-sync-l1.json', 'utf-8'))
+    lastProcessedBlockHeight = data?.lastProcessedBlockHeight;
+  } else {
+    let result: any;
+    try {
+      result = await dbSource.selectLastContract();
+      lastProcessedBlockHeight = result?.block_height;
+    } catch (e: any) {
+      logger.error('Error while checking new blocks', e.message);
+      return;
+    }
   }
 
   const currentNetworkHeight = getCachedNetworkData().cachedNetworkInfo.height;
-  const lastProcessedBlockHeight = result?.block_height || FIRST_SW_TX_BLOCK_HEIGHT;
-  const from = lastProcessedBlockHeight - AVG_BLOCKS_PER_HOUR;
+  lastProcessedBlockHeight = lastProcessedBlockHeight || FIRST_SW_TX_BLOCK_HEIGHT;
+  const from = lastProcessedBlockHeight - 5;
   const to = currentNetworkHeight - from <= 10 ? currentNetworkHeight : from + 10;
   logger.debug('Load contracts params', {
     from,
@@ -127,7 +135,11 @@ async function loadContractsFromGql(context: GatewayContext) {
     } catch (e) {
       logger.error(e);
       return;
+    } finally {
+      fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8')
     }
+  } else {
+    fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
   }
 
   logger.info(`Inserted ${contractsInserts.length} contracts`);
