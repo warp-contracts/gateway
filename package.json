@@ -28,8 +28,6 @@
     "arbundles": "^0.7.0",
     "arweave": "1.11.8",
     "axios": "^0.26.1",
-    "bluebird": "^3.7.2",
-    "date-fns": "^2.29.3",
     "dotenv": "16.0.3",
     "elliptic": "^6.5.4",
     "ethers": "^5.7.2",
