@@ -236,7 +236,7 @@ function initArweave(): Arweave {
 }
 
 function readGwPubSubConfig(filename: string) {
-  const pubSubConfigPath = path.join('./.secrets', filename);
+  const pubSubConfigPath = path.join(`./.secrets/${filename}`);
   if (fs.existsSync(pubSubConfigPath)) {
     const json = fs.readFileSync(pubSubConfigPath, 'utf-8');
     return JSON.parse(json);
