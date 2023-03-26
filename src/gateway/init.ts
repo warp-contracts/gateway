@@ -20,6 +20,7 @@ import {initPubSub} from 'warp-contracts-pubsub';
 // @ts-ignore
 import {EvmSignatureVerificationServerPlugin} from 'warp-signature/server';
 import {DatabaseSource} from '../db/databaseSource';
+import {accessLogMiddleware} from "./accessLogMiddleware";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -37,6 +38,7 @@ export interface GatewayContext {
   dbSource: DatabaseSource;
   logger: WarpLogger;
   sLogger: WarpLogger;
+  accessLogger: WarpLogger;
   arweave: Arweave;
   bundlr: Bundlr;
   jwk: JWKInterface;
@@ -77,8 +79,10 @@ export interface GatewayContext {
   LoggerFactory.INST.logLevel('info', 'gateway');
   LoggerFactory.INST.logLevel('debug', 'sequencer');
   LoggerFactory.INST.logLevel('debug', 'LastTxSync');
+  LoggerFactory.INST.logLevel('debug', 'access');
   const logger = LoggerFactory.INST.create('gateway');
   const sLogger = LoggerFactory.INST.create('sequencer');
+  const accessLogger = LoggerFactory.INST.create('access');
 
   logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode. noSync = ${noSync}`);
 
@@ -104,6 +108,7 @@ export interface GatewayContext {
   app.context.dbSource = dbSource;
   app.context.logger = logger;
   app.context.sLogger = sLogger;
+  app.context.accessLogger = accessLogger;
   app.context.arweave = arweave;
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
@@ -121,6 +126,7 @@ export interface GatewayContext {
   app.context.appSync = appSync;
   app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
 
+  app.use(accessLogMiddleware);
   app.use(
     cors({
       async origin() {
