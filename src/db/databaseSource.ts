@@ -149,7 +149,7 @@ export class DatabaseSource {
 
   public async insertContractsMetadata(contractsInserts: any[]) {
     await this.loopThroughDb(async (db: Knex) => {
-      db('contracts').insert(contractsInserts).onConflict('contract_id').ignore();
+      await db('contracts').insert(contractsInserts).onConflict('contract_id').ignore();
     }, 'insert_contracts_metadata');
   }
 
