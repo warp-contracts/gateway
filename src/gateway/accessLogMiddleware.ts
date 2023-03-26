@@ -3,7 +3,7 @@ import {format} from 'date-fns'
 import {DefaultState, Next, ParameterizedContext} from "koa";
 import {GatewayContext} from "./init";
 
-const LOG_FORMAT = '%s - - [%s] "%s %s HTTP/%s" %d %s\n';
+const LOG_FORMAT = '%s [%s] "%s %s HTTP/%s" %d %s';
 const DATE_FORMAT = 'd/MMM/yyyy:HH:mm:ss xx';
 
 export async function accessLogMiddleware(ctx: ParameterizedContext<DefaultState, GatewayContext, any>, next: Next): Promise<void> {
