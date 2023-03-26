@@ -1,27 +1,25 @@
 import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
-import { Knex } from 'knex';
+import {hideBin} from 'yargs/helpers';
 import Koa from 'koa';
 import Application from 'koa';
 import bodyParser from 'koa-bodyparser';
-import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger } from 'warp-contracts';
+import {ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger} from 'warp-contracts';
 import Arweave from 'arweave';
-import { runGatewayTasks } from './runGatewayTasks';
+import {runGatewayTasks} from './runGatewayTasks';
 import gatewayRouter from './router/gatewayRouter';
 import * as fs from 'fs';
 import cluster from 'cluster';
 import welcomeRouter from './router/welcomeRouter';
 import Bundlr from '@bundlr-network/client';
-import { initBundlr } from '../bundlr/connect';
-import { JWKInterface } from 'arweave/node/lib/wallet';
-import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
-import path from 'path';
+import {initBundlr} from '../bundlr/connect';
+import {JWKInterface} from 'arweave/node/lib/wallet';
+import {runNetworkInfoCacheTask} from './tasks/networkInfoCache';
 import Redis from 'ioredis';
-import { LastTxSync } from './LastTxSyncer';
-import { initPubSub } from 'warp-contracts-pubsub';
+import {LastTxSync} from './LastTxSyncer';
+import {initPubSub} from 'warp-contracts-pubsub';
 // @ts-ignore
-import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
-import { DatabaseSource } from '../db/databaseSource';
+import {EvmSignatureVerificationServerPlugin} from 'warp-signature/server';
+import {DatabaseSource} from '../db/databaseSource';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -85,7 +83,7 @@ export interface GatewayContext {
   logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode. noSync = ${noSync}`);
 
   const arweave = initArweave();
-  const { bundlr, jwk } = initBundlr(logger);
+  const {bundlr, jwk} = initBundlr(logger);
 
   const dbSource = new DatabaseSource([
     {
@@ -236,11 +234,6 @@ function initArweave(): Arweave {
 }
 
 function readGwPubSubConfig(filename: string) {
-  const pubSubConfigPath = path.join(`./.secrets/${filename}`);
-  if (fs.existsSync(pubSubConfigPath)) {
-    const json = fs.readFileSync(pubSubConfigPath, 'utf-8');
-    return JSON.parse(json);
-  } else {
-    return false;
-  }
+  const json = fs.readFileSync(`./.secrets/${filename}`, 'utf-8');
+  return JSON.parse(json);
 }
