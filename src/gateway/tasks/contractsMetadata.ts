@@ -2,15 +2,12 @@ import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
 import { ContractDefinition, ContractDefinitionLoader, GQLEdgeInterface, SmartWeaveTags } from 'warp-contracts';
 import { loadPages, MAX_GQL_REQUEST, ReqVariables } from '../../gql';
-import { AVG_BLOCKS_PER_HOUR, FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion } from './syncTransactions';
-import { Knex } from 'knex';
-import {getCachedNetworkData, NetworkCacheType} from './networkInfoCache';
+import { FIRST_SW_TX_BLOCK_HEIGHT, MAX_BATCH_INSERT, testnetVersion } from './syncTransactions';
+import { getCachedNetworkData } from './networkInfoCache';
 import { publishContract, sendNotification } from '../publisher';
-import { sleep } from '../../utils';
-import { WarpDeployment } from '../router/routes/deployContractRoute';
 import { DatabaseSource } from '../../db/databaseSource';
-import { ContractSourceInsert } from '../../db/insertInterfaces';
-import fs from "fs";
+import { ContractInsert } from '../../db/insertInterfaces';
+import fs from 'fs';
 
 const CONTRACTS_METADATA_INTERVAL_MS = 10000;
 
@@ -87,13 +84,13 @@ async function loadContractsFromGql(context: GatewayContext) {
 
   if (transactions.length === 0) {
     logger.info('No new contracts');
-    fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
+    fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: to }), 'utf-8');
     return;
   }
 
   logger.info(`Found ${transactions.length} contracts`);
 
-  let contractsInserts: any[] = [];
+  let contractsInserts: Partial<ContractInsert>[] = [];
 
   const contractsInsertsIds = new Set<string>();
   for (let transaction of transactions) {
@@ -111,6 +108,7 @@ async function loadContractsFromGql(context: GatewayContext) {
         content_type: contentType || 'unknown',
         deployment_type: 'arweave',
         testnet,
+        timestamp: Date.now(),
       });
       contractsInsertsIds.add(contractId);
 
@@ -136,10 +134,10 @@ async function loadContractsFromGql(context: GatewayContext) {
       logger.error(e);
       return;
     } finally {
-      fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
+      fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: to }), 'utf-8');
     }
   } else {
-    fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: to}), 'utf-8');
+    fs.writeFileSync('contracts-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: to }), 'utf-8');
   }
 
   logger.info(`Inserted ${contractsInserts.length} contracts`);
@@ -177,12 +175,13 @@ async function loadContractsMetadata(context: GatewayContext) {
   const { arweave, logger, dbSource, arweaveWrapper } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave, 'mainnet');
 
-  const result: { contract: string; blockHeight: number; blockTimestamp: number }[] = (
+  const result: { contract: string; blockHeight: number; blockTimestamp: number; timestamp: number }[] = (
     await dbSource.raw(
       `
         SELECT  contract_id AS contract,
                 block_height AS blockHeight,
-                block_timestamp AS blockTimestamp
+                block_timestamp AS blockTimestamp,
+                timestamp
         FROM contracts
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
@@ -246,7 +245,16 @@ async function loadContractsMetadata(context: GatewayContext) {
 
       // TODO: add tags to ContractDefinition type in the SDK
       sendNotification(context, definition.txId, { initState: definition.initState, tags: [] });
-      publishContract(context, contractId, definition.owner, type, row.blockHeight, row.blockTimestamp, 'arweave');
+      publishContract(
+        context,
+        contractId,
+        definition.owner,
+        type,
+        row.blockHeight,
+        row.blockTimestamp,
+        'arweave',
+        row.timestamp
+      );
 
       logger.debug(`${row.contract} metadata inserted into db`);
     } catch (e) {

@@ -32,8 +32,9 @@ export interface InteractionInsert {
   sort_key: string;
   evolve: string | null;
   testnet: string | null;
-  last_sort_key?: string;
+  last_sort_key?: string | null;
   owner: string;
+  timestamp: number;
 }
 
 export interface ContractInsert {
@@ -53,8 +54,9 @@ export interface ContractInsert {
   bundler_contract_tx_id: string;
   bundler_contract_node: string;
   testnet: string | null;
-  deployment_type: WarpDeployment;
+  deployment_type: WarpDeployment | 'arweave';
   manifest: string;
+  timestamp: number;
 }
 
 export interface ContractSourceInsert {
