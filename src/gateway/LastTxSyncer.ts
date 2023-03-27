@@ -15,7 +15,7 @@ export class LastTxSync {
 
     // https://stackoverflow.com/a/20963803
 
-    await trx.raw(`SET LOCAL lock_timeout = '2s';`)
+    await trx.raw(`SET LOCAL lock_timeout = '5s';`)
     const benchmark = Benchmark.measure();
     await trx.raw(`
       SELECT pg_advisory_xact_lock(?, ?);
