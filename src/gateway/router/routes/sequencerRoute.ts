@@ -79,10 +79,14 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       arweave
     );
 
+    // note: contractLastSortKey will be null for the very first interaction with a given contract
     const contractLastSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
 
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
+    if (contractLastSortKey !== null && sortKey.localeCompare(contractLastSortKey) <= 0) {
+      throw new Error('New sortKey <= lastSortKey!');
+    }
 
     tags.push({ name: 'Sequencer-Mills', value: '' + millis });
     tags.push({ name: 'Sequencer-Sort-Key', value: sortKey });
