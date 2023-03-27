@@ -100,7 +100,6 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
     const manifest = evalManifest(contractDataItem.tags);
     const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
     const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
-    const timestamp = Date.now();
 
     const insert: ContractInsert = {
       contract_id: contractDataItem.id,
@@ -119,22 +118,12 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       testnet,
       deployment_type: WarpDeployment.Direct,
       manifest,
-      timestamp,
     };
 
     await dbSource.insertContract(insert);
 
     sendNotification(ctx, contractDataItem.id, { initState, tags: contractDataItem.tags });
-    publishContract(
-      ctx,
-      contractDataItem.id,
-      ownerAddress!!,
-      type,
-      blockHeight,
-      blockTimestamp,
-      WarpDeployment.Direct,
-      timestamp
-    );
+    publishContract(ctx, contractDataItem.id, ownerAddress!!, type, blockHeight, blockTimestamp, WarpDeployment.Direct);
 
     logger.info('Contract successfully deployed.', {
       contractTxId: contractDataItem.id,

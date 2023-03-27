@@ -55,8 +55,7 @@ export function publishInteraction(
   sortKey: string,
   lastSortKey: string | null,
   functionName: string,
-  source: string,
-  timestamp: number
+  source: string
 ) {
   const { logger, appSync } = ctx;
 
@@ -71,7 +70,6 @@ export function publishInteraction(
     lastSortKey,
     source,
     functionName,
-    timestamp,
     interaction: {
       ...interaction,
       sortKey,
@@ -94,19 +92,17 @@ export function publishContract(
   contractTxId: string,
   creator: string,
   type: string,
-  blockHeight: number,
-  blockTimestamp: number,
-  source: string,
-  timestamp: number
+  height: number,
+  timestamp: number,
+  source: string
 ) {
   const contractToPublish = JSON.stringify({
     contractTxId,
     creator,
     type,
-    blockHeight,
-    blockTimestamp,
-    source,
+    height,
     timestamp,
+    source,
   });
 
   publish(ctx, 'contracts', contractToPublish, `Published contract: ${contractTxId}`);

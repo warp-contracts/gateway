@@ -48,7 +48,6 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     const manifest = evalManifest(dataItem.tags);
     const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
     const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
-    const timestamp = Date.now();
 
     const insert: ContractInsert = {
       contract_id: bundlrResponse.data.id,
@@ -67,7 +66,6 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       testnet,
       deployment_type: WarpDeployment.Direct,
       manifest,
-      timestamp,
     };
 
     await dbSource.insertContract(insert);
@@ -79,8 +77,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       type,
       blockHeight,
       blockTimestamp,
-      WarpDeployment.Direct,
-      timestamp
+      WarpDeployment.Direct
     );
 
     logger.info('Contract successfully deployed.', {

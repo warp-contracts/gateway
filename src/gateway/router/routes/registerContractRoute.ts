@@ -71,7 +71,6 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
     const manifest = evalManifest(tags);
     const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
     const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
-    const timestamp = Date.now();
 
     contractTx = {
       id: txId,
@@ -99,13 +98,12 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       testnet,
       deployment_type: WarpDeployment.External,
       manifest,
-      timestamp,
     };
 
     await dbSource.insertContract(insert);
 
     sendNotification(ctx, txId, { initState, tags });
-    publishContract(ctx, txId, ownerAddress, type, blockHeight, blockTimestamp, WarpDeployment.External, timestamp);
+    publishContract(ctx, txId, ownerAddress, type, blockHeight, blockTimestamp, WarpDeployment.External);
 
     logger.info('Contract successfully registered.', {
       contractTxId: txId,

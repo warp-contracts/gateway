@@ -12,7 +12,6 @@ import { isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE2_URL } from '../../../constants';
 import { publishInteraction, sendNotification } from '../../publisher';
 import { Knex } from 'knex';
-import { InteractionInsert } from '../../../db/insertInterfaces';
 
 const { Evaluate } = require('@idena/vrf-js');
 
@@ -148,7 +147,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       last_sort_key: contractLastSortKey,
     };
 
-    const interactionsInsert: InteractionInsert = {
+    const interactionsInsert = {
       interaction_id: transaction.id,
       interaction: JSON.stringify(interaction),
       block_height: currentHeight,
@@ -167,7 +166,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       testnet: testnetVersion,
       last_sort_key: contractLastSortKey,
       owner: originalOwner,
-      timestamp: millis,
     };
 
     await dbSource.insertSequencerAndInteraction(sequencerInsert, interactionsInsert, trx, sLogger);
@@ -182,16 +180,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     sLogger.info('Total sequencer processing', benchmark.elapsed());
 
     sendNotification(ctx, contractTag, undefined, interaction);
-    publishInteraction(
-      ctx,
-      contractTag,
-      interaction,
-      sortKey,
-      contractLastSortKey,
-      functionName,
-      'redstone-sequencer',
-      millis
-    );
+    publishInteraction(ctx, contractTag, interaction, sortKey, contractLastSortKey, functionName, 'redstone-sequencer');
   } catch (e) {
     if (!trx.isCompleted()) {
       await trx.rollback();
