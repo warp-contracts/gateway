@@ -85,7 +85,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
     if (contractLastSortKey !== null && sortKey.localeCompare(contractLastSortKey) <= 0) {
-      throw new Error('New sortKey <= lastSortKey!');
+      throw new Error(`New sortKey (${sortKey}) <= lastSortKey (${contractLastSortKey})!`);
     }
 
     tags.push({ name: 'Sequencer-Mills', value: '' + millis });
