@@ -14,3 +14,4 @@ yarn-error.log
 dump_*
 cache
 db_error_log
+contracts-sync-l1.json

@@ -6,8 +6,8 @@ import { isTxIdValid } from '../../utils';
 import { publishInteraction, sendNotification } from '../publisher';
 import { DatabaseSource } from '../../db/databaseSource';
 import { InteractionInsert } from '../../db/insertInterfaces';
-import fs from "fs";
-import {getCachedNetworkData} from "./networkInfoCache";
+import fs from 'fs';
+import { getCachedNetworkData } from './networkInfoCache';
 
 const INTERACTIONS_QUERY = `query Transactions($tags: [TagFilter!]!, $blockFilter: BlockFilter!, $first: Int!, $after: String) {
     transactions(tags: $tags, block: $blockFilter, first: $first, sort: HEIGHT_ASC, after: $after) {
@@ -144,7 +144,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (gqlInteractions.length === 0) {
     logger.info('Now new interactions');
-    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
     return;
   }
 
@@ -180,6 +180,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
     const sortKey = await sorter.createSortKey(blockId, interaction.node.id, interaction.node.block.height);
     const testnet = testnetVersion(interaction);
+    const syncTimestamp = Date.now();
     // now this one is really fucked-up - if the interaction contains the same tag X-times,
     // the default GQL endpoint will return this interaction X-times...
     // this is causing "SQLITE_CONSTRAINT: UNIQUE constraint failed: interactions.id"
@@ -204,6 +205,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         evolve: evolve,
         testnet,
         owner: interaction.node.owner.address,
+        sync_timestamp: syncTimestamp,
       });
     }
     if (interactionsInserts.length === MAX_BATCH_INSERT) {
@@ -226,6 +228,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       blockHeight: interaction.node.block.height,
       sortKey,
       source: 'arweave',
+      syncTimestamp,
     });
   }
 
@@ -240,10 +243,10 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       logger.error(e);
       return;
     } finally {
-      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
     }
   } else {
-    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
   }
 
   if (publish) {
@@ -256,7 +259,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         value.sortKey,
         null,
         value.functionName,
-        value.source
+        value.source,
+        value.syncTimestamp
       );
     }
   }

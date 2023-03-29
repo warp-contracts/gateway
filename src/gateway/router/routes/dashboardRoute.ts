@@ -23,7 +23,7 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
                                    type             AS contract_type,
                                    ''               AS function,
                                    block_height     AS block_height,
-                                   block_timestamp  AS block_timestamp,
+                                   sync_timestamp   AS sync_timestamp,
                                    ''               AS sort_key,
                                    CASE contracts.deployment_type
                                        WHEN 'warp-external' THEN 'warp'
@@ -45,7 +45,7 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
                                   ''                AS contract_type,
                                   function          AS function,
                                   block_height      AS block_height,
-                                  block_timestamp   AS block_timestamp,
+                                  sync_timestamp    AS sync_timestamp,
                                   sort_key          AS sort_key,
                                   CASE source
                                   WHEN 'redstone-sequencer' THEN 'sequencer'
