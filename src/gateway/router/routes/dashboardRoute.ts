@@ -35,7 +35,8 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
                           where contract_id != ''
                             AND type != 'error'
                             AND testnet IS ${testnet ? ' NOT NULL ' : ' NULL '}
-                          order by block_height desc 
+                            AND sync_timestamp IS NOT NULL
+                          order by sync_timestamp DESC
                               LIMIT ${contractLimit ? ' ? ' : ' 100'}
             ),
               interaction as (select 'interaction'  AS contract_or_interaction,
@@ -54,7 +55,8 @@ export async function dashboardRoute(ctx: Router.RouterContext) {
                                 from interactions
                             where contract_id != ''
                                 AND testnet IS ${testnet ? ' NOT NULL ' : ' NULL '}
-                                order by sort_key desc 
+                                AND sync_timestamp IS NOT NULL
+                                order by sync_timestamp desc
                                 LIMIT ${interactionLimit ? ' ? ' : ' 100'}
                                 )
                                 select * from contract
