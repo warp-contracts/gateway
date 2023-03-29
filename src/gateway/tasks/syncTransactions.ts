@@ -229,6 +229,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       sortKey,
       source: 'arweave',
       syncTimestamp,
+      functionName,
     });
   }
 
