@@ -84,7 +84,7 @@ function syncLastSixHoursTransactionsTask(context: GatewayContext) {
 }
 
 async function syncTransactions(context: GatewayContext, pastBlocksAmount: number, publish = false) {
-  const { dbSource, logger, arweaveWrapper, sorter } = context;
+  const { dbSource, logger, sorter } = context;
 
   logger.info('Syncing L1 interactions');
 
@@ -290,6 +290,7 @@ async function insertInteractions(dbSource: DatabaseSource, interactionsInserts:
 // TODO: verify internalWrites
 async function load(context: GatewayContext, from: number, to: number): Promise<GQLEdgeInterface[]> {
   const mainTransactionsVariables: ReqVariables = {
+    bundledIn: null,
     tags: [
       {
         name: SmartWeaveTags.APP_NAME,
@@ -303,8 +304,8 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
     first: MAX_GQL_REQUEST,
   };
 
-  const { logger, arweaveWrapper } = context;
-  return await loadPages({ logger, arweaveWrapper }, INTERACTIONS_QUERY, mainTransactionsVariables);
+  const { logger, arweaveWrapperGqlGoldsky } = context;
+  return await loadPages({ logger, arweaveWrapper: arweaveWrapperGqlGoldsky }, INTERACTIONS_QUERY, mainTransactionsVariables);
 }
 
 export function testnetVersion(tx: GQLEdgeInterface): string | null {
