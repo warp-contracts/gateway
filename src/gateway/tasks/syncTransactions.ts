@@ -60,13 +60,13 @@ export async function runSyncRecentTransactionsTask(context: GatewayContext) {
 }
 
 export async function runSyncLastHourTransactionsTask(context: GatewayContext) {
-  await TaskRunner.from('[sync last hour transactions]', syncLastHourTransactions, context).runAsyncEvery(
+  await TaskRunner.from('[sync last hour transactions]', syncLastHourTransactions, context).runSyncEvery(
     HOUR_INTERVAL_MS
   );
 }
 
 export async function runSyncLastSixHoursTransactionsTask(context: GatewayContext) {
-  await TaskRunner.from('[sync last 6 hours transactions]', syncLastSixHoursTransactionsTask, context).runAsyncEvery(
+  await TaskRunner.from('[sync last 6 hours transactions]', syncLastSixHoursTransactionsTask, context).runSyncEvery(
     DAY_INTERVAL_MS
   );
 }
@@ -114,8 +114,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   const heightFrom = lastProcessedBlockHeight - pastBlocksAmount;
   let heightTo = currentNetworkHeight;
-  if (heightTo > heightFrom + 5000) {
-    heightTo = heightFrom + 5000;
+  if (heightTo > heightFrom + 20) {
+    heightTo = heightFrom + 20;
   }
 
   logger.info('Loading interactions for blocks', {
