@@ -44,7 +44,7 @@ export async function loadPages(context: GqlContext, query: string, variables: a
 
   const txInfos: GQLEdgeInterface[] = transactions.edges.filter((tx) => filterBundles(tx));
 
-  const { logger, arweaveWrapper } = context;
+  const { logger } = context;
 
   while (transactions.pageInfo.hasNextPage) {
     const cursor = transactions.edges[MAX_GQL_REQUEST - 1].cursor;
@@ -70,7 +70,7 @@ export async function getNextPage(
   const { logger, arweaveWrapper } = context;
 
   const benchmark = Benchmark.measure();
-  logger.debug('GQL Variables', JSON.stringify(variables));
+  logger.info('GQL Variables', JSON.stringify(variables));
   let response = await arweaveWrapper.gql(query, variables);
   logger.debug('GQL page load:', benchmark.elapsed());
 
