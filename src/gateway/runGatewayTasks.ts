@@ -45,7 +45,7 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   await runSyncRecentTransactionsTask(context);
 
-  await runSyncLastHourTransactionsTask(context);
+  // await runSyncLastHourTransactionsTask(context);
 
   await runVerifyInteractionsTask(context);
 
@@ -55,5 +55,5 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   await runEvolvedContractSourcesTask(context);
 
-  await runSyncLastSixHoursTransactionsTask(context);
+  // await runSyncLastSixHoursTransactionsTask(context);
 }

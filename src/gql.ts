@@ -48,7 +48,7 @@ export async function loadPages(context: GqlContext, query: string, variables: a
 
   while (transactions.pageInfo.hasNextPage) {
     const cursor = transactions.edges[MAX_GQL_REQUEST - 1].cursor;
-    logger.debug(`Cursor for ${transactions.edges[MAX_GQL_REQUEST - 1].node.id}[${transactions.edges[MAX_GQL_REQUEST - 1].node.block.height}]: ${transactions.edges[MAX_GQL_REQUEST - 1].cursor}`);
+    logger.info(`Cursor for ${transactions.edges[MAX_GQL_REQUEST - 1].node.id}[${transactions.edges[MAX_GQL_REQUEST - 1].node.block.height}]: ${transactions.edges[MAX_GQL_REQUEST - 1].cursor}`);
 
     variables = {
       ...variables,
