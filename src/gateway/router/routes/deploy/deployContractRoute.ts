@@ -2,12 +2,13 @@ import Router, { RouterContext } from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
-import { evalType } from '../../tasks/contractsMetadata';
-import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { BUNDLR_NODE1_URL } from '../../../constants';
-import { uploadToBundlr } from './sequencerRoute';
-import { publishContract, sendNotification } from '../../publisher';
-import { ContractInsert, ContractSourceInsert } from '../../../db/insertInterfaces';
+import { evalType } from '../../../tasks/contractsMetadata';
+import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
+import { BUNDLR_NODE1_URL } from '../../../../constants';
+import { uploadToBundlr } from '../sequencerRoute';
+import { publishContract, sendNotification } from '../../../publisher';
+import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
+import {GatewayError} from "../../../errorHandlerMiddleware";
 
 /*
 - warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
@@ -169,10 +170,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundleSrcId: bundlerSrcTxId,
     };
   } catch (e) {
-    logger.error('Error while inserting bundled transaction');
-    logger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
+    throw new GatewayError(`Error while inserting bundled transaction: ${e}`);
   }
 }
 

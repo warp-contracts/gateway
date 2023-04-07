@@ -2,10 +2,11 @@ import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { SmartWeaveTags } from 'warp-contracts';
-import { BUNDLR_NODE1_URL } from '../../../constants';
-import { uploadToBundlr } from './sequencerRoute';
+import { BUNDLR_NODE1_URL } from '../../../../constants';
+import { uploadToBundlr } from '../sequencerRoute';
 import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
-import { ContractSourceInsert } from '../../../db/insertInterfaces';
+import { ContractSourceInsert } from '../../../../db/insertInterfaces';
+import {GatewayError} from "../../../errorHandlerMiddleware";
 
 export async function deploySourceRoute(ctx: Router.RouterContext) {
   const { logger, arweave, bundlr, dbSource } = ctx;
@@ -66,9 +67,6 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
       bundlrSrcTxId,
     };
   } catch (e) {
-    logger.error('Error while inserting bundled source transaction');
-    logger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
+    throw new GatewayError(`Error while inserting bundled source transaction ${e}`);
   }
 }

@@ -21,6 +21,7 @@ import {initPubSub} from 'warp-contracts-pubsub';
 import {EvmSignatureVerificationServerPlugin} from 'warp-signature/server';
 import {DatabaseSource} from '../db/databaseSource';
 import {accessLogMiddleware} from "./accessLogMiddleware";
+import {errorHandlerMiddleware} from "./errorHandlerMiddleware";
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -93,7 +94,7 @@ export interface GatewayContext {
     {
       client: 'pg',
       url: process.env.DB_URL_GCP as string,
-      ssl: {
+      ssl: localEnv ? undefined : {
         rejectUnauthorized: false,
         ca: fs.readFileSync('.secrets/ca.pem'),
         cert: fs.readFileSync('.secrets/cert.pem'),
@@ -126,7 +127,9 @@ export interface GatewayContext {
   app.context.appSync = appSync;
   app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
 
+  app.use(errorHandlerMiddleware);
   app.use(accessLogMiddleware);
+
   app.use(
     cors({
       async origin() {
@@ -162,46 +165,47 @@ export interface GatewayContext {
 
     logger.info('vrf', app.context.vrf);
 
-    const connectionOptions = readGwPubSubConfig('gw-pubsub.json');
-    logger.info('Redis connection options', connectionOptions);
-    if (connectionOptions) {
-      const publisher = new Redis(connectionOptions);
-      await publisher.connect();
-      logger.info(`Publisher status`, {
-        host: connectionOptions.host,
-        status: publisher.status,
-      });
-      app.context.publisher = publisher;
-    }
+    if (!localEnv) {
+      const connectionOptions = readGwPubSubConfig('gw-pubsub.json');
+      logger.info('Redis connection options', connectionOptions);
+      if (connectionOptions) {
+        const publisher = new Redis(connectionOptions);
+        await publisher.connect();
+        logger.info(`Publisher status`, {
+          host: connectionOptions.host,
+          status: publisher.status,
+        });
+        app.context.publisher = publisher;
+      }
 
-    // temporary..
-    const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
-    if (connectionOptions2) {
-      console.log({
-        ...connectionOptions2,
-        tls: {
-          ca: [process.env.GW_TLS_CA_CERT],
-          checkServerIdentity: () => {
-            return null;
+      // temporary..
+      const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
+      if (connectionOptions2) {
+        console.log({
+          ...connectionOptions2,
+          tls: {
+            ca: [process.env.GW_TLS_CA_CERT],
+            checkServerIdentity: () => {
+              return null;
+            },
           },
-        },
-      });
-
-      const publisher2 = new Redis({
-        ...connectionOptions2,
-        tls: {
-          ca: [process.env.GW_TLS_CA_CERT],
-          checkServerIdentity: () => {
-            return null;
+        });
+        const publisher2 = new Redis({
+          ...connectionOptions2,
+          tls: {
+            ca: [process.env.GW_TLS_CA_CERT],
+            checkServerIdentity: () => {
+              return null;
+            },
           },
-        },
-      });
-      await publisher2.connect();
-      logger.info(`Publisher 2 status`, {
-        host: connectionOptions2.host,
-        status: publisher2.status,
-      });
-      app.context.publisher_v2 = publisher2;
+        });
+        await publisher2.connect();
+        logger.info(`Publisher 2 status`, {
+          host: connectionOptions2.host,
+          status: publisher2.status,
+        });
+        app.context.publisher_v2 = publisher2;
+      }
     }
 
     if (!fs.existsSync('gateway.lock')) {

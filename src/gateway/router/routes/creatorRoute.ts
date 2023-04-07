@@ -23,55 +23,49 @@ export async function creatorRoute(ctx: Router.RouterContext) {
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
-  try {
-    const benchmark = Benchmark.measure();
-    const result: any = await dbSource.raw(
-      `
-      WITH all_transactions AS (${
-        txType != 'contract'
-          ? `SELECT 
-        interaction_id AS id, 
-        bundler_tx_id AS bundler_id, 
-        block_height, 
-        interaction->'block'->>'timestamp' AS block_timestamp, 
-        'interaction' AS type 
-        FROM interactions 
-        where owner = ?`
-          : ''
-      }
-      ${!txType ? 'UNION all' : ''}
-      ${
-        txType != 'interaction'
-          ? `SELECT 
-        contract_id AS id, 
-        bundler_contract_tx_id AS bundler_id, 
-        block_height, 
-        block_timestamp::text AS block_timestamp, 
-        'contract' AS type 
-        FROM contracts where owner = ?`
-          : ''
-      })
-        SELECT *, COUNT(*) OVER() AS total FROM all_transactions ORDER BY all_transactions.block_timestamp DESC LIMIT ? OFFSET ?;`,
-      bindings
-    );
+  const benchmark = Benchmark.measure();
+  const result: any = await dbSource.raw(
+    `
+    WITH all_transactions AS (${
+      txType != 'contract'
+        ? `SELECT 
+      interaction_id AS id, 
+      bundler_tx_id AS bundler_id, 
+      block_height, 
+      interaction->'block'->>'timestamp' AS block_timestamp, 
+      'interaction' AS type 
+      FROM interactions 
+      where owner = ?`
+        : ''
+    }
+    ${!txType ? 'UNION all' : ''}
+    ${
+      txType != 'interaction'
+        ? `SELECT 
+      contract_id AS id, 
+      bundler_contract_tx_id AS bundler_id, 
+      block_height, 
+      block_timestamp::text AS block_timestamp, 
+      'contract' AS type 
+      FROM contracts where owner = ?`
+        : ''
+    })
+      SELECT *, COUNT(*) OVER() AS total FROM all_transactions ORDER BY all_transactions.block_timestamp DESC LIMIT ? OFFSET ?;`,
+    bindings
+  );
 
-    const total = result?.rows?.length > 0 ? parseInt(result.rows[0].total) : 0;
+  const total = result?.rows?.length > 0 ? parseInt(result.rows[0].total) : 0;
 
-    ctx.body = {
-      paging: {
-        total,
-        limit: parsedLimit,
-        items: result?.rows.length,
-        page: parsedPage,
-        pages: Math.ceil(total / parsedLimit),
-      },
-      transactions: result?.rows,
-    };
+  ctx.body = {
+    paging: {
+      total,
+      limit: parsedLimit,
+      items: result?.rows.length,
+      page: parsedPage,
+      pages: Math.ceil(total / parsedLimit),
+    },
+    transactions: result?.rows,
+  };
 
-    logger.debug(`Owner's transactions loaded in ${benchmark.elapsed()}`);
-  } catch (e: any) {
-    logger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
-  }
+  logger.debug(`Owner's transactions loaded in ${benchmark.elapsed()}`);
 }
