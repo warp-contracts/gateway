@@ -1,43 +1,43 @@
 import Router from '@koa/router';
-import { evalType } from '../../tasks/contractsMetadata';
-import { BUNDLR_NODE1_URL } from '../../../constants';
+import { evalType } from '../../../tasks/contractsMetadata';
+import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
-import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { publishContract, sendNotification } from '../../publisher';
-import { evalManifest, WarpDeployment } from './deployContractRoute';
-import { ContractInsert } from '../../../db/insertInterfaces';
+import {getCachedNetworkData} from '../../../tasks/networkInfoCache';
+import {publishContract, sendNotification} from '../../../publisher';
+import {evalManifest, WarpDeployment} from './deployContractRoute';
+import {ContractInsert} from '../../../../db/insertInterfaces';
+import {GatewayError} from "../../../errorHandlerMiddleware";
 
 export async function deployBundledRoute(ctx: Router.RouterContext) {
-  const { logger, dbSource, arweave, bundlr } = ctx;
+  const {logger, dbSource, arweave, bundlr} = ctx;
 
   let initStateRaw, dataItem;
 
+
+  const rawDataItem: Buffer = await rawBody(ctx.req);
+  dataItem = new DataItem(rawDataItem);
+  const isValid = await dataItem.isValid();
+  if (!isValid) {
+    throw new GatewayError('Data item binary is not valid.', 400);
+  }
+
+  const areContractTagsValid = await verifyContractTags(dataItem, ctx);
+  if (!areContractTagsValid) {
+    throw new GatewayError('Contract tags are not valid.', 400);
+  }
+
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(dataItem, {getReceiptSignature: true});
+
+  if (bundlrResponse.status !== 200 || !bundlrResponse.data.public || !bundlrResponse.data.signature) {
+    throw new GatewayError(
+      `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
+    );
+  }
+  logger.debug('Data item successfully bundled.', {
+    id: bundlrResponse.data.id,
+  });
   try {
-    const rawDataItem: Buffer = await rawBody(ctx.req);
-    dataItem = new DataItem(rawDataItem);
-    const isValid = await dataItem.isValid();
-    if (!isValid) {
-      ctx.throw(400, 'Data item binary is not valid.');
-    }
-
-    const areContractTagsValid = await verifyContractTags(dataItem, ctx);
-    if (!areContractTagsValid) {
-      ctx.throw(400, 'Contract tags are not valid.');
-    }
-
-    const bundlrResponse = await bundlr.uploader.uploadTransaction(dataItem, { getReceiptSignature: true });
-
-    if (bundlrResponse.status !== 200 || !bundlrResponse.data.public || !bundlrResponse.data.signature) {
-      throw new Error(
-        `Bundlr did not upload transaction correctly. Bundlr responded with status ${bundlrResponse.status}.`
-      );
-    }
-
-    logger.debug('Data item successfully bundled.', {
-      id: bundlrResponse.data.id,
-    });
-
     const srcTxId = dataItem.tags.find((t) => t.name == 'Contract-Src')!.value;
     initStateRaw = dataItem.tags.find((t) => t.name == 'Init-State')!.value;
     const initState = JSON.parse(initStateRaw);
@@ -61,7 +61,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       block_height: blockHeight,
       block_timestamp: blockTimestamp,
       content_type: contentType,
-      contract_tx: { tags: dataItem.toJSON().tags },
+      contract_tx: {tags: dataItem.toJSON().tags},
       bundler_contract_tx_id: bundlrResponse.data.id,
       bundler_contract_node: BUNDLR_NODE1_URL,
       testnet,
@@ -71,7 +71,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     };
 
     await dbSource.insertContract(insert);
-    sendNotification(ctx, bundlrResponse.data.id, { initState, tags: dataItem.tags });
+    sendNotification(ctx, bundlrResponse.data.id, {initState, tags: dataItem.tags});
     publishContract(
       ctx,
       bundlrResponse.data.id,
@@ -91,23 +91,20 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       contractTxId: bundlrResponse.data.id,
     };
   } catch (e: any) {
-    logger.error('Error while inserting bundled transaction.', {
+    throw new GatewayError(`Error while inserting bundled transaction.`, 500, {
       dataItemId: dataItem?.id,
       contractTx: dataItem?.toJSON(),
       initStateRaw: initStateRaw,
     });
-    logger.error(e);
-    ctx.body = e;
-    ctx.status = e.status ? e.status : 500;
   }
 }
 
 export async function verifyContractTags(dataItem: DataItem, ctx: Router.RouterContext) {
   const tags = dataItem.tags;
   const tagsIncluded = [
-    { name: 'App-Name', value: 'SmartWeaveContract' },
-    { name: 'App-Version', value: '0.3.0' },
-    { name: 'Content-Type', value: 'application/x.arweave-manifest+json' },
+    {name: 'App-Name', value: 'SmartWeaveContract'},
+    {name: 'App-Version', value: '0.3.0'},
+    {name: 'Content-Type', value: 'application/x.arweave-manifest+json'},
   ];
   const nameTagsIncluded = ['Contract-Src', 'Init-State', 'Title', 'Description', 'Type'];
   if (tags.some((t) => t.name == tagsIncluded[2].name && t.value != tagsIncluded[2].value)) {

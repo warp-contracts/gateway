@@ -1,14 +1,15 @@
 import Router from '@koa/router';
-import { evalType } from '../../tasks/contractsMetadata';
-import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { publishContract, sendNotification } from '../../publisher';
-import { evalManifest, WarpDeployment } from './deployContractRoute';
-import { Tag } from 'arweave/node/lib/transaction';
-import { stringToB64Url } from 'arweave/node/lib/utils';
-import { fetch } from 'undici';
-import { backOff } from 'exponential-backoff';
-import { getTestnetTag } from './deployBundledRoute';
-import { ContractInsert } from '../../../db/insertInterfaces';
+import {evalType} from '../../../tasks/contractsMetadata';
+import {getCachedNetworkData} from '../../../tasks/networkInfoCache';
+import {publishContract, sendNotification} from '../../../publisher';
+import {evalManifest, WarpDeployment} from './deployContractRoute';
+import {Tag} from 'arweave/node/lib/transaction';
+import {stringToB64Url} from 'arweave/node/lib/utils';
+import {fetch} from 'undici';
+import {backOff} from 'exponential-backoff';
+import {getTestnetTag} from './deployBundledRoute';
+import {ContractInsert} from '../../../../db/insertInterfaces';
+import {GatewayError} from "../../../errorHandlerMiddleware";
 
 const BUNDLR_QUERY = `query Transactions($ids: [String!]) {
     transactions(ids: $ids) {
@@ -24,43 +25,44 @@ const BUNDLR_NODES = ['node1', 'node2'] as const;
 type BundlrNodeType = typeof BUNDLR_NODES[number];
 
 export async function registerContractRoute(ctx: Router.RouterContext) {
-  const { logger, dbSource } = ctx;
+  const {logger, dbSource} = ctx;
 
   let initStateRaw = '';
   let contractTx = null;
   let txId = '';
 
+
+  const bundlrNode = ctx.request.body.bundlrNode;
+  if (!bundlrNode || !isBundlrNodeType(bundlrNode)) {
+    throw new GatewayError(
+      `Invalid Bundlr Node. Should be equal to one of the following values: ${BUNDLR_NODES.map((n) => n).join(
+        ', '
+      )}, found: ${bundlrNode}.`, 400
+    );
+  }
+
+  txId = ctx.request.body.id;
+
+  const txMetadata = ((await getBundlrGqlMetadata(txId, bundlrNode)) as any).transactions.edges[0].node;
+
+  const {contractTagsIncluded, tags, signature} = await verifyContractTags(txId, bundlrNode);
+  if (!contractTagsIncluded) {
+    throw new GatewayError('Bundlr transaction is not valid contract transaction.', 400);
+  }
+
+  logger.debug('Bundlr transaction marked as valid contract transaction.');
+
+  let encodedTags: Tag[] = [];
+
+  for (const tag of tags) {
+    try {
+      encodedTags.push(new Tag(stringToB64Url(tag.name), stringToB64Url(tag.value)));
+    } catch (e: any) {
+      throw new GatewayError(`Unable to encode tag ${tag.name}: ${e.status}`, 400);
+    }
+  }
+
   try {
-    const bundlrNode = ctx.request.body.bundlrNode;
-    if (!bundlrNode || !isBundlrNodeType(bundlrNode)) {
-      throw new Error(
-        `Invalid Bundlr Node. Should be equal to one of the following values: ${BUNDLR_NODES.map((n) => n).join(
-          ', '
-        )}, found: ${bundlrNode}.`
-      );
-    }
-
-    txId = ctx.request.body.id;
-
-    const txMetadata = ((await getBundlrGqlMetadata(txId, bundlrNode)) as any).transactions.edges[0].node;
-
-    const { contractTagsIncluded, tags, signature } = await verifyContractTags(txId, bundlrNode);
-    if (!contractTagsIncluded) {
-      ctx.throw(400, 'Bundlr transaction is not valid contract transaction.');
-    }
-
-    logger.debug('Bundlr transaction marked as valid contract transaction.');
-
-    let encodedTags: Tag[] = [];
-
-    for (const tag of tags) {
-      try {
-        encodedTags.push(new Tag(stringToB64Url(tag.name), stringToB64Url(tag.value)));
-      } catch (e: any) {
-        throw new Error(`Unable to encode tag ${tag.name}: ${e.status}`);
-      }
-    }
-
     const srcTxId = tags.find((t: Tag) => t.name == 'Contract-Src')!.value;
     initStateRaw = tags.find((t: Tag) => t.name == 'Init-State')!.value;
     const initState = JSON.parse(initStateRaw);
@@ -93,7 +95,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       block_height: blockHeight,
       block_timestamp: blockTimestamp,
       content_type: contentType,
-      contract_tx: { tags: contractTx.tags },
+      contract_tx: {tags: contractTx.tags},
       bundler_contract_tx_id: txId,
       bundler_contract_node: `https://${bundlrNode}.bundlr.network`,
       testnet,
@@ -104,7 +106,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
 
     await dbSource.insertContract(insert);
 
-    sendNotification(ctx, txId, { initState, tags });
+    sendNotification(ctx, txId, {initState, tags});
     publishContract(ctx, txId, ownerAddress, type, blockHeight, blockTimestamp, WarpDeployment.External, syncTimestamp);
 
     logger.info('Contract successfully registered.', {
@@ -115,14 +117,11 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       contractTxId: txId,
     };
   } catch (e: any) {
-    logger.error('Error while registering bundled transaction.', {
+    throw new GatewayError(`Error while registering bundled transaction: ${e}.`, 500, {
       txId,
       contractTx,
       initStateRaw,
     });
-    logger.error(e);
-    ctx.body = e;
-    ctx.status = e.status ? e.status : 500;
   }
 }
 
@@ -145,8 +144,8 @@ export async function verifyContractTags(id: string, bundlrNode: string) {
   const tags = response.tags;
   const signature = response.signature;
   const tagsIncluded = [
-    { name: 'App-Name', value: 'SmartWeaveContract' },
-    { name: 'App-Version', value: '0.3.0' },
+    {name: 'App-Name', value: 'SmartWeaveContract'},
+    {name: 'App-Version', value: '0.3.0'},
   ];
 
   const nameTagsIncluded = ['Contract-Src', 'Init-State', 'Content-Type'];
@@ -155,13 +154,13 @@ export async function verifyContractTags(id: string, bundlrNode: string) {
     tagsIncluded.every((ti) => tags.some((t: Tag) => t.name == ti.name && t.value == ti.value)) &&
     nameTagsIncluded.every((nti) => tags.some((t: Tag) => t.name == nti));
 
-  return { contractTagsIncluded, tags, signature };
+  return {contractTagsIncluded, tags, signature};
 }
 
 export async function getBundlrGqlMetadata(id: string, bundlrNode: string) {
   const data = JSON.stringify({
     query: BUNDLR_QUERY,
-    variables: { ids: [id] },
+    variables: {ids: [id]},
   });
 
   const response = await fetch(`https://${bundlrNode}.bundlr.network/graphql`, {

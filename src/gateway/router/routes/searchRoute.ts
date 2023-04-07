@@ -19,24 +19,18 @@ export async function searchRoute(ctx: Router.RouterContext) {
   const isEthWallet = utils.isAddress(phrase);
   const validTs = isTxIdValid(phrase);
 
-  try {
-    const benchmark = Benchmark.measure();
-    let result: any;
-    if (isEthWallet) {
-      result = await fetchCreatorOnly(dbSource, phrase);
-    } else if (validTs) {
-      result = await fetchTransaction(dbSource, phrase, testnet);
-    } else {
-      result = await fetchPst(dbSource, phrase, testnet);
-    }
-
-    ctx.body = result?.rows;
-    logger.debug('Contracts loaded in', benchmark.elapsed());
-  } catch (e: any) {
-    ctx.logger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
+  const benchmark = Benchmark.measure();
+  let result: any;
+  if (isEthWallet) {
+    result = await fetchCreatorOnly(dbSource, phrase);
+  } else if (validTs) {
+    result = await fetchTransaction(dbSource, phrase, testnet);
+  } else {
+    result = await fetchPst(dbSource, phrase, testnet);
   }
+
+  ctx.body = result?.rows;
+  logger.debug('Contracts loaded in', benchmark.elapsed());
 }
 
 async function fetchCreatorOnly(dbSource: DatabaseSource, wallet: string) {

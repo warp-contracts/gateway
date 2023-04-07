@@ -60,7 +60,7 @@ export function publishInteraction(
 ) {
   const { logger, appSync } = ctx;
 
-  if (!appSync) {
+  if (!appSync || ctx.localEnv) {
     logger.warn('App sync key not set');
     return;
   }

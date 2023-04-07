@@ -7,12 +7,13 @@ import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } fr
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
-import { VRF } from '../../init';
 import { isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { publishInteraction, sendNotification } from '../../publisher';
 import { Knex } from 'knex';
 import { InteractionInsert } from '../../../db/insertInterfaces';
+import {GatewayError} from "../../errorHandlerMiddleware";
+import {VRF} from "../../init";
 
 const { Evaluate } = require('@idena/vrf-js');
 
@@ -113,15 +114,12 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       contractLastSortKey
     );
 
-    let verified = false;
-    if (isEvmSigner) {
-      verified = await signatureVerification.process(interaction);
-    } else {
-      verified = await arweave.transactions.verify(transaction);
-    }
+    const verified = isEvmSigner
+      ? await signatureVerification.process(interaction)
+      : await arweave.transactions.verify(transaction);
 
     if (!verified) {
-      throw new Error('Naughty boy (interaction)!');
+      throw new Error('Transaction could not be verified - is it properly signed?');
     } else {
       sLogger.info('Transaction verified properly');
     }
@@ -196,14 +194,11 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       'redstone-sequencer',
       millis
     );
-  } catch (e) {
+  } catch (e: any) {
     if (!trx.isCompleted()) {
       await trx.rollback();
     }
-    sLogger.error('Error while inserting bundled transaction');
-    sLogger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
+    throw new GatewayError(e?.message || e)
   }
 }
 
