@@ -29,27 +29,40 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
   id && bindings.push(id);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
+  id && bindings.push(id);
 
   try {
     const benchmark = Benchmark.measure();
 
     const result: any = await dbSource.raw(
       `
-            SELECT  c.contract_id                                                                       as "contractId",
-                    c.owner                                                                             as "owner",
-                    c.bundler_contract_tx_id                                                            as "bundlerTxId",
-                    c.block_height                                                                      as "blockHeight",
-                    c.block_timestamp                                                                   as "blockTimestamp",
-                    count(i.contract_id)                                                                as "interactions",
-                    count(*) OVER () AS total
-            FROM contracts c
-            LEFT JOIN interactions i
-            ON c.contract_id = i.contract_id
-            WHERE src_tx_id = ?
-            AND c.type != 'error'
-            GROUP BY c.contract_id
-            ${sort == 'desc' || sort == 'asc' ? `ORDER BY c.block_height ${sort.toUpperCase()}` : ''}
-            LIMIT ? OFFSET ?; 
+          with c as (select contract_id, owner, bundler_contract_tx_id, block_height, block_timestamp
+                     from contracts
+                     where src_tx_id = ?
+                       and type != 'error'
+              ${sort == 'desc' || sort == 'asc' ? `ORDER BY block_height ${sort.toUpperCase()}, contract_id` : ''}
+              LIMIT ? OFFSET ?),
+                  
+              src as (select count(*) AS total
+                from contracts
+                where src_tx_id = ?
+                  and type <> 'error'),
+              
+              interactions as (select c.contract_id, count(*) as interactions
+          from c
+              join interactions on interactions.contract_id = c.contract_id
+          group by c.contract_id)
+          SELECT c.contract_id               AS "contractId",
+                 c.owner                     AS "owner",
+                 c.bundler_contract_tx_id    AS "bundlerTxId",
+                 c.block_height              AS "blockHeight",
+                 c.block_timestamp           AS "blockTimestamp",
+                 coalesce(i.interactions, 0) AS "interactions",
+                 coalesce(src.total, 0)      AS "total"
+          from c
+                   LEFT JOIN interactions i ON c.contract_id = i.contract_id
+                   LEFT JOIN src ON TRUE
+              ${sort == 'desc' || sort == 'asc' ? `ORDER BY c.block_height ${sort.toUpperCase()}, c.contract_id` : ''};
         `,
       bindings
     );
