@@ -9,7 +9,7 @@ import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
 import { VRF } from '../../init';
 import { isTxIdValid } from '../../../utils';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../constants';
 import { publishInteraction, sendNotification } from '../../publisher';
 import { Knex } from 'knex';
 import { InteractionInsert } from '../../../db/insertInterfaces';
@@ -158,7 +158,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       function: functionName,
       input: inputTag,
       confirmation_status: 'confirmed',
-      confirming_peer: BUNDLR_NODE2_URL,
+      confirming_peer: BUNDLR_NODE1_URL,
       source: 'redstone-sequencer',
       bundler_tx_id: bTx.id,
       interact_write: internalWrites,

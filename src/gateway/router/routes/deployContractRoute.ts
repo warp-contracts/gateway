@@ -4,7 +4,7 @@ import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
 import { evalType } from '../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
 import { publishContract, sendNotification } from '../../publisher';
 import { ContractInsert, ContractSourceInsert } from '../../../db/insertInterfaces';
@@ -119,7 +119,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
       contract_tx: { tags: contractTx.toJSON().tags },
       bundler_contract_tx_id: bundlerContractTx.id,
-      bundler_contract_node: BUNDLR_NODE2_URL,
+      bundler_contract_node: BUNDLR_NODE1_URL,
       testnet: contractTestnet,
       deployment_type: WarpDeployment.Wrapped,
       manifest,
@@ -137,7 +137,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         src_binary: srcBinary || null,
         src_wasm_lang: srcWasmLang || null,
         bundler_src_tx_id: bundlerSrcTxId as string,
-        bundler_src_node: BUNDLR_NODE2_URL,
+        bundler_src_node: BUNDLR_NODE1_URL,
         bundler_response: JSON.stringify(srcBundlrResponse?.data),
         src_tx: { ...srcTx.toJSON(), data: null },
         testnet: srcTestnet,
@@ -216,7 +216,7 @@ export async function prepareTags(
     { name: 'Uploader', value: 'RedStone' },
     { name: 'Uploader-Contract-Owner', value: originalAddress },
     { name: 'Uploader-Tx-Id', value: transaction.id },
-    { name: 'Uploader-Bundler', value: BUNDLR_NODE2_URL },
+    { name: 'Uploader-Bundler', value: BUNDLR_NODE1_URL },
     ...decodedTags,
   ];
 

@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import { evalType } from '../../tasks/contractsMetadata';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../constants';
 import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
@@ -63,7 +63,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       content_type: contentType,
       contract_tx: { tags: dataItem.toJSON().tags },
       bundler_contract_tx_id: bundlrResponse.data.id,
-      bundler_contract_node: BUNDLR_NODE2_URL,
+      bundler_contract_node: BUNDLR_NODE1_URL,
       testnet,
       deployment_type: WarpDeployment.Direct,
       manifest,

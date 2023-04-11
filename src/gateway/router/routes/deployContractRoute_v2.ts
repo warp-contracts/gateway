@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import { evalType } from '../../tasks/contractsMetadata';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Bundle, DataItem } from 'arbundles';
 import { ContractSource, sleep, SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
@@ -65,7 +65,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
         src_content_type: srcContentType,
         src_binary: srcBinary || null,
         src_wasm_lang: srcWasmLang || null,
-        bundler_src_node: BUNDLR_NODE2_URL,
+        bundler_src_node: BUNDLR_NODE1_URL,
         src_tx: srcDataItem.toJSON(),
         testnet: srcTestnet,
         deployment_type: WarpDeployment.Direct,
@@ -115,7 +115,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       content_type: contentType,
       contract_tx: { tags: contractDataItem.toJSON().tags },
       bundler_contract_tx_id: bundlrResponse.data.id,
-      bundler_contract_node: BUNDLR_NODE2_URL,
+      bundler_contract_node: BUNDLR_NODE1_URL,
       testnet,
       deployment_type: WarpDeployment.Direct,
       manifest,

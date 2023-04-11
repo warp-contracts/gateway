@@ -2,7 +2,7 @@ import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { SmartWeaveTags } from 'warp-contracts';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../constants';
 import { uploadToBundlr } from './sequencerRoute';
 import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
 import { ContractSourceInsert } from '../../../db/insertInterfaces';
@@ -47,7 +47,7 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
       src_binary: srcBinary || null,
       src_wasm_lang: srcWasmLang || null,
       bundler_src_tx_id: bundlrSrcTxId,
-      bundler_src_node: BUNDLR_NODE2_URL,
+      bundler_src_node: BUNDLR_NODE1_URL,
       bundler_response: JSON.stringify(srcBundlrResponse?.data),
       src_tx: { ...srcTx.toJSON(), data: null },
       testnet: srcTestnet,
