@@ -3,7 +3,7 @@ import Arweave from 'arweave';
 import { ArweaveWrapper, Benchmark, Tags, WarpLogger } from 'warp-contracts';
 import { decodeTags, getTagByName, isTxIdValid } from '../../../utils';
 import Transaction from 'arweave/node/lib/transaction';
-import { BUNDLR_NODE2_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../constants';
 import { WarpDeployment } from './deployContractRoute';
 
 export async function contractDataRoute(ctx: Router.RouterContext) {
@@ -26,7 +26,8 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
       `
           SELECT  bundler_contract_tx_id as "bundlerContractTxId",
                   contract_tx -> 'tags' as "contractTags",
-                  deployment_type as "deploymentType"
+                  deployment_type as "deploymentType",
+                  bundler_contract_node as "bundlrContractNode"
           FROM contracts 
           WHERE contract_id = ?;
       `,
@@ -47,7 +48,8 @@ export async function contractDataRoute(ctx: Router.RouterContext) {
         result?.rows[0].bundlerContractTxId,
         tags,
         arweaveWrapper,
-        result?.rows[0].deploymentType
+        result?.rows[0].deploymentType,
+        result.rows[0].bundlrContractNode
       );
       ctx.body = data;
       ctx.set('Content-Type', contentType);
@@ -66,7 +68,8 @@ async function getContractData(
   id: string,
   tags: { name: string; value: string }[],
   arweaveWrapper: ArweaveWrapper,
-  deploymentType: string
+  deploymentType: string,
+  bundlrContractNode: string
 ) {
   let data: ArrayBuffer | Buffer;
 
@@ -75,7 +78,7 @@ async function getContractData(
   } catch (e) {
     logger.error(`Error from Arweave Gateway while loading data: `, e);
 
-    data = await fetch(`${BUNDLR_NODE2_URL}/tx/${id}/data`).then((res) => {
+    data = await fetch(`${bundlrContractNode}/tx/${id}/data`).then((res) => {
       return res.arrayBuffer();
     });
   }
