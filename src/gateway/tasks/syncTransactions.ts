@@ -239,6 +239,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       source: 'arweave',
       syncTimestamp,
       functionName,
+      testnet,
     });
   }
 
@@ -274,7 +275,8 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
         null,
         value.functionName,
         value.source,
-        value.syncTimestamp
+        value.syncTimestamp,
+        value.testnet
       );
     }
   }

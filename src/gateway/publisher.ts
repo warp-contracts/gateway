@@ -56,7 +56,8 @@ export function publishInteraction(
   lastSortKey: string | null,
   functionName: string,
   source: string,
-  syncTimestamp: number
+  syncTimestamp: number,
+  testnet: string | null
 ) {
   const { logger, appSync } = ctx;
 
@@ -83,10 +84,11 @@ export function publishInteraction(
     ctx,
     `interactions/${contractTxId}`,
     interactionToPublish,
-    `Published interaction for contract ${contractTxId} @ ${sortKey}`
+    `Published interaction for contract ${contractTxId} @ ${sortKey}`,
+    testnet
   );
 
-  publish(ctx, 'interactions', interactionToPublish, `Published new interaction: ${interaction.id}`);
+  publish(ctx, 'interactions', interactionToPublish, `Published new interaction: ${interaction.id}`, testnet);
 }
 
 export function publishContract(
@@ -97,7 +99,8 @@ export function publishContract(
   blockHeight: number,
   blockTimestamp: number,
   source: string,
-  syncTimestamp: number
+  syncTimestamp: number,
+  testnet: string | null
 ) {
   const contractToPublish = JSON.stringify({
     contractTxId,
@@ -109,14 +112,15 @@ export function publishContract(
     syncTimestamp,
   });
 
-  publish(ctx, 'contracts', contractToPublish, `Published contract: ${contractTxId}`);
+  publish(ctx, 'contracts', contractToPublish, `Published contract: ${contractTxId}`, testnet);
 }
 
 function publish(
   ctx: Router.RouterContext | GatewayContext,
   channel: string,
   txToPublish: string,
-  infoMessage: string
+  infoMessage: string,
+  testnet: string | null
 ) {
   const { logger, appSync } = ctx;
 
@@ -125,7 +129,7 @@ function publish(
     return;
   }
 
-  appSyncPublish(`${ctx.localEnv ? 'local/' : ''}${channel}`, txToPublish, appSync)
+  appSyncPublish(`${ctx.localEnv ? 'local/' : ''}${testnet ? 'testnet/' : ''}${channel}`, txToPublish, appSync)
     .then((r) => {
       logger.debug(infoMessage);
     })

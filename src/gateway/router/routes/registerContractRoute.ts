@@ -105,7 +105,17 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
     await dbSource.insertContract(insert);
 
     sendNotification(ctx, txId, { initState, tags });
-    publishContract(ctx, txId, ownerAddress, type, blockHeight, blockTimestamp, WarpDeployment.External, syncTimestamp);
+    publishContract(
+      ctx,
+      txId,
+      ownerAddress,
+      type,
+      blockHeight,
+      blockTimestamp,
+      WarpDeployment.External,
+      syncTimestamp,
+      testnet
+    );
 
     logger.info('Contract successfully registered.', {
       contractTxId: txId,

@@ -133,7 +133,8 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       blockHeight,
       blockTimestamp,
       WarpDeployment.Direct,
-      syncTimestamp
+      syncTimestamp,
+      testnet
     );
 
     logger.info('Contract successfully deployed.', {
