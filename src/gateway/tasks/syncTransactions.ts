@@ -114,8 +114,13 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   const heightFrom = lastProcessedBlockHeight - pastBlocksAmount;
   let heightTo = currentNetworkHeight;
-  if (heightTo > heightFrom + 20) {
-    heightTo = heightFrom + 20;
+
+  // note: only main task should have this protection. The 'last hour' and 'last 6 hours' tasks
+  // will obviously try to resync more blocks.
+  if (publish) {
+    if (heightTo > heightFrom + 20) {
+      heightTo = heightFrom + 20;
+    }
   }
 
   logger.info('Loading interactions for blocks', {
@@ -144,7 +149,11 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
 
   if (gqlInteractions.length === 0) {
     logger.info('Now new interactions');
-    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
+    // note: publish is set to true only for the main syncing task - and also only this task should
+    // store info about last processed height
+    if (publish) {
+      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+    }
     return;
   }
 
@@ -244,10 +253,14 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       logger.error(e);
       return;
     } finally {
-      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
+      if (publish) {
+        fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+      }
     }
   } else {
-    fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
+    if (publish) {
+      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+    }
   }
 
   if (publish) {
