@@ -190,7 +190,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       contractLastSortKey,
       functionName,
       'redstone-sequencer',
-      millis
+      millis,
+      testnetVersion
     );
   } catch (e) {
     if (!trx.isCompleted()) {

@@ -80,7 +80,8 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
       blockHeight,
       blockTimestamp,
       WarpDeployment.Direct,
-      syncTimestamp
+      syncTimestamp,
+      testnet
     );
 
     logger.info('Contract successfully deployed.', {

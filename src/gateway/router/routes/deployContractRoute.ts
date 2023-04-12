@@ -156,7 +156,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       blockHeight,
       blockTimestamp,
       WarpDeployment.Wrapped,
-      syncTimestamp
+      syncTimestamp,
+      contractTestnet
     );
 
     logger.info('Contract successfully bundled.');

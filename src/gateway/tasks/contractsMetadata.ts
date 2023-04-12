@@ -175,13 +175,20 @@ async function loadContractsMetadata(context: GatewayContext) {
   const { arweave, logger, dbSource, arweaveWrapper } = context;
   const definitionLoader = new ContractDefinitionLoader(arweave, 'mainnet');
 
-  const result: { contract: string; blockHeight: number; blockTimestamp: number; syncTimestamp: number }[] = (
+  const result: {
+    contract: string;
+    blockHeight: number;
+    blockTimestamp: number;
+    syncTimestamp: number;
+    testnet: string;
+  }[] = (
     await dbSource.raw(
       `
         SELECT  contract_id AS contract,
                 block_height AS blockHeight,
                 block_timestamp AS blockTimestamp,
-                sync_timestamp AS syncTimestamp
+                sync_timestamp AS syncTimestamp,
+                testnet AS testnet
         FROM contracts
         WHERE contract_id != ''
           AND contract_id NOT ILIKE '()%'
@@ -253,7 +260,8 @@ async function loadContractsMetadata(context: GatewayContext) {
         row.blockHeight,
         row.blockTimestamp,
         'arweave',
-        row.syncTimestamp
+        row.syncTimestamp,
+        row.testnet
       );
 
       logger.debug(`${row.contract} metadata inserted into db`);
