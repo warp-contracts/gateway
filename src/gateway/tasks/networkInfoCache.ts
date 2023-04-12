@@ -19,7 +19,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
     try {
       const newNetworkInfo = await arweaveWrapper.info();
       if (cache?.cachedNetworkInfo && newNetworkInfo && newNetworkInfo.height <= cache.cachedNetworkInfo.height) {
-        logger.warn('New network height lower or equal than current, skipping.', {
+        logger.debug('New network height lower or equal than current, skipping.', {
           currentHeight: cache?.cachedNetworkInfo.height,
           newHeight: newNetworkInfo.height,
         });
