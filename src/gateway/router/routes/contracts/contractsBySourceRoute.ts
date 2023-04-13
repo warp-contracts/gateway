@@ -21,8 +21,6 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
     throw new GatewayError('Incorrect contract source transaction id.', 403);
   }
 
-  logger.info(`contractsBySourceRoute [ip: ${ctx.request?.ip}, srcId: ${id}]`);
-
   const bindings: any = [];
   id && bindings.push(id);
   parsedPage && bindings.push(parsedLimit);
