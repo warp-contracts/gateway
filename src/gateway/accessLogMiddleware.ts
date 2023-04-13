@@ -9,7 +9,7 @@ export async function accessLogMiddleware(ctx: ParameterizedContext<DefaultState
   ctx.state.requestId = uuidv4();
   await next();
   try {
-    if (ctx.path == '/gateway/gcp/alive') {
+    if (ctx.path == '/gateway/gcp/alive' || ctx.path == '/gateway/arweave/info') {
       return;
     }
     ctx.accessLogger.debug(util.format(
