@@ -22,7 +22,7 @@ export async function errorHandlerMiddleware(ctx: ParameterizedContext<DefaultSt
         ctx.logger.error(util.format(
           ERROR_LOG_FORMAT,
           ctx.state.requestId,
-          `${ctx.path}${ctx.querystring}`,
+          `${ctx.path}${ctx.search}`,
           err.message,
           err.properties ? JSON.stringify(err.properties): ''
         ), err);
@@ -33,7 +33,7 @@ export async function errorHandlerMiddleware(ctx: ParameterizedContext<DefaultSt
       ctx.logger.error(util.format(
         ERROR_LOG_FORMAT,
         ctx.state.requestId,
-        `${ctx.path}${ctx.querystring}`,
+        `${ctx.path}${ctx.search}`,
         err.message || err
       ), err);
     }
