@@ -90,19 +90,21 @@ export interface GatewayContext {
   const arweave = initArweave();
   const {bundlr, jwk} = initBundlr(logger);
 
-  const dbSource = new DatabaseSource([
-    {
-      client: 'pg',
-      url: process.env.DB_URL_GCP as string,
-      ssl: localEnv ? undefined : {
-        rejectUnauthorized: false,
-        ca: fs.readFileSync('.secrets/ca.pem'),
-        cert: fs.readFileSync('.secrets/cert.pem'),
-        key: fs.readFileSync('.secrets/key.pem'),
-      },
-      primaryDb: true,
+  const gcpDataOptions =     {
+    client: 'pg' as 'pg',
+    url: process.env.DB_URL_GCP as string,
+    ssl: localEnv ? undefined : {
+      rejectUnauthorized: false,
+      ca: fs.readFileSync('.secrets/ca.pem'),
+      cert: fs.readFileSync('.secrets/cert.pem'),
+      key: fs.readFileSync('.secrets/key.pem'),
     },
-  ]);
+    primaryDb: true,
+    healthCheckConnection: false
+  }
+
+  const dbSource = new DatabaseSource(
+    [gcpDataOptions, {...gcpDataOptions, primaryDb: false, healthCheckConnection: true}]);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
 
