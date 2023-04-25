@@ -19,11 +19,13 @@ interface DbData {
   ssl?: { ca: string | Buffer; cert: string | Buffer; key: string | Buffer; rejectUnauthorized: boolean };
   options?: Partial<Knex.Config>;
   primaryDb?: boolean;
+  healthCheckConnection?: boolean;
 }
 
 export class DatabaseSource {
   public db: Knex[] = [];
   public primaryDb: Knex | null = null;
+  public healthCheckConnection: Knex | null = null;
   private mailClient: Transporter<SMTPTransport.SentMessageInfo>;
 
   constructor(dbData: DbData[]) {
@@ -34,6 +36,11 @@ export class DatabaseSource {
           throw new Error('Only one db can be set primary!');
         }
         this.primaryDb = this.db[i];
+      } else if (dbData[i].healthCheckConnection) {
+        if (this.healthCheckConnection != null) {
+          throw new Error('Can set only one health check connection');
+        }
+        this.healthCheckConnection = this.db[i];
       }
     }
     if (this.primaryDb == null) {
@@ -251,6 +258,10 @@ export class DatabaseSource {
     return db.raw(query, bindings);
   }
 
+  public healthCheck(query: string, bindings?: any) {
+    return this.healthCheckConnection!!.raw(query, bindings);
+  }
+
   public async loopThroughDb(callback: any, recordName: string): Promise<any> {
     let result: any;
     try {
@@ -276,19 +287,35 @@ export class DatabaseSource {
         ...(dbData.ssl ? { ssl: dbData.ssl } : ''),
       },
       useNullAsDefault: true,
-      pool: {
-        min: 5,
-        max: 30,
-        createTimeoutMillis: 3000,
-        acquireTimeoutMillis: 30000,
-        idleTimeoutMillis: 30000,
-        reapIntervalMillis: 1000,
-        createRetryIntervalMillis: 100,
-        propagateCreateError: false,
-      },
+      pool: this.connectionPool(dbData),
       ...dbData.options,
     };
     return knex(options);
+  }
+
+  private connectionPool(dbData: DbData) {
+    if (dbData.healthCheckConnection) {
+      return {
+        min: 1,
+        max: 2,
+        createTimeoutMillis: 500,
+        acquireTimeoutMillis: 500,
+        idleTimeoutMillis: 500,
+        reapIntervalMillis: 500,
+        createRetryIntervalMillis: 100,
+        propagateCreateError: false,
+      }
+    }
+    return {
+      min: 5,
+      max: 30,
+      createTimeoutMillis: 3000,
+      acquireTimeoutMillis: 30000,
+      idleTimeoutMillis: 30000,
+      reapIntervalMillis: 1000,
+      createRetryIntervalMillis: 100,
+      propagateCreateError: false,
+    }
   }
 
   private currentLocalDateWithTime(): string {
