@@ -19,7 +19,6 @@ interface DbData {
   ssl?: { ca: string | Buffer; cert: string | Buffer; key: string | Buffer; rejectUnauthorized: boolean };
   options?: Partial<Knex.Config>;
   primaryDb?: boolean;
-  healthCheckConnection?: boolean;
 }
 
 export class DatabaseSource {
@@ -28,7 +27,7 @@ export class DatabaseSource {
   public healthCheckConnection: Knex | null = null;
   private mailClient: Transporter<SMTPTransport.SentMessageInfo>;
 
-  constructor(dbData: DbData[]) {
+  constructor(dbData: DbData[], healthCheckConnection?: DbData) {
     for (let i = 0; i < dbData.length; i++) {
       this.db[i] = this.connectDb(dbData[i]);
       if (dbData[i].primaryDb) {
@@ -36,15 +35,13 @@ export class DatabaseSource {
           throw new Error('Only one db can be set primary!');
         }
         this.primaryDb = this.db[i];
-      } else if (dbData[i].healthCheckConnection) {
-        if (this.healthCheckConnection != null) {
-          throw new Error('Can set only one health check connection');
-        }
-        this.healthCheckConnection = this.db[i];
       }
     }
     if (this.primaryDb == null) {
       throw new Error('Exactly one db must be set as primary');
+    }
+    if (healthCheckConnection != null) {
+      this.healthCheckConnection = this.connectDb(healthCheckConnection);
     }
     this.mailClient = client();
   }
@@ -258,6 +255,10 @@ export class DatabaseSource {
     return db.raw(query, bindings);
   }
 
+  public healthCheckEnabled(): boolean {
+    return this.healthCheckConnection != null;
+  }
+
   public healthCheck(query: string, bindings?: any) {
     return this.healthCheckConnection!!.raw(query, bindings);
   }
@@ -287,35 +288,19 @@ export class DatabaseSource {
         ...(dbData.ssl ? { ssl: dbData.ssl } : ''),
       },
       useNullAsDefault: true,
-      pool: this.connectionPool(dbData),
+      pool: {
+        min: 5,
+        max: 30,
+        createTimeoutMillis: 3000,
+        acquireTimeoutMillis: 30000,
+        idleTimeoutMillis: 30000,
+        reapIntervalMillis: 1000,
+        createRetryIntervalMillis: 100,
+        propagateCreateError: false,
+      },
       ...dbData.options,
     };
     return knex(options);
-  }
-
-  private connectionPool(dbData: DbData) {
-    if (dbData.healthCheckConnection) {
-      return {
-        min: 1,
-        max: 2,
-        createTimeoutMillis: 500,
-        acquireTimeoutMillis: 500,
-        idleTimeoutMillis: 500,
-        reapIntervalMillis: 500,
-        createRetryIntervalMillis: 100,
-        propagateCreateError: false,
-      }
-    }
-    return {
-      min: 5,
-      max: 30,
-      createTimeoutMillis: 3000,
-      acquireTimeoutMillis: 30000,
-      idleTimeoutMillis: 30000,
-      reapIntervalMillis: 1000,
-      createRetryIntervalMillis: 100,
-      propagateCreateError: false,
-    }
   }
 
   private currentLocalDateWithTime(): string {
