@@ -99,12 +99,27 @@ export interface GatewayContext {
       cert: fs.readFileSync('.secrets/cert.pem'),
       key: fs.readFileSync('.secrets/key.pem'),
     },
-    primaryDb: true,
-    healthCheckConnection: false
+    primaryDb: true
   }
 
-  const dbSource = new DatabaseSource(
-    [gcpDataOptions, {...gcpDataOptions, primaryDb: false, healthCheckConnection: true}]);
+  const healthCheckOptions = {
+    ...gcpDataOptions,
+    primaryDb: false,
+    options: {
+      pool: {
+        min: 1,
+        max: 2,
+        createTimeoutMillis: 500,
+        acquireTimeoutMillis: 500,
+        idleTimeoutMillis: 500,
+        reapIntervalMillis: 500,
+        createRetryIntervalMillis: 100,
+        propagateCreateError: false,
+      }
+    }
+  }
+
+  const dbSource = new DatabaseSource([gcpDataOptions], healthCheckOptions);
 
   const app = new Koa<Application.DefaultState, GatewayContext>();
 
