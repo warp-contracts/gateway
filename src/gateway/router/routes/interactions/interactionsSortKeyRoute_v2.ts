@@ -8,8 +8,6 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk} = ctx.query;
 
-  logger.info(`interactionsSortKeyRoute [ip: ${ctx.request?.ip}, contractId: ${contractId}]`);
-
   const parsedPage = page ? parseInt(page as string) : 1;
 
   const parsedLimit = limit
