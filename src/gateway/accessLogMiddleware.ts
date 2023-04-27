@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {DefaultState, Next, ParameterizedContext} from "koa";
 import {GatewayContext} from "./init";
 
-const LOG_FORMAT = '%s %s "%s %s HTTP/%s" %d %s %d[ms]';
+const LOG_FORMAT = '%s %s "%s %s HTTP/%s" %d %s %s[ms]';
 
 export async function accessLogMiddleware(ctx: ParameterizedContext<DefaultState, GatewayContext, any>, next: Next): Promise<void> {
   ctx.state.requestId = uuidv4();
@@ -23,7 +23,7 @@ export async function accessLogMiddleware(ctx: ParameterizedContext<DefaultState
         ctx.req.httpVersion,
         ctx.status,
         ctx.length ? ctx.length.toString() : '-',
-        t1 - t0
+        (t1 - t0).toFixed(3)
       )
     );
   } catch (err: any) {
