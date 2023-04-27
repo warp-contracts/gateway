@@ -4,14 +4,14 @@ import { SmartWeaveTags } from 'warp-contracts';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { WarpDeployment } from './deployContractRoute';
 import rawBody from 'raw-body';
-import {DataItem} from 'arbundles';
-import {getTestnetTag} from './deployBundledRoute';
-import {bundleAndUpload, determineOwner, verifyDeployTags} from './deployContractRoute_v2';
-import {ContractSourceInsert} from '../../../../db/insertInterfaces';
-import {GatewayError} from "../../../errorHandlerMiddleware";
+import { DataItem } from 'arbundles';
+import { getTestnetTag } from './deployBundledRoute';
+import { bundleAndUpload, determineOwner, getDataItemWithoutData, verifyDeployTags } from './deployContractRoute_v2';
+import { ContractSourceInsert } from '../../../../db/insertInterfaces';
+import { GatewayError } from '../../../errorHandlerMiddleware';
 
 export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
-  const {logger, arweave, dbSource} = ctx;
+  const { logger, arweave, dbSource } = ctx;
 
   let dataItem;
 
@@ -42,7 +42,7 @@ export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
     } else {
       srcBinary = dataItem.rawData;
     }
-    const bundlrResponse = await bundleAndUpload({contract: null, src: dataItem}, ctx);
+    const bundlrResponse = await bundleAndUpload({ contract: null, src: dataItem }, ctx);
 
     bundlrSrcTxId = bundlrResponse.data.id;
     srcBundlrResponse = bundlrResponse;
@@ -78,7 +78,7 @@ export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
   } catch (e) {
     throw new GatewayError(`Error while inserting bundled transaction: ${e}.`, 500, {
       dataItemId: dataItem?.id,
-      contractTx: dataItem?.toJSON(),
+      contractTx: getDataItemWithoutData(dataItem),
     });
   }
 }

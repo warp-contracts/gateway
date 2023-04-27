@@ -7,14 +7,14 @@ import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import Arweave from 'arweave';
-import {SignatureConfig} from 'arbundles/src/constants';
-import {utils} from 'ethers';
-import {longTo32ByteArray} from 'arbundles/src/utils';
-import {ContractInsert, ContractSourceInsert} from '../../../../db/insertInterfaces';
-import {GatewayError} from "../../../errorHandlerMiddleware";
+import { SignatureConfig } from 'arbundles/src/constants';
+import { utils } from 'ethers';
+import { longTo32ByteArray } from 'arbundles/src/utils';
+import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
+import { GatewayError } from '../../../errorHandlerMiddleware';
 
 export async function deployContractRoute_v2(ctx: Router.RouterContext) {
-  const {logger, arweave, dbSource} = ctx;
+  const { logger, arweave, dbSource } = ctx;
 
   let initStateRaw,
     contractDataItem,
@@ -27,7 +27,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
     if (!isContractValid) {
       ctx.throw(400, 'Contract data item binary is not valid.');
     }
-    const areContractTagsValid = await verifyDeployTags(contractDataItem, {contract: true});
+    const areContractTagsValid = await verifyDeployTags(contractDataItem, { contract: true });
     if (!areContractTagsValid) {
       ctx.throw(400, 'Contract tags are not valid.');
     }
@@ -72,7 +72,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
         deployment_type: WarpDeployment.Direct,
       };
     }
-    const bundlrResponse = await bundleAndUpload({contract: contractDataItem, src: srcDataItem || null}, ctx);
+    const bundlrResponse = await bundleAndUpload({ contract: contractDataItem, src: srcDataItem || null }, ctx);
     logger.debug('Contract successfully uploaded to Bundlr.', {
       contract_id: contractDataItem.id,
       src_id: srcDataItem?.id,
@@ -114,7 +114,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       block_height: blockHeight,
       block_timestamp: blockTimestamp,
       content_type: contentType,
-      contract_tx: {tags: contractDataItem.toJSON().tags},
+      contract_tx: { tags: contractDataItem.toJSON().tags },
       bundler_contract_tx_id: bundlrResponse.data.id,
       bundler_contract_node: BUNDLR_NODE1_URL,
       testnet,
@@ -125,7 +125,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
 
     await dbSource.insertContract(insert);
 
-    sendNotification(ctx, contractDataItem.id, {initState, tags: contractDataItem.tags});
+    sendNotification(ctx, contractDataItem.id, { initState, tags: contractDataItem.tags });
     publishContract(
       ctx,
       contractDataItem.id,
@@ -152,7 +152,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
   } catch (e: any) {
     throw new GatewayError(`Error while inserting bundled transaction: ${e}.`, 500, {
       dataItemId: contractDataItem?.id,
-      contract: contractDataItem?.toJSON(),
+      contract: getDataItemWithoutData(contractDataItem),
       initStateRaw: initStateRaw,
     });
   }
@@ -162,9 +162,9 @@ export async function verifyDeployTags(dataItem: DataItem, opts?: { contract: bo
   const tags = dataItem.tags;
 
   const deployTags = [
-    {name: SmartWeaveTags.APP_NAME, value: opts?.contract ? 'SmartWeaveContract' : 'SmartWeaveContractSource'},
-    {name: SmartWeaveTags.APP_VERSION, value: '0.3.0'},
-    {name: SmartWeaveTags.SDK, value: 'Warp'},
+    { name: SmartWeaveTags.APP_NAME, value: opts?.contract ? 'SmartWeaveContract' : 'SmartWeaveContractSource' },
+    { name: SmartWeaveTags.APP_VERSION, value: '0.3.0' },
+    { name: SmartWeaveTags.SDK, value: 'Warp' },
   ];
 
   const contractNameTags = ['Contract-Src', 'Nonce'];
@@ -197,8 +197,8 @@ export async function bundleAndUpload(
   dataItems: { contract: DataItem | null; src: DataItem | null },
   ctx: Router.RouterContext
 ) {
-  const {bundlr} = ctx;
-  const {contract, src} = dataItems;
+  const { bundlr } = ctx;
+  const { contract, src } = dataItems;
   const dataItemsToUpload = [];
   contract && dataItemsToUpload.push(contract);
   src && dataItemsToUpload.push(src);
@@ -206,14 +206,14 @@ export async function bundleAndUpload(
 
   const bundlrTx = bundlr.createTransaction(bundle.getRaw(), {
     tags: [
-      {name: 'Bundle-Format', value: 'binary'},
-      {name: 'Bundle-Version', value: '2.0.0'},
-      {name: 'App-Name', value: 'Warp'},
-      {name: 'Action', value: 'WarpContractDeployment'},
+      { name: 'Bundle-Format', value: 'binary' },
+      { name: 'Bundle-Version', value: '2.0.0' },
+      { name: 'App-Name', value: 'Warp' },
+      { name: 'Action', value: 'WarpContractDeployment' },
     ],
   });
   await bundlrTx.sign();
-  const bundlrResponse = await bundlr.uploader.uploadTransaction(bundlrTx, {getReceiptSignature: true});
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(bundlrTx, { getReceiptSignature: true });
   if (
     bundlrResponse.status !== 200 ||
     !bundlrResponse.data.public ||
@@ -252,4 +252,13 @@ export async function bundleData(dataItems: DataItem[]): Promise<Bundle> {
   const buffer = Buffer.concat([longTo32ByteArray(dataItems.length), headers, binaries]);
 
   return new Bundle(buffer);
+}
+
+export function getDataItemWithoutData(dataItem: DataItem | undefined) {
+  if (dataItem) {
+    const { data, ...dataItemWithoutData } = dataItem.toJSON();
+    return JSON.stringify(dataItemWithoutData);
+  } else {
+    return undefined;
+  }
 }
