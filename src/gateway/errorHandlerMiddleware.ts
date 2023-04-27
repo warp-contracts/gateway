@@ -20,7 +20,7 @@ export async function errorHandlerMiddleware(
   } catch (err: any) {
     if (err.name == 'GatewayError') {
       ctx.status = err.status;
-      ctx.message = `[${ctx.state.requestId}]: ${err.message.replace(/\r?\n|\r/, '')}`;
+      ctx.message = `[${ctx.state.requestId}]: ${err.message.replace(/\n/g, '')}`;
       if (err.log) {
         ctx.logger.error(
           util.format(
@@ -36,7 +36,7 @@ export async function errorHandlerMiddleware(
     } else {
       ctx.status = 500;
       ctx.message = `[${ctx.state.requestId}]${
-        err?.message ? `: ${err.message.replace(/\r?\n|\r/, '')}` : `Unknown gateway error.`
+        err?.message ? `: ${err.message.replace(/\n/g, '')}` : `Unknown gateway error.`
       }`;
       ctx.logger.error(
         util.format(ERROR_LOG_FORMAT, ctx.state.requestId, `${ctx.path}${ctx.search}`, err.message || err),
