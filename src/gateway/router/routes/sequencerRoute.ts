@@ -81,7 +81,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       arweave
     );
 
-    const trx = await dbSource.primaryDb.transaction();
+    trx = (await dbSource.primaryDb.transaction()) as Knex.Transaction;
     const contractPrevSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
     const millis = Date.now();
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
@@ -216,7 +216,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     );
   } catch (e: any) {
     if (trx != null) {
-      await (trx as Knex.Transaction).rollback();
+      await trx.rollback();
     }
     throw new GatewayError(e?.message || e)
   }
