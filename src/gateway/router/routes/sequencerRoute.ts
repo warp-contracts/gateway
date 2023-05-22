@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
-import { parseFunctionName } from '../../tasks/syncTransactions';
+import { parseFunctionName, safeParseInput } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } from 'warp-contracts';
@@ -14,6 +14,7 @@ import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { VRF } from '../../init';
 import { serializeTags } from 'arbundles';
+import { DataItem } from 'arbundles';
 
 const { Evaluate } = require('@idena/vrf-js');
 
@@ -232,8 +233,8 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   }
 }
 
-function createInteraction(
-  transaction: Transaction,
+export function createInteraction(
+  transactionOrDataItem: Transaction | DataItem,
   originalAddress: string,
   decodedTags: GQLTagInterface[],
   currentHeight: number,
@@ -246,9 +247,9 @@ function createInteraction(
   lastSortKey: string | null
 ) {
   const interaction: any = {
-    id: transaction.id,
+    id: transactionOrDataItem.id,
     owner: { address: originalAddress },
-    recipient: transaction.target,
+    recipient: transactionOrDataItem.target,
     tags: decodedTags,
     block: {
       height: currentHeight,
@@ -256,16 +257,16 @@ function createInteraction(
       timestamp: blockInfo.timestamp,
     },
     fee: {
-      winston: transaction.reward,
+      winston: isTransaction(transactionOrDataItem) ? transactionOrDataItem.reward : '0',
     },
     quantity: {
-      winston: transaction.quantity,
+      winston: isTransaction(transactionOrDataItem) ? transactionOrDataItem.quantity : '',
     },
     sortKey: sortKey,
     source: 'redstone-sequencer',
     vrf: vrfData,
     testnet: testnetVersion,
-    lastSortKey
+    lastSortKey,
   };
 
   if (signature) {
@@ -275,7 +276,11 @@ function createInteraction(
   return interaction;
 }
 
-function generateVrfTags(sortKey: string, vrf: VRF, arweave: Arweave) {
+function isTransaction(transactionOrDataItem: Transaction | DataItem): transactionOrDataItem is Transaction {
+  return (transactionOrDataItem as Transaction).last_tx != undefined;
+}
+
+export function generateVrfTags(sortKey: string, vrf: VRF, arweave: Arweave) {
   const privateKey = vrf.privKey.toArray();
   const data = arweave.utils.stringToBuffer(sortKey);
   const [index, proof] = Evaluate(privateKey, data);
@@ -367,15 +372,14 @@ async function prepareTags(
     originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
   }
 
-  const tags = [
-    { name: 'Sequencer', value: 'RedStone' },
-    { name: 'Sequencer-Owner', value: originalAddress },
-    { name: 'Sequencer-Tx-Id', value: transaction.id },
-    { name: 'Sequencer-Block-Height', value: '' + currentHeight },
-    { name: 'Sequencer-Block-Id', value: currentBlockId },
-    { name: 'Sequencer-Block-Timestamp', value: '' + currentBlockTimestamp },
-    ...decodedTags,
-  ];
+  const tags = getUploaderTags(
+    originalAddress,
+    transaction.id,
+    currentHeight,
+    currentBlockId,
+    currentBlockTimestamp,
+    decodedTags
+  );
 
   return {
     contractTag,
@@ -388,6 +392,25 @@ async function prepareTags(
     isEvmSigner,
     testnetVersion,
   };
+}
+
+export function getUploaderTags(
+  originalAddress: string,
+  id: string,
+  currentHeight: number,
+  currentBlockId: string,
+  currentBlockTimestamp: number,
+  decodedTags: GQLTagInterface[]
+): GQLTagInterface[] {
+  return [
+    { name: 'Sequencer', value: 'RedStone' },
+    { name: 'Sequencer-Owner', value: originalAddress },
+    { name: 'Sequencer-Tx-Id', value: id },
+    { name: 'Sequencer-Block-Height', value: '' + currentHeight },
+    { name: 'Sequencer-Block-Id', value: currentBlockId },
+    { name: 'Sequencer-Block-Timestamp', value: '' + currentBlockTimestamp },
+    ...decodedTags,
+  ];
 }
 
 export async function uploadToBundlr(
@@ -417,7 +440,7 @@ export async function uploadToBundlr(
   return { bTx, bundlrResponse };
 }
 
-async function createSortKey(
+export async function createSortKey(
   arweave: Arweave,
   jwk: JWKInterface,
   blockId: string,

@@ -185,11 +185,13 @@ export function getTestnetTag(tags: { name: string; value: string }[]) {
   }
 }
 
-export async function determineOwner(dataItem: DataItem, arweave: Arweave) {
+export async function determineOwner(dataItem: DataItem, arweave: Arweave): Promise<string> {
   if (dataItem.signatureType == SignatureConfig.ARWEAVE) {
     return await arweave.wallets.ownerToAddress(dataItem.owner);
   } else if (dataItem.signatureType == SignatureConfig.ETHEREUM) {
     return utils.computeAddress(utils.hexlify(dataItem.rawOwner));
+  } else {
+    throw new Error(`Signature type: ${dataItem.signatureType} is not supported.`);
   }
 }
 
