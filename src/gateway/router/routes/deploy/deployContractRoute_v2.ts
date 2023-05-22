@@ -7,9 +7,9 @@ import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import Arweave from 'arweave';
-import { SignatureConfig } from 'arbundles/src/constants';
+import { SignatureConfig } from 'arbundles';
 import { utils } from 'ethers';
-import { longTo32ByteArray } from 'arbundles/src/utils';
+import { longTo32ByteArray } from 'arbundles';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
 import { GatewayError } from '../../../errorHandlerMiddleware';
 
