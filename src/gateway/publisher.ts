@@ -61,7 +61,7 @@ export function publishInteraction(
 ) {
   const { logger, appSync } = ctx;
 
-  if (!appSync || ctx.env === 'local') {
+  if (!appSync) {
     logger.warn('App sync key not set');
     return;
   }
@@ -129,7 +129,7 @@ function publish(
     return;
   }
 
-  const prefix = ctx.env === "main" ? "" : `${ctx.env}/`;
+  const prefix = ctx.env === 'main' ? '' : `${ctx.env}/`;
 
   appSyncPublish(`${prefix}${testnet ? 'testnet/' : ''}${channel}`, txToPublish, appSync)
     .then((r) => {

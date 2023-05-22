@@ -2477,6 +2477,16 @@ arweave@1.11.8, arweave@=1.11.8:
     bignumber.js "^9.0.2"
     util "^0.12.4"
 
+arweave@^1.13.7:
+  version "1.13.7"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.13.7.tgz#cda8534c833baec372a7052c61f53b4e39a886d7"
+  integrity sha512-Hv+x2bSI6UyBHpuVbUDMMpMje1ETfpJWj52kKfz44O0IqDRi/LukOkkDUptup1p6OT6KP1/DdpnUnsNHoskFeA==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
+
 asn1.js@^5.4.1:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/asn1.js/-/asn1.js-5.4.1.tgz#11a980b84ebb91781ce35b0fdc2ee294e3783f07"
@@ -7118,6 +7128,16 @@ walker@^1.0.7:
   dependencies:
     makeerror "1.0.12"
 
+warp-arbundles@1.0.0-beta.18:
+  version "1.0.0-beta.18"
+  resolved "https://registry.yarnpkg.com/warp-arbundles/-/warp-arbundles-1.0.0-beta.18.tgz#a29e3b7863d2bc1185c5edb282c7c709e0c2a570"
+  integrity sha512-c6AcP5dZwh88OIBNrlYeL786CdCw2YGxIq650dKkBIqDBmwJqGj4pAEQMgRGpD4Cwt3/R5z+p4GRhY5mveTPPw==
+  dependencies:
+    arweave "^1.13.7"
+    base64url "^3.0.1"
+    buffer "^6.0.3"
+    warp-isomorphic "^1.0.4"
+
 warp-contracts-pubsub@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/warp-contracts-pubsub/-/warp-contracts-pubsub-1.0.3.tgz#5d2636b3da95c7b2a31b51668b70b9c3fb3685a6"
@@ -7175,6 +7195,14 @@ warp-contracts@1.2.48:
     unzipit "^1.4.0"
     vm2 "3.9.11"
     warp-wasm-metering "1.0.0"
+
+warp-isomorphic@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/warp-isomorphic/-/warp-isomorphic-1.0.4.tgz#1017eba260e0f0228b33b94b9e36a1afe54e09d8"
+  integrity sha512-W77IoLjq/eu5bY1uRrlmVt5lLDoIHeZ0ozJ/j67FTnxvZRXu887biEnom1nx8q1UgOKyJh8eQYFQaE2FLlKhFg==
+  dependencies:
+    buffer "^6.0.3"
+    undici "^5.8.0"
 
 warp-signature@1.0.4:
   version "1.0.4"
