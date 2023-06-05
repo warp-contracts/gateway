@@ -3,11 +3,11 @@ import { TaskRunner } from './TaskRunner';
 import { GatewayContext } from '../init';
 
 export const MIN_CONFIRMATIONS = 10;
-const PARALLEL_REQUESTS = 10;
-const TX_CONFIRMATION_SUCCESSFUL_ROUNDS = 3;
-const TX_CONFIRMATION_MAX_ROUNDS = 4;
+const PARALLEL_REQUESTS = 15;
+const TX_CONFIRMATION_SUCCESSFUL_ROUNDS = 1;
+const TX_CONFIRMATION_MAX_ROUNDS = 2;
 const TX_CONFIRMATION_MAX_ROUND_TIMEOUT_MS = 3000;
-const CONFIRMATIONS_INTERVAL_MS = 60000;
+const CONFIRMATIONS_INTERVAL_MS = 10000;
 
 let lastVerificationHeight = 0;
 
@@ -34,7 +34,7 @@ async function verifyInteractions(context: GatewayContext) {
   }
 
   const safeNetworkHeight = currentNetworkHeight - MIN_CONFIRMATIONS;
-  logger.debug('Verify confirmations params:', {
+  logger.info('Verify confirmations params:', {
     currentNetworkHeight,
     safeNetworkHeight,
     lastVerificationHeight,
