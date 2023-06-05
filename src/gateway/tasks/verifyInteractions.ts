@@ -155,15 +155,16 @@ async function verifyInteractions(context: GatewayContext) {
 
         Promise.allSettled(
           interactionsToCheck.map((tx) => {
-            const interactionPeers = interactionsPeers.get(tx.interaction_id)!;
-            const randomPeer = interactionPeers[Math.floor(Math.random() * interactionPeers.length)];
+            // const interactionPeers = interactionsPeers.get(tx.interaction_id)!;
+            // const randomPeer = interactionPeers[Math.floor(Math.random() * interactionPeers.length)];
 
             // removing the selected peer for this interaction
             // - so it won't be selected again in any of the next rounds.
-            interactionPeers.splice(peers.indexOf(randomPeer), 1);
-            const randomPeerUrl = `http://${randomPeer.peer}`;
+            // interactionPeers.splice(peers.indexOf(randomPeer), 1);
+            // const randomPeerUrl = `http://${randomPeer.peer}`;
 
-            return axios.get(`${randomPeerUrl}/tx/${tx.interaction_id}/status`);
+            // return axios.get(`${randomPeerUrl}/tx/${tx.interaction_id}/status`);
+            return axios.get(`https://arweave.net/tx/${tx.interaction_id}/status`);
           })
         ),
       ]);
