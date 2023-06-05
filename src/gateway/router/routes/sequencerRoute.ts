@@ -3,7 +3,7 @@ import Transaction from 'arweave/node/lib/transaction';
 import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
-import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } from 'warp-contracts';
+import { arrayToHex, Benchmark, GQLNodeInterface, GQLTagInterface, SmartWeaveTags, WarpLogger } from "warp-contracts";
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import Bundlr from '@bundlr-network/client';
 import { BlockData } from 'arweave/node/blocks';
@@ -245,7 +245,7 @@ function createInteraction(
   testnetVersion: string | null,
   lastSortKey: string | null
 ) {
-  const interaction: any = {
+  const interaction: Partial<GQLNodeInterface> = {
     id: transaction.id,
     owner: { address: originalAddress },
     recipient: transaction.target,
@@ -265,6 +265,7 @@ function createInteraction(
     source: 'redstone-sequencer',
     vrf: vrfData,
     testnet: testnetVersion,
+    lastSortKey
   };
 
   if (signature) {
