@@ -265,6 +265,7 @@ function createInteraction(
     source: 'redstone-sequencer',
     vrf: vrfData,
     testnet: testnetVersion,
+    lastSortKey
   };
 
   if (signature) {
