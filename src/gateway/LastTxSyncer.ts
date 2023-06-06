@@ -38,13 +38,13 @@ export class LastTxSync {
     const result = await trx.raw(
       `SELECT 'sort_key'    as type,
               max(sort_key) AS "lastSortKey",
-              null          as finishedBlockHeight,
-              null          as finishedBlockHash,
-              null          as finishedTimestamp
+              null          as "finishedBlockHeight",
+              null          as "finishedBlockHash",
+              null          as "finishedBlockTimestamp"
        FROM interactions
        WHERE contract_id = ?
        UNION ALL
-       SELECT 'finished_block' as type, null, finished_block_height, finished_block_hash, finished_timestamp
+       SELECT 'finished_block' as type, null, finished_block_height, finished_block_hash, finished_block_timestamp
        FROM sync_state
        WHERE name = 'Contracts'`, [contractTxId]
     );
@@ -58,7 +58,7 @@ export class LastTxSync {
       lastSortKey: result?.rows[sortKeyRow].lastSortKey, // note: this will return null if we're registering the very first tx for the contract
       blockHeight: result?.rows[finishedBlockRow].finishedBlockHeight,
       blockHash: result?.rows[finishedBlockRow].finishedBlockHash,
-      blockTimestamp: 0 // TODO
+      blockTimestamp: result?.rows[finishedBlockRow].finishedBlockTimestamp
     };
   }
 
