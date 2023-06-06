@@ -67,7 +67,7 @@ setInterval(async () => {
     })
 
   ]);
-}, 75);
+}, 500);
 
 function readJSON(path) {
   const content = fs.readFileSync(path, 'utf-8');
