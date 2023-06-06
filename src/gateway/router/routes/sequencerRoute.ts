@@ -168,7 +168,25 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
                            last_sort_key,
                            owner,
                            sync_timestamp)
-        VALUES (:interaction_id, :interaction, :block_height, :block_id, :contract_id, : function, : input, :confirmation_status, :confirming_peer, : source, :block_timestamp, :interact_write, :sort_key, :evolve, :testnet, :prev_sort_key, :owner, :sync_timestamp)
+        VALUES (
+            :interaction_id,
+            :interaction,
+            :block_height,
+            :block_id,
+            :contract_id,
+            :function,
+            :input,
+            :confirmation_status,
+            :confirming_peer,
+            :source,
+            :block_timestamp,
+            :interact_write,
+            :sort_key,
+            :evolve,
+            :testnet,
+            :prev_sort_key,
+            :owner,
+            :sync_timestamp)
             RETURNING id)
         INSERT
         INTO bundle_items (interaction_id, state, transaction, tags)
