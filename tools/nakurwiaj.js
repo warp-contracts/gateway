@@ -45,7 +45,7 @@ setInterval(async () => {
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
     }),
-    contractB.writeInteraction({
+    /*contractB.writeInteraction({
       function: 'transfer',
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
@@ -64,7 +64,7 @@ setInterval(async () => {
       function: 'transfer',
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
-    })
+    })*/
 
   ]);
 }, 500);
