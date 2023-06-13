@@ -6,7 +6,6 @@ import { JWKInterface } from 'arweave/node/lib/wallet';
 import {
   arrayToHex,
   Benchmark,
-  GQLNodeInterface,
   GQLTagInterface,
   SmartWeaveTags,
   timeout,
