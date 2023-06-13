@@ -27,11 +27,12 @@ const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
 const replica = (argv.replica as boolean) || false;
 const noSync = (argv.noSync as boolean) || false;
-const localEnv = (argv.local as boolean) || false;
 const elliptic = require('elliptic');
 const EC = new elliptic.ec('secp256k1');
 
 const cors = require('@koa/cors');
+
+export type EnvType = 'local' | 'dev' | 'main';
 
 export type VRF = { pubKeyHex: string; privKey: any; ec: any };
 
@@ -50,7 +51,7 @@ export interface GatewayContext {
   publisher: Redis;
   publisher_v2: Redis;
   lastTxSync: LastTxSync;
-  localEnv: boolean;
+  env: EnvType;
   appSync?: string;
   signatureVerification: EvmSignatureVerificationServerPlugin;
   replica: boolean;
@@ -86,7 +87,12 @@ export interface GatewayContext {
   const sLogger = LoggerFactory.INST.create('sequencer');
   const accessLogger = LoggerFactory.INST.create('access');
 
-  logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode. noSync = ${noSync}`);
+  const env = process.env.ENV as string;
+  if (!env) {
+    logger.error(`Set 'ENV' value in ${envPath} to either 'local', 'dev' or 'main'`);
+    process.exit(0);
+  }
+  logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode.\nnoSync = ${noSync}.\nENV: ${env}`);
 
   const arweave = initArweave();
   const { bundlr, jwk } = initBundlr(logger);
@@ -94,14 +100,15 @@ export interface GatewayContext {
   const gcpDataOptions = {
     client: 'pg' as 'pg',
     url: process.env.DB_URL_GCP as string,
-    ssl: localEnv
-      ? undefined
-      : {
-          rejectUnauthorized: false,
-          ca: fs.readFileSync('.secrets/ca.pem'),
-          cert: fs.readFileSync('.secrets/cert.pem'),
-          key: fs.readFileSync('.secrets/key.pem'),
-        },
+    ssl:
+      env === 'local'
+        ? undefined
+        : {
+            rejectUnauthorized: false,
+            ca: fs.readFileSync('.secrets/ca.pem'),
+            cert: fs.readFileSync('.secrets/cert.pem'),
+            key: fs.readFileSync('.secrets/key.pem'),
+          },
     primaryDb: true,
   };
 
@@ -145,7 +152,6 @@ export interface GatewayContext {
   );
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
   app.context.lastTxSync = new LastTxSync();
-  app.context.localEnv = localEnv;
   app.context.appSync = appSync;
   app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
   app.context.replica = replica;
@@ -188,7 +194,7 @@ export interface GatewayContext {
 
     logger.info('vrf', app.context.vrf);
 
-    if (!localEnv) {
+    if (env !== 'local') {
       const connectionOptions = readGwPubSubConfig('gw-pubsub.json');
       logger.info('Redis connection options', connectionOptions);
       if (connectionOptions) {
@@ -244,7 +250,7 @@ export interface GatewayContext {
 
           // note: only one worker in cluster runs the gateway tasks
           // all workers in cluster run the http server
-          if (!localEnv) {
+          if (env !== 'local') {
             logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
             await runGatewayTasks(app.context);
           }

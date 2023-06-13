@@ -20,7 +20,7 @@ export function sendNotification(
 ) {
   const { logger } = ctx;
 
-  if (ctx.localEnv) {
+  if (ctx.env === 'local') {
     logger.info('Skipping publish contract notification for local env');
     return;
   }
@@ -63,7 +63,7 @@ export function publishInteraction(
 ) {
   const { logger, appSync } = ctx;
 
-  if (!appSync) {
+  if (!appSync || ctx.env === 'local') {
     logger.warn('App sync key not set');
     return;
   }
@@ -131,7 +131,9 @@ function publish(
     return;
   }
 
-  appSyncPublish(`${ctx.localEnv ? 'local/' : ''}${testnet ? 'testnet/' : ''}${channel}`, txToPublish, appSync)
+  const prefix = ctx.env === 'main' ? '' : `${ctx.env}/`;
+
+  appSyncPublish(`${prefix}${testnet ? 'testnet/' : ''}${channel}`, txToPublish, appSync)
     .then((r) => {
       logger.debug(infoMessage);
     })
