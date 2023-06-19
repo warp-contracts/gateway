@@ -1,27 +1,27 @@
 import yargs from 'yargs';
-import {hideBin} from 'yargs/helpers';
+import { hideBin } from 'yargs/helpers';
 import Koa from 'koa';
 import Application from 'koa';
 import bodyParser from 'koa-bodyparser';
-import {ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger} from 'warp-contracts';
+import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger } from 'warp-contracts';
 import Arweave from 'arweave';
-import {runGatewayTasks} from './runGatewayTasks';
+import { runGatewayTasks } from './runGatewayTasks';
 import gatewayRouter from './router/gatewayRouter';
 import * as fs from 'fs';
 import cluster from 'cluster';
 import welcomeRouter from './router/welcomeRouter';
 import Bundlr from '@bundlr-network/client';
-import {initBundlr} from '../bundlr/connect';
-import {JWKInterface} from 'arweave/node/lib/wallet';
-import {runNetworkInfoCacheTask} from './tasks/networkInfoCache';
+import { initBundlr } from '../bundlr/connect';
+import { JWKInterface } from 'arweave/node/lib/wallet';
+import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
 import Redis from 'ioredis';
-import {LastTxSync} from './LastTxSyncer';
-import {initPubSub} from 'warp-contracts-pubsub';
+import { LastTxSync } from './LastTxSyncer';
+import { initPubSub } from 'warp-contracts-pubsub';
 // @ts-ignore
-import {EvmSignatureVerificationServerPlugin} from 'warp-signature/server';
-import {DatabaseSource} from '../db/databaseSource';
-import {accessLogMiddleware} from "./accessLogMiddleware";
-import {errorHandlerMiddleware} from "./errorHandlerMiddleware";
+import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
+import { DatabaseSource } from '../db/databaseSource';
+import { accessLogMiddleware } from './accessLogMiddleware';
+import { errorHandlerMiddleware } from './errorHandlerMiddleware';
 
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
@@ -53,6 +53,7 @@ export interface GatewayContext {
   localEnv: boolean;
   appSync?: string;
   signatureVerification: EvmSignatureVerificationServerPlugin;
+  replica: boolean;
 }
 
 (async () => {
@@ -88,19 +89,21 @@ export interface GatewayContext {
   logger.info(`🚀🚀🚀 Starting gateway in ${replica ? 'replica' : 'normal'} mode. noSync = ${noSync}`);
 
   const arweave = initArweave();
-  const {bundlr, jwk} = initBundlr(logger);
+  const { bundlr, jwk } = initBundlr(logger);
 
-  const gcpDataOptions =     {
+  const gcpDataOptions = {
     client: 'pg' as 'pg',
     url: process.env.DB_URL_GCP as string,
-    ssl: localEnv ? undefined : {
-      rejectUnauthorized: false,
-      ca: fs.readFileSync('.secrets/ca.pem'),
-      cert: fs.readFileSync('.secrets/cert.pem'),
-      key: fs.readFileSync('.secrets/key.pem'),
-    },
-    primaryDb: true
-  }
+    ssl: localEnv
+      ? undefined
+      : {
+          rejectUnauthorized: false,
+          ca: fs.readFileSync('.secrets/ca.pem'),
+          cert: fs.readFileSync('.secrets/cert.pem'),
+          key: fs.readFileSync('.secrets/key.pem'),
+        },
+    primaryDb: true,
+  };
 
   const healthCheckOptions = {
     ...gcpDataOptions,
@@ -115,9 +118,9 @@ export interface GatewayContext {
         reapIntervalMillis: 500,
         createRetryIntervalMillis: 100,
         propagateCreateError: false,
-      }
-    }
-  }
+      },
+    },
+  };
 
   const dbSource = new DatabaseSource([gcpDataOptions], healthCheckOptions);
 
@@ -131,18 +134,21 @@ export interface GatewayContext {
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
   app.context.arweaveWrapper = new ArweaveWrapper(arweave);
-  app.context.arweaveWrapperGqlGoldsky = new ArweaveWrapper(Arweave.init({
-    host: 'arweave-search.goldsky.com',
-    port: 443,
-    protocol: 'https',
-    timeout: 20000,
-    logging: false,
-  }));
+  app.context.arweaveWrapperGqlGoldsky = new ArweaveWrapper(
+    Arweave.init({
+      host: 'arweave-search.goldsky.com',
+      port: 443,
+      protocol: 'https',
+      timeout: 20000,
+      logging: false,
+    })
+  );
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
   app.context.lastTxSync = new LastTxSync();
   app.context.localEnv = localEnv;
   app.context.appSync = appSync;
   app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
+  app.context.replica = replica;
 
   app.use(errorHandlerMiddleware);
   app.use(accessLogMiddleware);
@@ -233,7 +239,7 @@ export interface GatewayContext {
           logger.info(`Creating lock file for ${cluster.worker?.id}`);
           // note: if another process in cluster have already created the file - writing here
           // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
-          fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, {flag: 'wx'});
+          fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, { flag: 'wx' });
           removeLock = true;
 
           // note: only one worker in cluster runs the gateway tasks
