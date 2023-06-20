@@ -83,8 +83,8 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   const acquireMutexResult = await lastTxSync.acquireMutex(contractTag, trx);
   sLogger.debug("Acquire mutex result", acquireMutexResult);
-  if (acquireMutexResult.lastSortKey == null
-    || acquireMutexResult.blockHash == null
+  // note: lastSortKey can be null if that's a very first interaction with a contract.
+  if (acquireMutexResult.blockHash == null
     || acquireMutexResult.blockHeight == null
     || acquireMutexResult.blockTimestamp == null) {
     throw new Error(`Missing data in acquireMutexResult: ${JSON.stringify(acquireMutexResult)}`);
