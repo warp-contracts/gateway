@@ -12,6 +12,7 @@ const contractA = warp.contract("IBrkOF0A8XqlZHVFtZXy7jfCJFcaLJ2XYp94xL1-yUc")
   })
   .connect(wallet);
 
+/*
 const contractB = warp.contract("1LsbT8HH8SbldveeZcZZwgmuLn0ueJ6pN7ZSrbTqeVU")
   .setEvaluationOptions({
     sequencerUrl: 'http://34.141.17.15:5666/'
@@ -35,6 +36,7 @@ const contractE = warp.contract("pxna6TxgVFaESLNu0uZvxeUMOSqoYL1n-RRLtk7mGjY")
     sequencerUrl: 'http://34.141.17.15:5666/'
   })
   .connect(wallet);
+*/
 
 
 setInterval(async () => {
@@ -67,7 +69,72 @@ setInterval(async () => {
     })*/
 
   ]);
+}, 1000);
+
+setInterval(async () => {
+  console.log('sending to L2...');
+  await Promise.all([
+    contractA.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    /*contractB.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    contractC.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    contractD.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    contractE.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    })*/
+
+  ]);
 }, 2000);
+
+
+setInterval(async () => {
+  console.log('sending to L1...');
+  await Promise.all([
+    contractA.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }, { disableBundling: true }),
+    /*contractB.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    contractC.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    contractD.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    }),
+    contractE.writeInteraction({
+      function: 'transfer',
+      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
+      qty: 100
+    })*/
+
+  ]);
+}, 5000);
 
 function readJSON(path) {
   const content = fs.readFileSync(path, 'utf-8');
