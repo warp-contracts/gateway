@@ -46,7 +46,7 @@ export class LastTxSync {
        UNION ALL
        SELECT 'finished_block' as type, null, finished_block_height, finished_block_hash, finished_block_timestamp
        FROM sync_state
-       WHERE name = 'Contracts'`, [contractTxId]
+       WHERE name = 'Interactions'`, [contractTxId]
     );
     if (result?.rows.length !== 2) {
       throw new Error("Acquire mutex result should have exactly 2 rows in result");
