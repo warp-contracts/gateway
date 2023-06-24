@@ -2,7 +2,7 @@ const fs = require("fs");
 
 const warpContracts = require("warp-contracts");
 const warp = warpContracts.WarpFactory.forTestnet();
-const wallet = readJSON('./.secrets/33F0QHcb22W7LwWR1iRC8Az1ntZG09XQ03YWuw2ABqA.json');
+const wallet = readJSON('./.secrets/warp-wallet-jwk.json');
 
 warpContracts.LoggerFactory.INST.logLevel('error');
 
