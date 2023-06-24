@@ -6,13 +6,6 @@ const wallet = readJSON('./.secrets/33F0QHcb22W7LwWR1iRC8Az1ntZG09XQ03YWuw2ABqA.
 
 warpContracts.LoggerFactory.INST.logLevel('error');
 
-const contractA = warp.contract("IBrkOF0A8XqlZHVFtZXy7jfCJFcaLJ2XYp94xL1-yUc")
-  .setEvaluationOptions({
-    sequencerUrl: 'http://34.141.17.15:5666/'
-  })
-  .connect(wallet);
-
-/*
 const contractB = warp.contract("1LsbT8HH8SbldveeZcZZwgmuLn0ueJ6pN7ZSrbTqeVU")
   .setEvaluationOptions({
     sequencerUrl: 'http://34.141.17.15:5666/'
@@ -25,61 +18,10 @@ const contractC = warp.contract("o-QYGKa6rkWj5i0Vx0VQy99myCkPNeCAJi6-UZnhIVU")
   })
   .connect(wallet);
 
-const contractD = warp.contract("Y8ngFNyfGo17FeSvB7NEzLxdjl-qpFlE1YIPM8Sa6fo")
-  .setEvaluationOptions({
-    sequencerUrl: 'http://34.141.17.15:5666/'
-  })
-  .connect(wallet);
-
-const contractE = warp.contract("pxna6TxgVFaESLNu0uZvxeUMOSqoYL1n-RRLtk7mGjY")
-  .setEvaluationOptions({
-    sequencerUrl: 'http://34.141.17.15:5666/'
-  })
-  .connect(wallet);
-*/
-
-
-setInterval(async () => {
-  console.log('sending...');
-  await Promise.all([
-    contractA.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    /*contractB.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    contractC.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    contractD.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    contractE.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    })*/
-
-  ]);
-}, 1000);
-
 setInterval(async () => {
   console.log('sending to L2...');
   await Promise.all([
-    contractA.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    /*contractB.writeInteraction({
+    contractB.writeInteraction({
       function: 'transfer',
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
@@ -89,49 +31,23 @@ setInterval(async () => {
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
     }),
-    contractD.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    contractE.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    })*/
-
   ]);
-}, 2000);
+}, 3000);
 
 
 setInterval(async () => {
   console.log('sending to L1...');
   await Promise.all([
-    contractA.writeInteraction({
+    contractB.writeInteraction({
       function: 'transfer',
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
     }, { disableBundling: true }),
-    /*contractB.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
     contractC.writeInteraction({
       function: 'transfer',
       target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
       qty: 100
-    }),
-    contractD.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    }),
-    contractE.writeInteraction({
-      function: 'transfer',
-      target: 'M-mpNeJbg9h7mZ-uHaNsa5jwFFRAq0PsTkNWXJ-ojwI',
-      qty: 100
-    })*/
+    }, { disableBundling: true }),
 
   ]);
 }, 5000);
