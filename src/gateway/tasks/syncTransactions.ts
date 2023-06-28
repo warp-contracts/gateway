@@ -152,7 +152,7 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     // note: publish is set to true only for the main syncing task - and also only this task should
     // store info about last processed height
     if (publish) {
-      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
     }
     return;
   }
@@ -255,12 +255,12 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
       return;
     } finally {
       if (publish) {
-        fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+        fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
       }
     }
   } else {
     if (publish) {
-      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({lastProcessedBlockHeight: heightTo}), 'utf-8');
+      fs.writeFileSync('interactions-sync-l1.json', JSON.stringify({ lastProcessedBlockHeight: heightTo }), 'utf-8');
     }
   }
 
@@ -320,7 +320,11 @@ async function load(context: GatewayContext, from: number, to: number): Promise<
   };
 
   const { logger, arweaveWrapperGqlGoldsky } = context;
-  return await loadPages({ logger, arweaveWrapper: arweaveWrapperGqlGoldsky }, INTERACTIONS_QUERY, mainTransactionsVariables);
+  return await loadPages(
+    { logger, arweaveWrapper: arweaveWrapperGqlGoldsky },
+    INTERACTIONS_QUERY,
+    mainTransactionsVariables
+  );
 }
 
 export function testnetVersion(tx: GQLEdgeInterface): string | null {
@@ -338,7 +342,7 @@ export function parseFunctionName(input: string, logger: WarpLogger) {
   }
 }
 
-function safeParseInput(input: string, logger: WarpLogger) {
+export function safeParseInput(input: string, logger: WarpLogger) {
   try {
     return JSON.parse(input);
   } catch (e) {

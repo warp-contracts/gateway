@@ -45,6 +45,7 @@
     "raw-body": "^2.5.1",
     "undici": "5.21.0",
     "uuid": "^9.0.0",
+    "warp-arbundles": "1.0.0",
     "warp-contracts": "1.2.48",
     "warp-contracts-pubsub": "^1.0.3",
     "warp-contracts-subscription-plugin": "1.0.4",
