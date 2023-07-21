@@ -1,5 +1,5 @@
 import { GQLTagInterface, Tags } from 'warp-contracts';
-import { WarpDeployment } from '../gateway/router/routes/deployContractRoute';
+import { WarpDeployment } from '../gateway/router/routes/deploy/deployContractRoute';
 
 export interface SequencerInsert {
   original_sig: string;

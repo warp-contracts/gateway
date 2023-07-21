@@ -1,34 +1,35 @@
 import Router from '@koa/router';
 import Arweave from 'arweave';
 import { SmartWeaveTags } from 'warp-contracts';
-import { BUNDLR_NODE1_URL } from '../../../constants';
+import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { WarpDeployment } from './deployContractRoute';
 import rawBody from 'raw-body';
 import { DataItem } from 'arbundles';
 import { getTestnetTag } from './deployBundledRoute';
-import { bundleAndUpload, determineOwner, verifyDeployTags } from './deployContractRoute_v2';
-import { ContractSourceInsert } from '../../../db/insertInterfaces';
+import { bundleAndUpload, determineOwner, getDataItemWithoutData, verifyDeployTags } from './deployContractRoute_v2';
+import { ContractSourceInsert } from '../../../../db/insertInterfaces';
+import { GatewayError } from '../../../errorHandlerMiddleware';
 
 export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
   const { logger, arweave, dbSource } = ctx;
 
   let dataItem;
 
+  const rawDataItem: Buffer = await rawBody(ctx.req);
+  dataItem = new DataItem(rawDataItem);
+  logger.debug('New deploy source transaction', dataItem.id);
+
+  const isValid = await dataItem.isValid();
+  if (!isValid) {
+    throw new GatewayError('Source data item binary is not valid.', 400);
+  }
+
+  const areSrcTagsValid = await verifyDeployTags(dataItem);
+  if (!areSrcTagsValid) {
+    throw new GatewayError('Contract source tags are not valid.', 400);
+  }
+
   try {
-    const rawDataItem: Buffer = await rawBody(ctx.req);
-    dataItem = new DataItem(rawDataItem);
-    logger.debug('New deploy source transaction', dataItem.id);
-
-    const isValid = await dataItem.isValid();
-    if (!isValid) {
-      ctx.throw(400, 'Source data item binary is not valid.');
-    }
-
-    const areSrcTagsValid = await verifyDeployTags(dataItem);
-    if (!areSrcTagsValid) {
-      ctx.throw(400, 'Contract source tags are not valid.');
-    }
-
     let srcId, srcContentType, src, srcBinary, srcWasmLang, bundlrSrcTxId, srcOwner, srcTestnet, srcBundlrResponse;
     srcId = dataItem.id;
     srcOwner = await determineOwner(dataItem, arweave);
@@ -75,12 +76,9 @@ export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
       bundlrSrcTxId,
     };
   } catch (e) {
-    logger.error('Error while inserting bundled transaction.', {
+    throw new GatewayError(`Error while inserting bundled transaction: ${e}.`, 500, {
       dataItemId: dataItem?.id,
-      contractTx: dataItem?.toJSON(),
+      contractTx: getDataItemWithoutData(dataItem),
     });
-    logger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
   }
 }

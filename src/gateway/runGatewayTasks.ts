@@ -2,7 +2,6 @@ import { runLoadPeersTask } from './tasks/loadPeers';
 import { runVerifyInteractionsTask } from './tasks/verifyInteractions';
 import { runVerifyCorruptedTransactionsTask } from './tasks/verifyCorruptedTransactions';
 import {
-  runSyncLastSixHoursTransactionsTask,
   runSyncLastHourTransactionsTask,
   runSyncRecentTransactionsTask,
 } from './tasks/syncTransactions';

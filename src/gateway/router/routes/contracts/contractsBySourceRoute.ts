@@ -1,13 +1,14 @@
 import Router from '@koa/router';
-import { Benchmark } from 'warp-contracts';
-import { isTxIdValid } from '../../../utils';
+import {Benchmark} from 'warp-contracts';
+import {isTxIdValid} from '../../../../utils';
+import {GatewayError} from "../../../errorHandlerMiddleware";
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function contractsBySourceRoute(ctx: Router.RouterContext) {
-  const { logger, dbSource } = ctx;
+  const {logger, dbSource} = ctx;
 
-  const { id, page, limit, sort } = ctx.query;
+  const {id, page, limit, sort} = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -17,13 +18,8 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
   const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
   if (!isTxIdValid(id as string)) {
-    logger.error('Incorrect contract source transaction id.');
-    ctx.status = 500;
-    ctx.body = { message: 'Incorrect contract source transaction id.' };
-    return;
+    throw new GatewayError('Incorrect contract source transaction id.', 403);
   }
-
-  logger.info(`contractsBySourceRoute [ip: ${ctx.request?.ip}, srcId: ${id}]`);
 
   const bindings: any = [];
   id && bindings.push(id);
@@ -31,8 +27,7 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
   parsedPage && bindings.push(offset);
   id && bindings.push(id);
 
-  try {
-    const benchmark = Benchmark.measure();
+  const benchmark = Benchmark.measure();
 
     const result: any = await dbSource.raw(
       `
@@ -67,23 +62,17 @@ export async function contractsBySourceRoute(ctx: Router.RouterContext) {
       bindings
     );
 
-    console.log(result.rows.length);
-    const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
+  const total = result?.rows?.length > 0 ? result?.rows[0].total : 0;
 
-    ctx.body = {
-      paging: {
-        total,
-        limit: parsedLimit,
-        items: result?.rows.length,
-        page: parsedPage,
-        pages: Math.ceil(total / parsedLimit),
-      },
-      contracts: result?.rows,
-    };
-    logger.debug('Source loaded in', benchmark.elapsed());
-  } catch (e: any) {
-    logger.error(e);
-    ctx.status = 500;
-    ctx.body = { message: e };
-  }
+  ctx.body = {
+    paging: {
+      total,
+      limit: parsedLimit,
+      items: result?.rows.length,
+      page: parsedPage,
+      pages: Math.ceil(total / parsedLimit),
+    },
+    contracts: result?.rows,
+  };
+  logger.debug('Source loaded in', benchmark.elapsed());
 }

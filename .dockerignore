@@ -2,3 +2,5 @@ node_modules
 dist
 .secrets/sw-gateway-ec2-key.cer
 gateway.lock
+dump*
+network-cache.json

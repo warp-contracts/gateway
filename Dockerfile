@@ -1,4 +1,4 @@
-FROM node:14.18.2-alpine
+FROM node:18
 
 RUN mkdir /app
 WORKDIR /app
@@ -6,7 +6,7 @@ WORKDIR /app
 # Installing required npm packages
 COPY package.json package.json
 COPY yarn.lock yarn.lock
-RUN yarn
+RUN yarn && yarn global add pm2
 
 # Copying all files
 COPY . .
@@ -17,4 +17,4 @@ RUN yarn build
 EXPOSE 5666
 
 # Running the gateway
-CMD yarn start:prod --env_path .secrets/.env
+CMD [ "pm2-runtime", "start", "dist/gateway/init.js", "--name", "gateway", "-i", "max", "--", "--noSync" ]

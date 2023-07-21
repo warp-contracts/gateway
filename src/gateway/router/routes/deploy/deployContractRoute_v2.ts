@@ -1,16 +1,17 @@
 import Router from '@koa/router';
-import { evalType } from '../../tasks/contractsMetadata';
-import { BUNDLR_NODE1_URL } from '../../../constants';
+import { evalType } from '../../../tasks/contractsMetadata';
+import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { Bundle, DataItem } from 'arbundles';
 import { ContractSource, sleep, SmartWeaveTags } from 'warp-contracts';
-import { getCachedNetworkData } from '../../tasks/networkInfoCache';
-import { publishContract, sendNotification } from '../../publisher';
+import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
+import { publishContract, sendNotification } from '../../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
 import Arweave from 'arweave';
-import { SignatureConfig } from 'arbundles/src/constants';
-import { Contract, utils } from 'ethers';
-import { longTo32ByteArray } from 'arbundles/src/utils';
-import { ContractInsert, ContractSourceInsert } from '../../../db/insertInterfaces';
+import { SignatureConfig } from 'arbundles';
+import { utils } from 'ethers';
+import { longTo32ByteArray } from 'arbundles';
+import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
+import { GatewayError } from '../../../errorHandlerMiddleware';
 
 export async function deployContractRoute_v2(ctx: Router.RouterContext) {
   const { logger, arweave, dbSource } = ctx;
@@ -149,14 +150,11 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       bundlrTxId: bundlrResponse.data.id,
     };
   } catch (e: any) {
-    logger.error('Error while inserting bundled transaction.', {
+    throw new GatewayError(`Error while inserting bundled transaction: ${e}.`, 500, {
       dataItemId: contractDataItem?.id,
-      contract: contractDataItem?.toJSON(),
+      contract: getDataItemWithoutData(contractDataItem),
       initStateRaw: initStateRaw,
     });
-    logger.error(e);
-    ctx.body = e;
-    ctx.status = e.status ? e.status : 500;
   }
 }
 
@@ -187,11 +185,13 @@ export function getTestnetTag(tags: { name: string; value: string }[]) {
   }
 }
 
-export async function determineOwner(dataItem: DataItem, arweave: Arweave) {
+export async function determineOwner(dataItem: DataItem, arweave: Arweave): Promise<string> {
   if (dataItem.signatureType == SignatureConfig.ARWEAVE) {
     return await arweave.wallets.ownerToAddress(dataItem.owner);
   } else if (dataItem.signatureType == SignatureConfig.ETHEREUM) {
     return utils.computeAddress(utils.hexlify(dataItem.rawOwner));
+  } else {
+    throw new Error(`Signature type: ${dataItem.signatureType} is not supported.`);
   }
 }
 
@@ -254,4 +254,13 @@ export async function bundleData(dataItems: DataItem[]): Promise<Bundle> {
   const buffer = Buffer.concat([longTo32ByteArray(dataItems.length), headers, binaries]);
 
   return new Bundle(buffer);
+}
+
+export function getDataItemWithoutData(dataItem: DataItem | undefined) {
+  if (dataItem) {
+    const { data, ...dataItemWithoutData } = dataItem.toJSON();
+    return JSON.stringify(dataItemWithoutData);
+  } else {
+    return undefined;
+  }
 }

@@ -24,9 +24,10 @@ interface DbData {
 export class DatabaseSource {
   public db: Knex[] = [];
   public primaryDb: Knex | null = null;
+  public healthCheckConnection: Knex | null = null;
   private mailClient: Transporter<SMTPTransport.SentMessageInfo>;
 
-  constructor(dbData: DbData[]) {
+  constructor(dbData: DbData[], healthCheckConnection?: DbData) {
     for (let i = 0; i < dbData.length; i++) {
       this.db[i] = this.connectDb(dbData[i]);
       if (dbData[i].primaryDb) {
@@ -38,6 +39,9 @@ export class DatabaseSource {
     }
     if (this.primaryDb == null) {
       throw new Error('Exactly one db must be set as primary');
+    }
+    if (healthCheckConnection != null) {
+      this.healthCheckConnection = this.connectDb(healthCheckConnection);
     }
     this.mailClient = client();
   }
@@ -249,6 +253,14 @@ export class DatabaseSource {
   public raw(query: string, bindings?: any, dbIndex?: number) {
     const db = dbIndex ? this.db[dbIndex] : this.primaryDb!!;
     return db.raw(query, bindings);
+  }
+
+  public healthCheckEnabled(): boolean {
+    return this.healthCheckConnection != null;
+  }
+
+  public healthCheck(query: string, bindings?: any) {
+    return this.healthCheckConnection!!.raw(query, bindings);
   }
 
   public async loopThroughDb(callback: any, recordName: string): Promise<any> {
