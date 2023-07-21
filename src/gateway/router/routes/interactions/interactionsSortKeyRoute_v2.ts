@@ -17,7 +17,7 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const parsedConfirmationStatus = confirmationStatus
     ? confirmationStatus == 'not_corrupted'
-      ? ['confirmed', 'not_processed']
+      ? undefined// ['confirmed', 'not_processed']
       : [confirmationStatus]
     : undefined;
 
