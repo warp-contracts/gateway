@@ -112,15 +112,10 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     lastProcessedBlockHeight
   });
 
-  const heightFrom = lastProcessedBlockHeight;
-  let heightTo = currentNetworkHeight;
+  const heightFrom = lastProcessedBlockHeight - 1;
+  let heightTo = currentNetworkHeight ;
 
-  if (heightFrom === heightTo) {
-    logger.info(`Already synced at block height ${heightTo}.`);
-    return;
-  }
-
-  // note: only main task should have this protection. The 'last hour' and 'last 6 hours' tasks
+    // note: only main task should have this protection. The 'last hour' and 'last 6 hours' tasks
   // will obviously try to resync more blocks.
   if (publish) {
     if (heightTo > heightFrom + 20) {
