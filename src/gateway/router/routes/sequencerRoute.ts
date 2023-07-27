@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
-import { parseFunctionName, safeParseInput } from '../../tasks/syncTransactions';
+import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } from 'warp-contracts';
@@ -32,8 +32,6 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
   try {
     const initialBenchmark = Benchmark.measure();
-    const cachedNetworkData = getCachedNetworkData();
-
     const benchmark = Benchmark.measure();
 
     const transaction: Transaction = new Transaction({ ...ctx.request.body });
@@ -41,55 +39,37 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 
     const originalSignature = transaction.signature;
     const originalOwner = transaction.owner;
-
-    if (cachedNetworkData == null) {
-      throw new Error('Network or block info not yet cached.');
-    }
-
-    const currentHeight = cachedNetworkData.cachedBlockInfo.height;
-    sLogger.debug(`Sequencer height: ${transaction.id}: ${currentHeight}`);
-
-    if (!currentHeight) {
-      throw new Error('Current height not set');
-    }
-
-    const currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
-    if (!currentBlockTimestamp) {
-      throw new Error('Current block timestamp not set');
-    }
-
-    const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
-    if (!currentBlockId) {
-      throw new Error('Current block not set');
-    }
-
     let {
       contractTag,
       inputTag,
       requestVrfTag,
       internalWrites,
       decodedTags,
-      tags,
       originalAddress,
       isEvmSigner,
       testnetVersion,
-    } = await prepareTags(
-      sLogger,
-      transaction,
-      originalOwner,
-      currentHeight,
-      currentBlockId,
-      currentBlockTimestamp,
-      arweave
-    );
+    } = await prepareTags(sLogger, transaction, originalOwner, arweave);
 
     trx = (await dbSource.primaryDb.transaction()) as Knex.Transaction;
     const contractPrevSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
     const millis = Date.now();
+    const { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo } = getBlockInfo(
+      transaction.id,
+      sLogger
+    );
     const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, transaction.id, currentHeight);
     if (contractPrevSortKey !== null && sortKey.localeCompare(contractPrevSortKey) <= 0) {
       throw new Error(`New sortKey (${sortKey}) <= lastSortKey (${contractPrevSortKey})!`);
     }
+
+    const tags = getUploaderTags(
+      originalAddress,
+      transaction.id,
+      currentHeight,
+      currentBlockId,
+      currentBlockTimestamp,
+      decodedTags
+    );
 
     tags.push({ name: 'Sequencer-Mills', value: '' + millis });
     tags.push({ name: 'Sequencer-Sort-Key', value: sortKey });
@@ -108,7 +88,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
       decodedTags,
       currentHeight,
       currentBlockId,
-      cachedNetworkData.cachedBlockInfo,
+      cachedBlockInfo,
       sortKey,
       vrfData,
       isEvmSigner ? originalSignature : null,
@@ -318,15 +298,7 @@ function bufToBn(buf: Array<number>) {
   return BigInt('0x' + hex.join(''));
 }
 
-async function prepareTags(
-  logger: any,
-  transaction: Transaction,
-  originalOwner: string,
-  currentHeight: number,
-  currentBlockId: string,
-  currentBlockTimestamp: number,
-  arweave: Arweave
-) {
+async function prepareTags(logger: any, transaction: Transaction, originalOwner: string, arweave: Arweave) {
   let contractTag: string = '',
     inputTag: string = '',
     requestVrfTag = '',
@@ -372,22 +344,12 @@ async function prepareTags(
     originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
   }
 
-  const tags = getUploaderTags(
-    originalAddress,
-    transaction.id,
-    currentHeight,
-    currentBlockId,
-    currentBlockTimestamp,
-    decodedTags
-  );
-
   return {
     contractTag,
     inputTag,
     requestVrfTag,
     internalWrites,
     decodedTags,
-    tags,
     originalAddress,
     isEvmSigner,
     testnetVersion,
@@ -457,4 +419,26 @@ export async function createSortKey(
   const blockHeightString = `${blockHeight}`.padStart(12, '0');
 
   return `${blockHeightString},${mills},${hashed}`;
+}
+
+export function getBlockInfo(id: string, sLogger: any) {
+  const cachedNetworkData = getCachedNetworkData();
+  if (cachedNetworkData == null) {
+    throw new Error('Network or block info not yet cached.');
+  }
+  const currentHeight = cachedNetworkData.cachedBlockInfo.height;
+  sLogger.debug(`Sequencer height: ${id}: ${currentHeight}`);
+  if (!currentHeight) {
+    throw new Error('Current height not set');
+  }
+  const currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
+  if (!currentBlockTimestamp) {
+    throw new Error('Current block timestamp not set');
+  }
+  const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
+  if (!currentBlockId) {
+    throw new Error('Current block not set');
+  }
+
+  return { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo: cachedNetworkData.cachedBlockInfo };
 }
