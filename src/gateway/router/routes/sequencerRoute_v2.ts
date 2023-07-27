@@ -1,14 +1,13 @@
 import Router from '@koa/router';
 import { parseFunctionName, safeParseInput } from '../../tasks/syncTransactions';
 import { Benchmark, SmartWeaveTags, VrfData } from 'warp-contracts';
-import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import { isTxIdValid } from '../../../utils';
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { publishInteraction, sendNotification } from '../../publisher';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { DataItem } from 'arbundles';
-import { createInteraction, generateVrfTags, getUploaderTags } from './sequencerRoute';
+import { createInteraction, generateVrfTags, getBlockInfo, getUploaderTags } from './sequencerRoute';
 import { createSortKey } from './sequencerRoute';
 import { tagsExceedLimit } from 'warp-arbundles';
 import rawBody from 'raw-body';
@@ -16,16 +15,12 @@ import { b64UrlToString } from 'arweave/node/lib/utils';
 import { determineOwner } from './deploy/deployContractRoute_v2';
 
 export async function sequencerRoute_v2(ctx: Router.RouterContext) {
-  const { sLogger, arweave, jwk, vrf, lastTxSync, dbSource, bundlr } = ctx;
+  const { sLogger, arweave, jwk, vrf, lastTxSync, dbSource } = ctx;
 
   let trx: Knex.Transaction | null = null;
 
   try {
     const initialBenchmark = Benchmark.measure();
-    const cachedNetworkData = getCachedNetworkData();
-    if (cachedNetworkData == null) {
-      throw new Error('Network or block info not yet cached.');
-    }
     const benchmark = Benchmark.measure();
 
     const rawDataItem: Buffer = await rawBody(ctx.req);
@@ -46,38 +41,29 @@ export async function sequencerRoute_v2(ctx: Router.RouterContext) {
       ctx.throw(400, 'Interaction data item binary is not valid.');
     }
 
-    const currentHeight = cachedNetworkData.cachedBlockInfo.height;
-    sLogger.debug(`Sequencer height: ${interactionDataItem.id}: ${currentHeight}`);
+    const contractTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.CONTRACT_TX_ID)!.value;
 
-    if (!currentHeight) {
-      throw new Error('Current height not set');
-    }
+    const trx = await dbSource.primaryDb.transaction();
+    const contractPrevSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
+    const millis = Date.now();
 
-    const currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
-    if (!currentBlockTimestamp) {
-      throw new Error('Current block timestamp not set');
-    }
+    const { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo } = getBlockInfo(
+      interactionDataItem.id,
+      sLogger
+    );
 
-    const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
-    if (!currentBlockId) {
-      throw new Error('Current block not set');
+    const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, interactionDataItem.id, currentHeight);
+    if (contractPrevSortKey !== null && sortKey.localeCompare(contractPrevSortKey) <= 0) {
+      throw new Error(`New sortKey (${sortKey}) <= lastSortKey (${contractPrevSortKey})!`);
     }
 
     const originalSignature = interactionDataItem.signature;
-    const contractTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.CONTRACT_TX_ID)!.value;
     const originalAddress = await determineOwner(interactionDataItem, arweave);
     const testnetVersion = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.WARP_TESTNET)?.value || null;
     const internalWrites: string[] = [];
     interactionDataItem.tags
       .filter((t) => t.name == SmartWeaveTags.INTERACT_WRITE)
       .forEach((t) => internalWrites.push(t.value));
-    const trx = await dbSource.primaryDb.transaction();
-    const contractPrevSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
-    const millis = Date.now();
-    const sortKey = await createSortKey(arweave, jwk, currentBlockId, millis, interactionDataItem.id, currentHeight);
-    if (contractPrevSortKey !== null && sortKey.localeCompare(contractPrevSortKey) <= 0) {
-      throw new Error(`New sortKey (${sortKey}) <= lastSortKey (${contractPrevSortKey})!`);
-    }
 
     const tags = getUploaderTags(
       originalAddress,
@@ -114,12 +100,12 @@ export async function sequencerRoute_v2(ctx: Router.RouterContext) {
       interactionDataItem.tags,
       currentHeight,
       currentBlockId,
-      cachedNetworkData.cachedBlockInfo,
+      cachedBlockInfo,
       sortKey,
       vrfData,
       originalSignature,
       testnetVersion,
-      parsedInput
+      contractPrevSortKey
     );
 
     sLogger.debug('inserting into tables');
