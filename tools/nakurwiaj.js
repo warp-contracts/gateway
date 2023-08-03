@@ -133,11 +133,19 @@ setInterval(async () => {
 }, 5000);
 
 setInterval(() => {
+  saveErrors();
+}, 3600000);
+
+function saveErrors() {
   fs.appendFileSync(`errors_l1.txt`, errors_l1);
   fs.appendFileSync(`errors_l2.txt`, errors_l2);
   errors_l1 = ``;
   errors_l2 = ``;
-}, 3600000);
+}
+
+process.on('SIGINT', () => {
+  saveErrors();
+});
 
 function readJSON(path) {
   const content = fs.readFileSync(path, 'utf-8');
