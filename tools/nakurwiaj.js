@@ -145,6 +145,7 @@ function saveErrors() {
 
 process.on('SIGINT', () => {
   saveErrors();
+  process.exit(-1);
 });
 
 function readJSON(path) {
