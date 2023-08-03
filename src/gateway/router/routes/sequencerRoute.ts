@@ -224,7 +224,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
   return transaction.id;
 }
 
-function createInteraction(
+export function createInteraction(
   transactionOrDataItem: Transaction | DataItem,
   originalAddress: string,
   decodedTags: GQLTagInterface[],
@@ -355,15 +355,6 @@ async function prepareTags(logger: any, transaction: Transaction, originalOwner:
     originalAddress = await arweave.wallets.ownerToAddress(originalOwner);
   }
 
-  /*const tags = [
-    { name: 'Sequencer', value: 'RedStone' },
-    { name: 'Sequencer-Owner', value: originalAddress },
-    { name: 'Sequencer-Tx-Id', value: transaction.id },
-    { name: 'Sequencer-Block-Height', value: '' + currentHeight },
-    { name: 'Sequencer-Block-Id', value: currentBlockId },
-    ...decodedTags,
-  ];*/
-
   return {
     contractTag,
     inputTag,
@@ -439,26 +430,4 @@ export async function createSortKey(
   const blockHeightString = `${blockHeight}`.padStart(12, '0');
 
   return `${blockHeightString},${mills},${hashed}`;
-}
-
-export function getBlockInfo(id: string, sLogger: any) {
-  const cachedNetworkData = getCachedNetworkData();
-  if (cachedNetworkData == null) {
-    throw new Error('Network or block info not yet cached.');
-  }
-  const currentHeight = cachedNetworkData.cachedBlockInfo.height;
-  sLogger.debug(`Sequencer height: ${id}: ${currentHeight}`);
-  if (!currentHeight) {
-    throw new Error('Current height not set');
-  }
-  const currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
-  if (!currentBlockTimestamp) {
-    throw new Error('Current block timestamp not set');
-  }
-  const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
-  if (!currentBlockId) {
-    throw new Error('Current block not set');
-  }
-
-  return { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo: cachedNetworkData.cachedBlockInfo };
 }
