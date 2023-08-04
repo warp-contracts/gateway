@@ -251,7 +251,7 @@ async function loadContractsMetadata(context: GatewayContext) {
       await dbSource.updateContractSrc(contracts_src_insert);
 
       // TODO: add tags to ContractDefinition type in the SDK
-      sendNotification(context, definition.txId, { initState: definition.initState, tags: [] });
+      sendNotification(context, definition.txId, { initState: definition.initState, tags: [], srcTxId: definition.srcTxId });
       publishContract(
         context,
         contractId,
