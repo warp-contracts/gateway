@@ -106,7 +106,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
 
     await dbSource.insertContract(insert);
 
-    sendNotification(ctx, txId, { initState, tags });
+    sendNotification(ctx, txId, { initState, tags, srcTxId });
     publishContract(
       ctx,
       txId,

@@ -71,7 +71,7 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     };
 
     await dbSource.insertContract(insert);
-    sendNotification(ctx, bundlrResponse.data.id, { initState, tags: dataItem.tags });
+    sendNotification(ctx, bundlrResponse.data.id, { initState, tags: dataItem.tags, srcTxId });
     publishContract(
       ctx,
       bundlrResponse.data.id,

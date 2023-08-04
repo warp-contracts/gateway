@@ -10,6 +10,7 @@ export function sendNotification(
   contractTxId: string,
   contractData?: {
     initState: any;
+    srcTxId: string;
     tags: {
       name: string;
       value: string;

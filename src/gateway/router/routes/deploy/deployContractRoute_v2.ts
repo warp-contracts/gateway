@@ -125,7 +125,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
 
     await dbSource.insertContract(insert);
 
-    sendNotification(ctx, contractDataItem.id, { initState, tags: contractDataItem.tags });
+    sendNotification(ctx, contractDataItem.id, { initState, tags: contractDataItem.tags, srcTxId: srcId });
     publishContract(
       ctx,
       contractDataItem.id,
