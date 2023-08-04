@@ -33,6 +33,7 @@ export function sendNotification(
     if (contractData) {
       message.initialState = contractData.initState;
       message.tags = contractData.tags;
+      message.srcTxId = contractData.srcTxId;
     }
     if (interaction) {
       message.interaction = interaction;
