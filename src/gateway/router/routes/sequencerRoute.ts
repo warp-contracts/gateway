@@ -53,7 +53,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
     trx = (await dbSource.primaryDb.transaction()) as Knex.Transaction;
     const contractPrevSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
     const millis = Date.now();
-    const { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo } = getBlockInfo(
+    const { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo } = await getBlockInfo(
       transaction.id,
       sLogger
     );
@@ -421,24 +421,37 @@ export async function createSortKey(
   return `${blockHeightString},${mills},${hashed}`;
 }
 
-export function getBlockInfo(id: string, sLogger: any) {
+export async function getBlockInfo(id: string, sLogger: any) {
+  const BLOCK_HEIGHT_X = 1235834;// FIXME: temp, for sync migration
   const cachedNetworkData = getCachedNetworkData();
   if (cachedNetworkData == null) {
     throw new Error('Network or block info not yet cached.');
   }
-  const currentHeight = cachedNetworkData.cachedBlockInfo.height;
+  let currentHeight = cachedNetworkData.cachedBlockInfo.height;
+  let currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
+  let currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
+  if (currentHeight > BLOCK_HEIGHT_X) {
+    currentHeight = BLOCK_HEIGHT_X;
+    const response = await fetch(`https://arweave.net/block/height/${BLOCK_HEIGHT_X}`);
+    if (!response.ok) {
+      sLogger.error(`Block ${id}, fetching ${BLOCK_HEIGHT_X} failed with status ${response.status}}`);
+      throw new Error(`Cannot fetch block data ${response.status}`);
+    }
+    const block = await response.json();
+
+    currentBlockId = block.indep_hash;
+    currentBlockTimestamp = block.timestamp;
+  }
   sLogger.debug(`Sequencer height: ${id}: ${currentHeight}`);
   if (!currentHeight) {
     throw new Error('Current height not set');
   }
-  const currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
   if (!currentBlockTimestamp) {
     throw new Error('Current block timestamp not set');
   }
-  const currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
   if (!currentBlockId) {
     throw new Error('Current block not set');
   }
 
-  return { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo: cachedNetworkData.cachedBlockInfo };
+  return {currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo: cachedNetworkData.cachedBlockInfo};
 }

@@ -47,7 +47,7 @@ export async function sequencerRoute_v2(ctx: Router.RouterContext) {
     const contractPrevSortKey: string | null = await lastTxSync.acquireMutex(contractTag, trx);
     const millis = Date.now();
 
-    const { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo } = getBlockInfo(
+    const { currentHeight, currentBlockTimestamp, currentBlockId, cachedBlockInfo } = await getBlockInfo(
       interactionDataItem.id,
       sLogger
     );
