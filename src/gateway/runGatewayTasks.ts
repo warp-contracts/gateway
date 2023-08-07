@@ -47,9 +47,9 @@ export async function runGatewayTasks(context: GatewayContext) {
 
   // await runSyncLastHourTransactionsTask(context);
 
-  await runVerifyInteractionsTask(context);
+  // await runVerifyInteractionsTask(context);
 
-  await runVerifyCorruptedTransactionsTask(context);
+  // await runVerifyCorruptedTransactionsTask(context);
 
   // await runLoadContractsFromGqlTask(context);
 
