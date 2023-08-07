@@ -431,6 +431,7 @@ export async function getBlockInfo(id: string, sLogger: any) {
   let currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
   let currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
   if (currentHeight > BLOCK_HEIGHT_X) {
+    sLogger.warn(`============ Seq Entered x-phase!`);
     currentHeight = BLOCK_HEIGHT_X;
     const response = await fetch(`https://arweave.net/block/height/${BLOCK_HEIGHT_X}`);
     if (!response.ok) {
