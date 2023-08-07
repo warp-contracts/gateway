@@ -422,7 +422,7 @@ export async function createSortKey(
 }
 
 export async function getBlockInfo(id: string, sLogger: any) {
-  const BLOCK_HEIGHT_X = 1235834;// FIXME: temp, for sync migration
+  const BLOCK_HEIGHT_X = 1235850;// FIXME: temp, for sync migration
   const cachedNetworkData = getCachedNetworkData();
   if (cachedNetworkData == null) {
     throw new Error('Network or block info not yet cached.');
@@ -431,6 +431,7 @@ export async function getBlockInfo(id: string, sLogger: any) {
   let currentBlockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
   let currentBlockId = cachedNetworkData.cachedNetworkInfo.current;
   if (currentHeight > BLOCK_HEIGHT_X) {
+    sLogger.warn(`============ Seq Entered x-phase!`);
     currentHeight = BLOCK_HEIGHT_X;
     const response = await fetch(`https://arweave.net/block/height/${BLOCK_HEIGHT_X}`);
     if (!response.ok) {
