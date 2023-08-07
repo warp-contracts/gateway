@@ -123,16 +123,17 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     }
   }
 
-  logger.info("Loading interactions for blocks", {
-    heightFrom,
-    heightTo
-  });
-
-  const BLOCK_HEIGHT_X = 1235834;// FIXME: temp, for sync migration
+  const BLOCK_HEIGHT_X = 1235850;// FIXME: temp, for sync migration
   if (heightTo > BLOCK_HEIGHT_X) {
     logger.warn(`============ Entered x-phase!`);
     heightTo = BLOCK_HEIGHT_X;
   }
+
+
+  logger.info("Loading interactions for blocks", {
+    heightFrom,
+    heightTo
+  });
 
   // 2. load interactions
   let gqlInteractions: GQLEdgeInterface[];
