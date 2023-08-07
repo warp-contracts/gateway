@@ -128,6 +128,12 @@ async function syncTransactions(context: GatewayContext, pastBlocksAmount: numbe
     heightTo
   });
 
+  const BLOCK_HEIGHT_X = 1235834;// FIXME: temp, for sync migration
+  if (heightTo > BLOCK_HEIGHT_X) {
+    logger.warn(`============ Entered x-phase!`);
+    heightTo = BLOCK_HEIGHT_X;
+  }
+
   // 2. load interactions
   let gqlInteractions: GQLEdgeInterface[];
   try {
