@@ -6,7 +6,7 @@ import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { DataItem } from 'arbundles';
-import { createInteraction, generateVrfTags } from './sequencerRoute';
+import { createInteraction, generateVrfTags, SequencerResult } from "./sequencerRoute";
 import { createSortKey } from './sequencerRoute';
 import { tagsExceedLimit } from 'warp-arbundles';
 import rawBody from 'raw-body';
@@ -20,11 +20,9 @@ export async function sequencerRoute_v2(ctx: Router.RouterContext) {
   const { timeoutId, timeoutPromise } = timeout(0.5);
 
   try {
-    const transactionId = await Promise.race([timeoutPromise, doGenerateSequence(ctx, trx)]);
+    const result = await Promise.race([timeoutPromise, doGenerateSequence(ctx, trx)]);
     await trx.commit();
-    ctx.body = {
-      id: transactionId,
-    };
+    ctx.body = result;
   } catch (e: any) {
     if (trx != null) {
       await trx.rollback();
@@ -37,7 +35,7 @@ export async function sequencerRoute_v2(ctx: Router.RouterContext) {
   }
 }
 
-async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transaction): Promise<string> {
+async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transaction): Promise<SequencerResult> {
   const { sLogger, arweave, jwk, vrf, lastTxSync } = ctx;
 
   const initialBenchmark = Benchmark.measure();
@@ -214,5 +212,11 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   sLogger.info('Total sequencer processing', benchmark.elapsed());
 
-  return interactionDataItem.id;
+  return {
+    id: interactionDataItem.id,
+    sortKey,
+    timestamp: millis,
+    prevSortKey: acquireMutexResult.lastSortKey,
+    internalWrites
+  };
 }
