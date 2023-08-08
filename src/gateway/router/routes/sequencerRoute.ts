@@ -21,6 +21,14 @@ export type VrfData = {
   pubkey: string;
 };
 
+export type SequencerResult = {
+  sortKey: string;
+  prevSortKey: string | null;
+  id: string;
+  internalWrites: string[];
+  timestamp: number
+}
+
 export async function sequencerRoute(ctx: Router.RouterContext) {
   const { dbSource } = ctx;
   const trx = (await dbSource.primaryDb.transaction()) as Knex.Transaction;
@@ -28,11 +36,9 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   const { timeoutId, timeoutPromise } = timeout(0.5);
 
   try {
-    const transactionId = await Promise.race([timeoutPromise, doGenerateSequence(ctx, trx)]);
+    const result = await Promise.race([timeoutPromise, doGenerateSequence(ctx, trx)]);
     await trx.commit();
-    ctx.body = {
-      id: transactionId,
-    };
+    ctx.body = result;
   } catch (e: any) {
     if (trx != null) {
       await trx.rollback();
@@ -45,7 +51,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
   }
 }
 
-async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transaction): Promise<string> {
+async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transaction): Promise<SequencerResult> {
   const { sLogger, arweave, jwk, vrf, lastTxSync, signatureVerification } = ctx;
 
   const initialBenchmark = Benchmark.measure();
@@ -221,7 +227,13 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   sLogger.info('Total sequencer processing', benchmark.elapsed());
 
-  return transaction.id;
+  return {
+    id: transaction.id,
+    sortKey,
+    timestamp: millis,
+    prevSortKey: acquireMutexResult.lastSortKey,
+    internalWrites
+  };
 }
 
 export function createInteraction(
@@ -365,25 +377,6 @@ async function prepareTags(logger: any, transaction: Transaction, originalOwner:
     isEvmSigner,
     testnetVersion,
   };
-}
-
-export function getUploaderTags(
-  originalAddress: string,
-  id: string,
-  currentHeight: number,
-  currentBlockId: string,
-  currentBlockTimestamp: number,
-  decodedTags: GQLTagInterface[]
-): GQLTagInterface[] {
-  return [
-    { name: 'Sequencer', value: 'RedStone' },
-    { name: 'Sequencer-Owner', value: originalAddress },
-    { name: 'Sequencer-Tx-Id', value: id },
-    { name: 'Sequencer-Block-Height', value: '' + currentHeight },
-    { name: 'Sequencer-Block-Id', value: currentBlockId },
-    { name: 'Sequencer-Block-Timestamp', value: '' + currentBlockTimestamp },
-    ...decodedTags,
-  ];
 }
 
 export async function uploadToBundlr(
