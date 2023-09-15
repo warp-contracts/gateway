@@ -6,7 +6,7 @@ import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { DataItem } from 'arbundles';
-import { createInteraction, generateVrfTags, SequencerResult } from "./sequencerRoute";
+import { createInteraction, generateVrfTags, SequencerResult } from './sequencerRoute';
 import { createSortKey } from './sequencerRoute';
 import { tagsExceedLimit } from 'warp-arbundles';
 import rawBody from 'raw-body';
@@ -107,6 +107,10 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     { name: 'Sequencer-Prev-Sort-Key', value: acquireMutexResult.lastSortKey || 'null' },
     ...interactionDataItem.tags,
   ];
+
+  if (tagsExceedLimit(tags)) {
+    throw new Error(`Nested bundle tags exceed limit.`);
+  }
 
   let vrfData: VrfData | null = null;
   const requestVrfTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.REQUEST_VRF)?.value || null;
@@ -217,6 +221,6 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     sortKey,
     timestamp: millis,
     prevSortKey: acquireMutexResult.lastSortKey,
-    internalWrites
+    internalWrites,
   };
 }
