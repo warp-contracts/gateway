@@ -25,6 +25,7 @@ export async function contractWithSourceRoute(ctx: Router.RouterContext) {
     `
         SELECT c.contract_id                                                                       as "txId",
                c.bundler_contract_tx_id                                                            as "bundlerTxId",
+               c.src_tx_id                                                                         as "originalSrcTxId", 
                s.src_tx_id                                                                         as "srcTxId",
                (case when s.src_content_type = 'application/javascript' then s.src else null end)  as src,
                (case when s.src_content_type = 'application/wasm' then s.src_binary else null end) as "srcBinary",
