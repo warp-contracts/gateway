@@ -7,6 +7,7 @@ import { contractRoute } from './routes/contracts/contractRoute';
 import { contractWithSourceRoute } from './routes/contracts/contractWithSourceRoute';
 import { contractWithSourceRoute_v2 } from './routes/contracts/contractWithSourceRoute_v2';
 import { interactionRoute } from './routes/interactions/interactionRoute';
+import { sequencerAddressRoute } from './routes/sequencerAddress'
 import { sequencerRoute } from './routes/sequencerRoute';
 import { sequencerRoute_v2 } from './routes/sequencerRoute_v2';
 import { interactionsStreamRoute } from './routes/interactions/interactionsStreamRoute';
@@ -57,6 +58,7 @@ const gatewayRouter = (replica: boolean): Router => {
   router.get('/contracts-by-source', contractsBySourceRoute);
   router.get('/creator', creatorRoute);
   router.get('/gcp/alive', gcpAliveRoute);
+  router.get('/sequencer/address', sequencerAddressRoute)
 
   // post
   if (!replica) {
