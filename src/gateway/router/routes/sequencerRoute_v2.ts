@@ -5,14 +5,20 @@ import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { DataItem } from 'arbundles';
-import { createInteraction, generateVrfTags, SequencerResult } from './sequencerRoute';
+import { createInteraction, generateVrfTags, LAST_SEQUENCER_ARWEAVE_HEIGHT, SEQUENCER_IS_STOPPED_ERROR, SequencerResult } from './sequencerRoute';
 import { createSortKey } from './sequencerRoute';
 import { tagsExceedLimit } from 'warp-arbundles';
 import rawBody from 'raw-body';
 import { b64UrlToString } from 'arweave/node/lib/utils';
 import { determineOwner } from './deploy/deployContractRoute_v2';
 
+let sequencerIsStopped = false;
+
 export async function sequencerRoute_v2(ctx: Router.RouterContext) {
+  if (sequencerIsStopped) {
+    throw SEQUENCER_IS_STOPPED_ERROR;
+  }
+
   const { dbSource } = ctx;
   const trx = (await dbSource.primaryDb.transaction()) as Knex.Transaction;
 
@@ -70,6 +76,12 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     acquireMutexResult.blockTimestamp == null
   ) {
     throw new Error(`Missing data in acquireMutexResult: ${JSON.stringify(acquireMutexResult)}`);
+  }
+
+  if (acquireMutexResult.blockHeight >= LAST_SEQUENCER_ARWEAVE_HEIGHT) {
+    sequencerIsStopped = true;
+    sLogger.info('The stopping height for the sequencer has been reached:' + LAST_SEQUENCER_ARWEAVE_HEIGHT)
+    throw SEQUENCER_IS_STOPPED_ERROR;
   }
 
   const millis = Date.now();

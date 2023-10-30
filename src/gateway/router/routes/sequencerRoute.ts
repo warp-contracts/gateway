@@ -13,6 +13,10 @@ import { DataItem, serializeTags } from 'arbundles';
 
 const { Evaluate } = require('@idena/vrf-js');
 
+export const LAST_SEQUENCER_ARWEAVE_HEIGHT = 1292800;
+export const SEQUENCER_IS_STOPPED_ERROR = new GatewayError('The centralized sequencer has been stopped. The decentralized sequencer should be launched soon.', 503);
+let sequencerIsStopped = false;
+
 export type VrfData = {
   index: string;
   proof: string;
@@ -29,6 +33,10 @@ export type SequencerResult = {
 }
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
+  if (sequencerIsStopped) {
+    throw SEQUENCER_IS_STOPPED_ERROR;
+  }
+
   const { dbSource } = ctx;
   const trx = (await dbSource.primaryDb.transaction()) as Knex.Transaction;
 
@@ -83,6 +91,12 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     acquireMutexResult.blockTimestamp == null
   ) {
     throw new Error(`Missing data in acquireSortKeyMutex: ${JSON.stringify(acquireMutexResult)}`);
+  }
+
+  if (acquireMutexResult.blockHeight >= LAST_SEQUENCER_ARWEAVE_HEIGHT) {
+    sequencerIsStopped = true;
+    sLogger.info('The stopping height for the sequencer has been reached:' + LAST_SEQUENCER_ARWEAVE_HEIGHT)
+    throw SEQUENCER_IS_STOPPED_ERROR;
   }
 
   const millis = Date.now();
