@@ -1,12 +1,12 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
-import { SmartWeaveTags } from 'warp-contracts';
+import { Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } from 'warp-contracts';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
-import { uploadToBundlr } from '../sequencerRoute';
 import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
 import { ContractSourceInsert } from '../../../../db/insertInterfaces';
 import {GatewayError} from "../../../errorHandlerMiddleware";
+import Bundlr from '@bundlr-network/client';
 
 export async function deploySourceRoute(ctx: Router.RouterContext) {
   const { logger, arweave, bundlr, dbSource } = ctx;
@@ -69,4 +69,31 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
   } catch (e) {
     throw new GatewayError(`Error while inserting bundled source transaction ${e}`);
   }
+}
+
+export async function uploadToBundlr(
+  transaction: Transaction,
+  bundlr: Bundlr,
+  tags: GQLTagInterface[],
+  logger: WarpLogger
+) {
+  const uploadBenchmark = Benchmark.measure();
+
+  const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
+  await bTx.sign();
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx, { getReceiptSignature: true });
+
+  logger.debug('Uploading to bundlr', {
+    elapsed: uploadBenchmark.elapsed(),
+    id: bundlrResponse.data.id,
+    status: bundlrResponse.status,
+  });
+
+  if (bundlrResponse.status !== 200 || !bundlrResponse.data.signature) {
+    throw new Error(
+      `Bundlr did not upload transaction ${bTx?.id} correctly. Bundlr responded with status ${bundlrResponse.status}.`
+    );
+  }
+
+  return { bTx, bundlrResponse };
 }

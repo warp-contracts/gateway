@@ -4,10 +4,10 @@ import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
-import { uploadToBundlr } from '../sequencerRoute';
 import { publishContract, sendNotification } from '../../../publisher';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
 import {GatewayError} from "../../../errorHandlerMiddleware";
+import { uploadToBundlr } from './deploySourceRoute';
 import { evalType } from "../../../../utils";
 
 /*

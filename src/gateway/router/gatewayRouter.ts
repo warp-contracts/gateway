@@ -9,7 +9,6 @@ import { contractWithSourceRoute_v2 } from './routes/contracts/contractWithSourc
 import { interactionRoute } from './routes/interactions/interactionRoute';
 import { sequencerAddressRoute } from './routes/sequencerAddress'
 import { sequencerRoute } from './routes/sequencerRoute';
-import { sequencerRoute_v2 } from './routes/sequencerRoute_v2';
 import { interactionsStreamRoute } from './routes/interactions/interactionsStreamRoute';
 import { deployContractRoute } from './routes/deploy/deployContractRoute';
 import { arweaveBlockRoute, arweaveInfoRoute } from './routes/arweaveInfoRoute';
@@ -65,7 +64,7 @@ const gatewayRouter = (replica: boolean): Router => {
   // post
   if (!replica) {
     router.post('/sequencer/register', sequencerRoute);
-    router.post('/v2/sequencer/register', sequencerRoute_v2);
+    router.post('/v2/sequencer/register', sequencerRoute);
     router.post('/contracts/deploy', deployContractRoute);
     router.post('/contracts/deploy-bundled', deployBundledRoute);
     router.post('/sources/deploy', deploySourceRoute);
