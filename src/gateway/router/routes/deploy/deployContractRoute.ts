@@ -5,10 +5,10 @@ import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
 import { evalType } from '../../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
-import { uploadToBundlr } from '../sequencerRoute';
 import { publishContract, sendNotification } from '../../../publisher';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
 import {GatewayError} from "../../../errorHandlerMiddleware";
+import { uploadToBundlr } from './deploySourceRoute';
 
 /*
 - warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
