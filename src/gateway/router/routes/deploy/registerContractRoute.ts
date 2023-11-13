@@ -1,56 +1,67 @@
 import Router from '@koa/router';
-import {evalType} from '../../../tasks/contractsMetadata';
-import {getCachedNetworkData} from '../../../tasks/networkInfoCache';
-import {publishContract, sendNotification} from '../../../publisher';
-import {evalManifest, WarpDeployment} from './deployContractRoute';
-import {Tag} from 'arweave/node/lib/transaction';
-import {stringToB64Url} from 'arweave/node/lib/utils';
-import {fetch} from 'undici';
-import {backOff} from 'exponential-backoff';
-import {getTestnetTag} from './deployBundledRoute';
-import {ContractInsert} from '../../../../db/insertInterfaces';
-import {GatewayError} from "../../../errorHandlerMiddleware";
+import { evalType } from '../../../tasks/contractsMetadata';
+import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
+import { publishContract, sendNotification } from '../../../publisher';
+import { evalManifest, WarpDeployment } from './deployContractRoute';
+import { Tag } from 'arweave/node/lib/transaction';
+import { stringToB64Url } from 'arweave/node/lib/utils';
+import { fetch } from 'undici';
+import { backOff } from 'exponential-backoff';
+import { getTestnetTag } from './deployBundledRoute';
+import { ContractInsert } from '../../../../db/insertInterfaces';
+import { GatewayError } from '../../../errorHandlerMiddleware';
 
-const BUNDLR_QUERY = `query Transactions($ids: [String!]) {
+const ARWEAVE_QUERY = `query Transaction($ids: [ID!]) {
     transactions(ids: $ids) {
       edges {
         node {
-          address
+          id
+          owner { address }
+          tags {
+            name
+            value
+          }
+          signature
         }
       }
     }
   }`;
 
-const BUNDLR_NODES = ['node1', 'node2'] as const;
-type BundlrNodeType = typeof BUNDLR_NODES[number];
+const REGISTER_PROVIDER = ['node1', 'node2', 'arweave'] as const;
+type RegisterProviderType = typeof REGISTER_PROVIDER[number];
 
 export async function registerContractRoute(ctx: Router.RouterContext) {
-  const {logger, dbSource} = ctx;
+  const { logger, dbSource } = ctx;
 
   let initStateRaw = '';
   let contractTx = null;
   let txId = '';
 
+  const registerProvider = ctx.request.body.registerProvider || ctx.request.body.bundlrNode;
 
-  const bundlrNode = ctx.request.body.bundlrNode;
-  if (!bundlrNode || !isBundlrNodeType(bundlrNode)) {
+  if (!registerProvider || !isRegisterProvider(registerProvider)) {
     throw new GatewayError(
-      `Invalid Bundlr Node. Should be equal to one of the following values: ${BUNDLR_NODES.map((n) => n).join(
+      `Invalid register type. Should be equal to one of the following values: ${REGISTER_PROVIDER.map((n) => n).join(
         ', '
-      )}, found: ${bundlrNode}.`, 400
+      )}, found: ${registerProvider}.`,
+      400
     );
   }
 
   txId = ctx.request.body.id;
 
-  const txMetadata = ((await getBundlrGqlMetadata(txId, bundlrNode)) as any).transactions.edges[0].node;
+  const txMetadata: { tags: Tag[]; address: string; signature: string } =
+    registerProvider == 'arweave'
+      ? await getArweaveGqlMetadata(txId)
+      : await getBundlrNetworkMetadata(txId, registerProvider);
 
-  const {contractTagsIncluded, tags, signature} = await verifyContractTags(txId, bundlrNode);
+  const tags = txMetadata.tags;
+  const contractTagsIncluded = await verifyContractTags(tags);
   if (!contractTagsIncluded) {
     throw new GatewayError('Bundlr transaction is not valid contract transaction.', 400);
   }
 
-  logger.debug('Bundlr transaction marked as valid contract transaction.');
+  logger.debug('Contract transaction marked as valid contract transaction.');
 
   let encodedTags: Tag[] = [];
 
@@ -79,7 +90,7 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       id: txId,
       owner: ownerAddress,
       data: null,
-      signature,
+      signature: txMetadata.signature,
       target: '',
       tags: encodedTags,
     };
@@ -95,9 +106,11 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
       block_height: blockHeight,
       block_timestamp: blockTimestamp,
       content_type: contentType,
-      contract_tx: {tags: contractTx.tags},
+      contract_tx: { tags: contractTx.tags },
       bundler_contract_tx_id: txId,
-      bundler_contract_node: `https://${bundlrNode}.bundlr.network`,
+      bundler_contract_node: ['node1', 'node2'].includes(registerProvider)
+        ? `https://${registerProvider}.bundlr.network`
+        : `https://arweave.net`,
       testnet,
       deployment_type: WarpDeployment.External,
       manifest,
@@ -135,27 +148,10 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
   }
 }
 
-export async function verifyContractTags(id: string, bundlrNode: string) {
-  let response: any;
-  const request = async () => {
-    return fetch(`https://${bundlrNode}.bundlr.network/tx/${id}`).then((res) => {
-      return res.ok ? res.json() : Promise.reject(res);
-    });
-  };
-  try {
-    response = await backOff(request, {
-      delayFirstAttempt: false,
-      maxDelay: 2000,
-      numOfAttempts: 5,
-    });
-  } catch (error: any) {
-    throw new Error(`Unable to retrieve Bundlr network tags response. ${error.status}.`);
-  }
-  const tags = response.tags;
-  const signature = response.signature;
+export async function verifyContractTags(tags: Tag[]) {
   const tagsIncluded = [
-    {name: 'App-Name', value: 'SmartWeaveContract'},
-    {name: 'App-Version', value: '0.3.0'},
+    { name: 'App-Name', value: 'SmartWeaveContract' },
+    { name: 'App-Version', value: '0.3.0' },
   ];
 
   const nameTagsIncluded = ['Contract-Src', 'Init-State', 'Content-Type'];
@@ -164,33 +160,68 @@ export async function verifyContractTags(id: string, bundlrNode: string) {
     tagsIncluded.every((ti) => tags.some((t: Tag) => t.name == ti.name && t.value == ti.value)) &&
     nameTagsIncluded.every((nti) => tags.some((t: Tag) => t.name == nti));
 
-  return {contractTagsIncluded, tags, signature};
+  return contractTagsIncluded;
 }
 
-export async function getBundlrGqlMetadata(id: string, bundlrNode: string) {
+export async function getBundlrNetworkMetadata(
+  id: string,
+  bundlrNode: string
+): Promise<{ tags: Tag[]; address: string; signature: string }> {
+  let response: any;
+  const request = async () => {
+    return fetch(`https://${bundlrNode}.bundlr.network/tx/${id}`).then((res) => {
+      return res.ok ? res.json() : Promise.reject(res);
+    });
+  };
+  try {
+    response = (await backOff(request, {
+      delayFirstAttempt: false,
+      maxDelay: 2000,
+      numOfAttempts: 5,
+    })) as any;
+  } catch (error: any) {
+    throw new Error(`Unable to retrieve Bundlr network tags response. ${error.status}.`);
+  }
+
+  return { tags: response.tags, address: response.address, signature: response.signature };
+}
+
+export async function getArweaveGqlMetadata(id: string): Promise<{ tags: Tag[]; address: string; signature: string }> {
   const data = JSON.stringify({
-    query: BUNDLR_QUERY,
-    variables: {ids: [id]},
+    query: ARWEAVE_QUERY,
+    variables: { ids: [id] },
   });
 
-  const response = await fetch(`https://${bundlrNode}.bundlr.network/graphql`, {
-    method: 'POST',
-    body: data,
-    headers: {
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-  })
-    .then((res) => {
+  let response: any;
+
+  const request = async () => {
+    return fetch(`https://arweave.net/graphql`, {
+      method: 'POST',
+      body: data,
+      headers: {
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    }).then((res) => {
       return res.ok ? res.json() : Promise.reject(res);
-    })
-    .catch((error) => {
-      throw new Error(`Unable to retrieve Bundlr gql response. ${error.status}.`);
     });
-  return (response as any).data;
+  };
+  try {
+    response = (
+      (await backOff(request, {
+        delayFirstAttempt: false,
+        maxDelay: 2000,
+        numOfAttempts: 5,
+      })) as any
+    ).data.transactions.edges[0].node;
+  } catch (error: any) {
+    throw new Error(`Unable to retrieve Arweave gql response. ${error.status}.`);
+  }
+
+  return { tags: response.tags, address: response.owner.address, signature: response.signature };
 }
 
-export function isBundlrNodeType(value: string): value is BundlrNodeType {
-  return BUNDLR_NODES.includes(value as BundlrNodeType);
+export function isRegisterProvider(value: string): value is RegisterProviderType {
+  return REGISTER_PROVIDER.includes(value as RegisterProviderType);
 }
