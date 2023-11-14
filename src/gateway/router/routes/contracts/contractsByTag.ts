@@ -7,7 +7,7 @@ const MAX_CONTRACTS_PER_PAGE = 100;
 export async function contractsByTag(ctx: Router.RouterContext) {
   const { logger, dbSource, arweave } = ctx;
 
-  const { tag, owner, page, limit, testnet } = ctx.query;
+  const { tag, owner, page, limit, testnet, srcId } = ctx.query;
 
   if (!tag) {
     throw new GatewayError('Tag parameter must be provided.', 422);
@@ -26,6 +26,7 @@ export async function contractsByTag(ctx: Router.RouterContext) {
   });
 
   owner && bindings.push(owner);
+  srcId && bindings.push(srcId);
   parsedPage && bindings.push(parsedLimit);
   parsedPage && bindings.push(offset);
 
@@ -43,6 +44,7 @@ export async function contractsByTag(ctx: Router.RouterContext) {
           AND c.type != 'error'
             ${testnet ? ' AND c.testnet IS NOT NULL' : ''}
             ${owner ? ` AND c.owner = ?` : ''}
+            ${srcId ? ` AND c.src_tx_id = ?` : ''}
             AND c.contract_tx->'tags' @> '[${tagEncoded}]'
         GROUP BY c.contract_id, c.owner
         ORDER BY c.sync_timestamp DESC
