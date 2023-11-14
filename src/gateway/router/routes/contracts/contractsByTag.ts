@@ -34,6 +34,7 @@ export async function contractsByTag(ctx: Router.RouterContext) {
   const result: any = await dbSource.raw(
     `
         SELECT c.contract_id                                                   AS contract,
+               c.src_tx_id                                                     AS srcTxId,
                c.owner                                                         AS owner,
                c.testnet                                                       AS testnet,
                c.contract_tx                                                   AS contractTx,
