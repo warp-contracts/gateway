@@ -1,5 +1,4 @@
 import Router from '@koa/router';
-import { evalType } from '../../../tasks/contractsMetadata';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { DataItem } from 'arbundles';
 import rawBody from 'raw-body';
@@ -9,6 +8,7 @@ import { evalManifest, WarpDeployment } from './deployContractRoute';
 import { ContractInsert } from '../../../../db/insertInterfaces';
 import { GatewayError } from '../../../errorHandlerMiddleware';
 import { getDataItemWithoutData } from './deployContractRoute_v2';
+import { evalType } from "../../../../utils";
 
 export async function deployBundledRoute(ctx: Router.RouterContext) {
   const { logger, dbSource, arweave, bundlr } = ctx;
@@ -46,8 +46,9 @@ export async function deployBundledRoute(ctx: Router.RouterContext) {
     const contentType = dataItem.tags.find((t) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(dataItem.tags);
     const manifest = evalManifest(dataItem.tags);
-    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
-    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
+    const cachedNetworkData = await getCachedNetworkData(dbSource);
+    const blockHeight = cachedNetworkData.cachedNetworkInfo.height;
+    const blockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
     const syncTimestamp = Date.now();
 
     const insert: ContractInsert = {

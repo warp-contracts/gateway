@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { Tag } from 'arweave/node/lib/transaction';
-import { Tags } from 'warp-contracts';
+import { Tags, WarpLogger } from "warp-contracts";
 import Arweave from 'arweave';
 
 export function sleep(ms: number): Promise<void> {
@@ -46,4 +46,23 @@ export function encodeTag(name: string, value: string, arweave: Arweave) {
     name: arweave.utils.stringToB64Url(name),
     value: arweave.utils.stringToB64Url(value),
   };
+}
+
+export function evalType(initState: any): string {
+  if (initState.ticker && initState.balances) {
+    return 'pst';
+  }
+
+  return 'other';
+}
+
+export function parseFunctionName(input: string, logger: WarpLogger) {
+  try {
+    return JSON.parse(input).function;
+  } catch (e) {
+    logger.error('Could not parse function name', {
+      input: input,
+    });
+    return '[Error during parsing function name]';
+  }
 }

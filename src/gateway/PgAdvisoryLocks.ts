@@ -2,24 +2,68 @@ import { Knex } from "knex";
 import { Benchmark, LoggerFactory } from "warp-contracts";
 import { createHash } from "crypto";
 
-export type AcquireMutexResult = {
+export type SortKeyMutexResult = {
   lastSortKey: string | null,
   blockHeight: number,
   blockHash: string,
   blockTimestamp: number
 }
 
-export class LastTxSync {
+export class PgAdvisoryLocks {
 
-  private readonly logger = LoggerFactory.INST.create(LastTxSync.name);
+  private readonly logger = LoggerFactory.INST.create(PgAdvisoryLocks.name);
 
-  async acquireMutex(contractTxId: string, trx: Knex.Transaction): Promise<AcquireMutexResult> {
-    const lockId = this.strToKey(contractTxId);
+  async acquireSortKeyMutex(contractTxId: string, trx: Knex.Transaction): Promise<SortKeyMutexResult> {
+    const lockFor = contractTxId;
+    const lockId = this.strToKey(lockFor);
     this.logger.debug("Locking for", {
-      contractTxId,
+      lockFor,
       lockId
     });
+    await this.doAcquireLock(lockId, trx);
+    return await this.loadLastSortKey(contractTxId, trx);
+  }
 
+  async acquireArweaveHeightMutex(trx: Knex.Transaction): Promise<{ blockHeight: number, blockHash: string, blockTimestamp: string } | null | undefined> {
+    const lockFor = "ArweaveHeight";
+    const lockId = this.strToKey(lockFor);
+    this.logger.debug("Locking for", {
+      lockFor,
+      lockId
+    });
+    const hasLock = await this.tryLock(lockId, trx);
+    if (hasLock) {
+      const result = await trx.raw(
+        `
+            SELECT finished_block_height    AS "blockHeight",
+                   finished_block_hash      AS "blockHash",
+                   finished_block_timestamp as "blockTimestamp",
+                   additional_data          as "additionalData"
+            FROM sync_state
+            WHERE name = 'Arweave';`
+      );
+      if (result?.rows?.length !== 1) {
+        return null;
+      }
+
+      return result.rows[0];
+    } else {
+      return undefined;
+    }
+  }
+
+  private async tryLock(lockId: number[], trx: Knex.Transaction): Promise<boolean> {
+    const benchmark = Benchmark.measure();
+    const result = await trx.raw(
+      `SELECT pg_try_advisory_xact_lock(?, ?);`, [lockId[0], lockId[1]]
+    );
+    const hasLock = result.rows[0]["pg_try_advisory_xact_lock"];
+    this.logger.debug("Acquiring pg_try_advisory_xact_lock", benchmark.elapsed(), hasLock);
+
+    return hasLock;
+  }
+
+  private async doAcquireLock(lockId: number[], trx: Knex.Transaction): Promise<void> {
     // https://stackoverflow.com/a/20963803
     await trx.raw(`SET LOCAL lock_timeout = '5s';`);
     const benchmark = Benchmark.measure();
@@ -27,11 +71,9 @@ export class LastTxSync {
       SELECT pg_advisory_xact_lock(?, ?);
     `, [lockId[0], lockId[1]]);
     this.logger.debug("Acquiring pg_advisory_xact_lock", benchmark.elapsed());
-
-    return this.loadLastSortKey(contractTxId, trx);
   }
 
-  private async loadLastSortKey(contractTxId: string, trx: Knex.Transaction): Promise<AcquireMutexResult> {
+  private async loadLastSortKey(contractTxId: string, trx: Knex.Transaction): Promise<SortKeyMutexResult> {
     const benchmark = Benchmark.measure();
     this.logger.debug("Loading lastSortKey", benchmark.elapsed());
 
@@ -46,7 +88,7 @@ export class LastTxSync {
        UNION ALL
        SELECT 'finished_block' as type, null, finished_block_height, finished_block_hash, finished_block_timestamp
        FROM sync_state
-       WHERE name = 'Interactions'`, [contractTxId]
+       WHERE name = 'Interactions';`, [contractTxId]
     );
     if (result?.rows.length !== 2) {
       throw new Error("Acquire mutex result should have exactly 2 rows in result");

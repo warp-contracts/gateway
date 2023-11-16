@@ -1,11 +1,10 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
-import { parseFunctionName } from '../../tasks/syncTransactions';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, timeout, WarpLogger } from 'warp-contracts';
 import Bundlr from '@bundlr-network/client';
-import { isTxIdValid } from '../../../utils';
+import { isTxIdValid, parseFunctionName } from "../../../utils";
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
@@ -52,7 +51,7 @@ export async function sequencerRoute(ctx: Router.RouterContext) {
 }
 
 async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transaction): Promise<SequencerResult> {
-  const { sLogger, arweave, jwk, vrf, lastTxSync, signatureVerification } = ctx;
+  const { sLogger, arweave, jwk, vrf, pgAdvisoryLocks, signatureVerification } = ctx;
 
   const initialBenchmark = Benchmark.measure();
 
@@ -75,7 +74,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     testnetVersion,
   } = await prepareTags(sLogger, transaction, originalOwner, arweave);
 
-  const acquireMutexResult = await lastTxSync.acquireMutex(contractTag, trx);
+  const acquireMutexResult = await pgAdvisoryLocks.acquireSortKeyMutex(contractTag, trx);
   sLogger.debug('Acquire mutex result', acquireMutexResult);
   // note: lastSortKey can be null if that's a very first interaction with a contract.
   if (
@@ -83,7 +82,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     acquireMutexResult.blockHeight == null ||
     acquireMutexResult.blockTimestamp == null
   ) {
-    throw new Error(`Missing data in acquireMutexResult: ${JSON.stringify(acquireMutexResult)}`);
+    throw new Error(`Missing data in acquireSortKeyMutex: ${JSON.stringify(acquireMutexResult)}`);
   }
 
   const millis = Date.now();

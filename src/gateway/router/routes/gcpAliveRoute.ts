@@ -2,7 +2,7 @@ import Router from '@koa/router';
 import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 
 export async function gcpAliveRoute(ctx: Router.RouterContext) {
-  const arBlockHeight = ctx.replica ? null : getCachedNetworkData().cachedBlockInfo.height;
+  const arBlockHeight = (await getCachedNetworkData(ctx.dbSource)).cachedBlockInfo.height;
 
   ctx.body = {
     gateway: 'ok',

@@ -3,9 +3,9 @@ import { getCachedNetworkData } from '../../tasks/networkInfoCache';
 import {GatewayError} from "../../errorHandlerMiddleware";
 
 export async function arweaveInfoRoute(ctx: Router.RouterContext) {
-  const { logger } = ctx;
+  const { logger, dbSource } = ctx;
 
-  const result = getCachedNetworkData().cachedNetworkInfo;
+  const result = (await getCachedNetworkData(dbSource)).cachedNetworkInfo;
   if (result == null) {
     throw new GatewayError('Network info not yet available.')
   } else {
@@ -17,9 +17,9 @@ export async function arweaveInfoRoute(ctx: Router.RouterContext) {
 }
 
 export async function arweaveBlockRoute(ctx: Router.RouterContext) {
-  const { logger } = ctx;
+  const { logger, dbSource } = ctx;
 
-  const result = getCachedNetworkData().cachedBlockInfo;
+  const result = (await getCachedNetworkData(dbSource)).cachedBlockInfo;
   if (result == null) {
     throw new GatewayError('Block info not yet available.');
   } else {
