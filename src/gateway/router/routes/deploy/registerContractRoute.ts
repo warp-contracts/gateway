@@ -1,5 +1,4 @@
 import Router from '@koa/router';
-import { evalType } from '../../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
@@ -10,6 +9,7 @@ import { backOff } from 'exponential-backoff';
 import { getTestnetTag } from './deployBundledRoute';
 import { ContractInsert } from '../../../../db/insertInterfaces';
 import { GatewayError } from '../../../errorHandlerMiddleware';
+import { evalType } from "../../../../utils";
 
 const ARWEAVE_QUERY = `query Transaction($ids: [ID!]) {
     transactions(ids: $ids) {
@@ -82,8 +82,9 @@ export async function registerContractRoute(ctx: Router.RouterContext) {
     const contentType = tags.find((t: Tag) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(tags);
     const manifest = evalManifest(tags);
-    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
-    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
+    const cachedNetworkData = await getCachedNetworkData(dbSource);
+    const blockHeight = cachedNetworkData.cachedNetworkInfo.height;
+    const blockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
     const syncTimestamp = Date.now();
 
     contractTx = {

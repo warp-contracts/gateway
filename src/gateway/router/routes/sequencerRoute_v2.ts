@@ -1,7 +1,6 @@
 import Router from '@koa/router';
-import { parseFunctionName } from '../../tasks/syncTransactions';
 import { Benchmark, SmartWeaveTags, VrfData, timeout } from 'warp-contracts';
-import { isTxIdValid } from '../../../utils';
+import { isTxIdValid, parseFunctionName } from "../../../utils";
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
@@ -36,7 +35,7 @@ export async function sequencerRoute_v2(ctx: Router.RouterContext) {
 }
 
 async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transaction): Promise<SequencerResult> {
-  const { sLogger, arweave, jwk, vrf, lastTxSync } = ctx;
+  const { sLogger, arweave, jwk, vrf, pgAdvisoryLocks } = ctx;
 
   const initialBenchmark = Benchmark.measure();
 
@@ -62,7 +61,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   const contractTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.CONTRACT_TX_ID)!.value;
 
-  const acquireMutexResult = await lastTxSync.acquireMutex(contractTag, trx);
+  const acquireMutexResult = await pgAdvisoryLocks.acquireSortKeyMutex(contractTag, trx);
   sLogger.debug('Acquire mutex result', acquireMutexResult);
   // note: lastSortKey can be null if that's a very first interaction with a contract.
   if (

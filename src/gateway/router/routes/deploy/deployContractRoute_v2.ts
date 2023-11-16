@@ -1,8 +1,7 @@
 import Router from '@koa/router';
-import { evalType } from '../../../tasks/contractsMetadata';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { Bundle, DataItem } from 'arbundles';
-import { ContractSource, sleep, SmartWeaveTags } from 'warp-contracts';
+import { SmartWeaveTags } from 'warp-contracts';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
@@ -12,6 +11,7 @@ import { utils } from 'ethers';
 import { longTo32ByteArray } from 'arbundles';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
 import { GatewayError } from '../../../errorHandlerMiddleware';
+import { evalType } from "../../../../utils";
 
 export async function deployContractRoute_v2(ctx: Router.RouterContext) {
   const { logger, arweave, dbSource } = ctx;
@@ -99,8 +99,9 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
     const contentType = contractDataItem.tags.find((t) => t.name == 'Content-Type')!.value;
     const testnet = getTestnetTag(contractDataItem.tags);
     const manifest = evalManifest(contractDataItem.tags);
-    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
-    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
+    const cachedNetworkData = await getCachedNetworkData(dbSource);
+    const blockHeight = cachedNetworkData.cachedNetworkInfo.height;
+    const blockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
     const syncTimestamp = Date.now();
 
     const insert: ContractInsert = {

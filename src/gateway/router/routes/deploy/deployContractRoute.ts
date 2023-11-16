@@ -2,13 +2,13 @@ import Router, { RouterContext } from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
-import { evalType } from '../../../tasks/contractsMetadata';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { uploadToBundlr } from '../sequencerRoute';
 import { publishContract, sendNotification } from '../../../publisher';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
 import {GatewayError} from "../../../errorHandlerMiddleware";
+import { evalType } from "../../../../utils";
 
 /*
 - warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
@@ -103,8 +103,9 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
     const initState = JSON.parse(initStateRaw);
     const type = evalType(initState);
     const manifest = evalManifest(contractTags);
-    const blockHeight = getCachedNetworkData().cachedNetworkInfo.height;
-    const blockTimestamp = getCachedNetworkData().cachedBlockInfo.timestamp;
+    const cachedNetworkData = await getCachedNetworkData(dbSource);
+    const blockHeight = cachedNetworkData.cachedNetworkInfo.height;
+    const blockTimestamp = cachedNetworkData.cachedBlockInfo.timestamp;
     const syncTimestamp = Date.now();
 
     const insert: ContractInsert = {

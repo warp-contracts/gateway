@@ -5,17 +5,15 @@ import Application from 'koa';
 import bodyParser from 'koa-bodyparser';
 import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger } from 'warp-contracts';
 import Arweave from 'arweave';
-import { runGatewayTasks } from './runGatewayTasks';
 import gatewayRouter from './router/gatewayRouter';
 import * as fs from 'fs';
-import cluster from 'cluster';
 import welcomeRouter from './router/welcomeRouter';
 import Bundlr from '@bundlr-network/client';
 import { initBundlr } from '../bundlr/connect';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
 import Redis from 'ioredis';
-import { LastTxSync } from './LastTxSyncer';
+import { PgAdvisoryLocks } from './PgAdvisoryLocks';
 import { initPubSub } from 'warp-contracts-pubsub';
 // @ts-ignore
 import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
@@ -50,7 +48,7 @@ export interface GatewayContext {
   sorter: LexicographicalInteractionsSorter;
   publisher: Redis;
   publisher_v2: Redis;
-  lastTxSync: LastTxSync;
+  pgAdvisoryLocks: PgAdvisoryLocks;
   env: EnvType;
   appSync?: string;
   signatureVerification: EvmSignatureVerificationServerPlugin;
@@ -79,9 +77,9 @@ export interface GatewayContext {
   const appSync = process.env.APP_SYNC;
 
   LoggerFactory.INST.logLevel('info');
-  LoggerFactory.INST.logLevel('info', 'gateway');
+  LoggerFactory.INST.logLevel('debug', 'gateway');
   LoggerFactory.INST.logLevel('debug', 'sequencer');
-  LoggerFactory.INST.logLevel('debug', 'LastTxSync');
+  LoggerFactory.INST.logLevel('debug', 'PgAdvisoryLocks');
   LoggerFactory.INST.logLevel('debug', 'access');
   const logger = LoggerFactory.INST.create('gateway');
   const sLogger = LoggerFactory.INST.create('sequencer');
@@ -151,7 +149,7 @@ export interface GatewayContext {
     })
   );
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
-  app.context.lastTxSync = new LastTxSync();
+  app.context.pgAdvisoryLocks = new PgAdvisoryLocks();
   app.context.appSync = appSync;
   app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
   app.context.replica = replica;
@@ -236,29 +234,7 @@ export interface GatewayContext {
         app.context.publisher_v2 = publisher2;
       }
     }
-
-    if (!fs.existsSync('gateway.lock')) {
-      await runNetworkInfoCacheTask(app.context);
-
-      if (!noSync) {
-        try {
-          logger.info(`Creating lock file for ${cluster.worker?.id}`);
-          // note: if another process in cluster have already created the file - writing here
-          // will fail thanks to wx flags. https://stackoverflow.com/a/31777314
-          fs.writeFileSync('gateway.lock', '' + cluster.worker?.id, { flag: 'wx' });
-          removeLock = true;
-
-          // note: only one worker in cluster runs the gateway tasks
-          // all workers in cluster run the http server
-          if (env !== 'local') {
-            logger.info(`Starting gateway tasks for ${cluster.worker?.id}`);
-            await runGatewayTasks(app.context);
-          }
-        } catch (e: any) {
-          logger.error('Error from gateway', e);
-        }
-      }
-    }
+    await runNetworkInfoCacheTask(app.context);
   }
 })();
 
