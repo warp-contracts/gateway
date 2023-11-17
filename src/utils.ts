@@ -2,6 +2,7 @@ import fs from 'fs';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { Tag } from 'arweave/node/lib/transaction';
 import { Tags } from 'warp-contracts';
+import Arweave from 'arweave';
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,4 +39,11 @@ export function decodeTags(tags: Tags) {
 export function getTagByName(tags: Tags, name: string) {
   const tagContentType = tags.find((tag: any) => tag.name == name)?.value;
   return tagContentType;
+}
+
+export function encodeTag(name: string, value: string, arweave: Arweave) {
+  return {
+    name: arweave.utils.stringToB64Url(name),
+    value: arweave.utils.stringToB64Url(value),
+  };
 }
