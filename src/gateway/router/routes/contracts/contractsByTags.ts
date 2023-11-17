@@ -1,29 +1,68 @@
 import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
 import { GatewayError } from '../../../errorHandlerMiddleware';
+import { encodeTag } from '../../../../utils';
 
 const MAX_CONTRACTS_PER_PAGE = 100;
+const MAX_TAGS_LIST_LENGTH = 5;
+const MAX_TAGS_VALUES_LIST_LENGTH = 5;
 
-export async function contractsByTag(ctx: Router.RouterContext) {
+export async function contractsByTags(ctx: Router.RouterContext) {
   const { logger, dbSource, arweave } = ctx;
 
-  const { tag, owner, page, limit, testnet, srcId } = ctx.query;
+  const { tags, owner, page, limit, testnet, srcId } = ctx.query;
 
-  if (!tag) {
+  if (!tags) {
     throw new GatewayError('Tag parameter must be provided.', 422);
   }
 
-  logger.debug('Contracts by tag route', { tag, owner, page, limit });
+  logger.debug('Contracts by tag route', { tags, owner, page, limit });
 
   const parsedPage = page ? parseInt(page as string) : 1;
   const parsedLimit = limit ? Math.min(parseInt(limit as string), MAX_CONTRACTS_PER_PAGE) : MAX_CONTRACTS_PER_PAGE;
   const offset = parsedPage ? (parsedPage - 1) * parsedLimit : 0;
 
   const bindings: any[] = [];
-  const tagEncoded = JSON.stringify({
-    name: arweave.utils.stringToB64Url(JSON.parse(tag as string).name),
-    value: arweave.utils.stringToB64Url(JSON.parse(tag as string).value),
-  });
+
+  const parsedTag = JSON.parse(tags as string);
+
+  if (parsedTag.length > 5) {
+    throw new GatewayError(
+      `Maximum ${MAX_TAGS_LIST_LENGTH} tags are excepted in the query. Current tags list length: ${parsedTag.length}`,
+      422
+    );
+  }
+
+  if (parsedTag.length < 1) {
+    throw new GatewayError(
+      `At least one tag in the list is required. Current tags list length: ${parsedTag.length}`,
+      422
+    );
+  }
+
+  let tagsQuery = ``;
+
+  for (let i = 0; i < parsedTag.length; i++) {
+    if (parsedTag[i].values.length > 1) {
+      if (parsedTag[i].values.length > 5) {
+        throw new GatewayError(
+          `Tag with name ${parsedTag[i].name} has too many values assigned. Maximum values list length: ${MAX_TAGS_VALUES_LIST_LENGTH}.`,
+          422
+        );
+      }
+      let partialTagQuery = ` AND (`;
+      partialTagQuery +=
+        parsedTag[i].values
+          .map(
+            (v: string) => `c.contract_tx->'tags' @> '[${JSON.stringify(encodeTag(parsedTag[i].name, v, arweave))}]'`
+          )
+          .join(' OR ') + ')';
+      tagsQuery += partialTagQuery;
+    } else {
+      const tagEncoded = JSON.stringify(encodeTag(parsedTag[i].name, parsedTag[i].values[0], arweave));
+      tagsQuery += ` AND c.contract_tx->'tags' @> '[${tagEncoded}]'`;
+    }
+  }
 
   owner && bindings.push(owner);
   srcId && bindings.push(srcId);
@@ -46,7 +85,7 @@ export async function contractsByTag(ctx: Router.RouterContext) {
             ${testnet ? ' AND c.testnet IS NOT NULL' : ''}
             ${owner ? ` AND c.owner = ?` : ''}
             ${srcId ? ` AND c.src_tx_id = ?` : ''}
-            AND c.contract_tx->'tags' @> '[${tagEncoded}]'
+            ${tagsQuery}
         GROUP BY c.contract_id, c.owner
         ORDER BY c.sync_timestamp DESC
         ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};

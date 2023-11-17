@@ -29,7 +29,7 @@ import { deployContractRoute_v2 } from './routes/deploy/deployContractRoute_v2';
 import { registerContractRoute } from './routes/deploy/registerContractRoute';
 import { dashboardRoute } from './routes/dashboardRoute';
 import { gcpAliveRoute } from './routes/gcpAliveRoute';
-import { contractsByTag } from './routes/contracts/contractsByTag';
+import { contractsByTags } from './routes/contracts/contractsByTags';
 
 const gatewayRouter = (replica: boolean): Router => {
   const router = new Router({ prefix: '/gateway' });
@@ -60,7 +60,7 @@ const gatewayRouter = (replica: boolean): Router => {
   router.get('/creator', creatorRoute);
   router.get('/gcp/alive', gcpAliveRoute);
   router.get('/sequencer/address', sequencerAddressRoute)
-  router.get('/contracts-by-tag', contractsByTag);
+  router.get('/contracts-by-tags', contractsByTags);
 
   // post
   if (!replica) {
