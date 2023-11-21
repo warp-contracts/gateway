@@ -86,7 +86,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
       await updateNetworkInfo();
     },
     context
-  ).runSyncEvery(30 * 1000, true);
+  ).runSyncEvery(40 * 1000, true);
 }
 
 export async function getCachedNetworkData(dbSource: DatabaseSource): Promise<NetworkCacheType> {
