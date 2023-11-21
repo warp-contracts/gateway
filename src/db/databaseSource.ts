@@ -290,7 +290,7 @@ export class DatabaseSource {
       useNullAsDefault: true,
       pool: {
         min: 5,
-        max: 30,
+        max: 20,
         createTimeoutMillis: 3000,
         acquireTimeoutMillis: 30000,
         idleTimeoutMillis: 30000,
