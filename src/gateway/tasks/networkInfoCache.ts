@@ -24,6 +24,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
       const currentArweaveBlock = await pgAdvisoryLocks.acquireArweaveHeightMutex(trx);
       if (currentArweaveBlock === undefined) {
         logger.debug("Network info already locked, skipping");
+        await trx.commit();
         return;
       }
 
