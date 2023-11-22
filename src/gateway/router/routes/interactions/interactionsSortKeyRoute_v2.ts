@@ -1,12 +1,12 @@
 import Router from '@koa/router';
-import {Benchmark} from 'warp-contracts';
+import { SmartWeaveTags } from 'warp-contracts';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
-  const {dbSource, logger} = ctx;
+  const { dbSource, logger } = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk} = ctx.query;
+  const { contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk } = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -17,7 +17,7 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const parsedConfirmationStatus = confirmationStatus
     ? confirmationStatus == 'not_corrupted'
-      ? undefined// ['confirmed', 'not_processed']
+      ? undefined // ['confirmed', 'not_processed']
       : [confirmationStatus]
     : undefined;
 
@@ -40,6 +40,7 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const query = `
       SELECT interaction,
+             input,
              confirmation_status,
              sort_key
                  ${isFromSdk ? '' : ',confirming_peer, confirmations, bundler_tx_id '}
@@ -47,10 +48,10 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
       FROM interactions
       WHERE (contract_id = ?
           OR interact_write @> ARRAY [?]) ${
-              parsedConfirmationStatus
-                      ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
-                      : ''
-      } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
+            parsedConfirmationStatus
+              ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
+              : ''
+          } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
       ORDER BY sort_key ${isFromSdk ? 'ASC' : 'DESC'}
       LIMIT ? OFFSET ?;
   `;
@@ -73,24 +74,29 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const total = result?.rows?.length > 0 ? parseInt(result?.rows[0].total) : 0;
 
-  const benchmark = Benchmark.measure();
-
   const mappedInteractions = isFromSdk
-    ? result?.rows?.map((r: any) => ({
-      ...r.interaction,
-      sortKey: r.sort_key,
-      confirmationStatus: r.confirmation_status,
-    }))
-    : result?.rows?.map((r: any) => ({
-      status: r.confirmation_status,
-      confirming_peers: r.confirming_peer,
-      confirmations: r.confirmations,
-      interaction: {
-        ...r.interaction,
-        bundlerTxId: r.bundler_tx_id,
-        sortKey: r.sort_key,
-      },
-    }));
+    ? result?.rows?.map((r: any) => {
+        const interactionTagsWithInput = addInputToInteractionTags(r.interaction.tags, r.input);
+        return {
+          ...{ ...r.interaction, tags: interactionTagsWithInput },
+          sortKey: r.sort_key,
+          confirmationStatus: r.confirmation_status,
+        };
+      })
+    : result?.rows?.map((r: any) => {
+        const interactionTagsWithInput = addInputToInteractionTags(r.interaction.tags, r.input);
+        return {
+          status: r.confirmation_status,
+          confirming_peers: r.confirming_peer,
+          confirmations: r.confirmations,
+          interaction: {
+            ...r.interaction,
+            tags: interactionTagsWithInput,
+            bundlerTxId: r.bundler_tx_id,
+            sortKey: r.sort_key,
+          },
+        };
+      });
 
   ctx.body = {
     paging: {
@@ -111,4 +117,15 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
     // TODO: this mapping here is kinda dumb.
     interactions: mappedInteractions,
   };
+}
+
+export function addInputToInteractionTags(interactionTags: { name: string; value: string }[], input: string) {
+  interactionTags.splice(
+    interactionTags.findIndex((i: { name: string; value: string }) => Object.keys(i)[0] == SmartWeaveTags.INPUT),
+    1
+  );
+
+  interactionTags.push({ name: SmartWeaveTags.INPUT, value: input });
+
+  return interactionTags;
 }

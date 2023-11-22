@@ -1,0 +1,1 @@
+ALTER TABLE interactions ADD COLUMN manifest jsonb;
