@@ -158,7 +158,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
   const functionName = parseFunctionName(input, sLogger);
   let evolve: string | null;
   evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
-  const manifest = safeParse(data, sLogger).manifest || null;
+  const manifest = safeParse(data, sLogger)?.manifest || null;
 
   sLogger.debug('Initial benchmark', initialBenchmark.elapsed());
   sLogger.debug('inserting into tables');
