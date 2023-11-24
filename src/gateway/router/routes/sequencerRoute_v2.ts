@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import { Benchmark, SmartWeaveTags, VrfData, timeout } from 'warp-contracts';
-import { isTxIdValid, parseFunctionName } from "../../../utils";
+import { isTxIdValid, parseFunctionName, safeParse } from '../../../utils';
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
@@ -11,6 +11,8 @@ import { tagsExceedLimit } from 'warp-arbundles';
 import rawBody from 'raw-body';
 import { b64UrlToString } from 'arweave/node/lib/utils';
 import { determineOwner } from './deploy/deployContractRoute_v2';
+
+export const MAX_INTERACTION_DATA_ITEM_SIZE_BYTES = 20000;
 
 export async function sequencerRoute_v2(ctx: Router.RouterContext) {
   const { dbSource } = ctx;
@@ -48,8 +50,12 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     throw new Error(`Interaction data item tags exceed limit.`);
   }
 
-  if (b64UrlToString(interactionDataItem.data).length > 4) {
-    throw new Error("Interaction data item's data field exceeds 4 bytes limit.");
+  if (interactionDataItem.getRaw().length > MAX_INTERACTION_DATA_ITEM_SIZE_BYTES) {
+    throw new Error(
+      `Interaction data item size: ${
+        interactionDataItem.getRaw().length
+      } exceeds maximum interaction data item size limit: ${MAX_INTERACTION_DATA_ITEM_SIZE_BYTES}.`
+    );
   }
 
   sLogger.debug('New sequencer data item', interactionDataItem.id);
@@ -85,14 +91,29 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     throw new Error(`New sortKey (${sortKey}) <= lastSortKey (${acquireMutexResult.lastSortKey})!`);
   }
 
+  const data = b64UrlToString(interactionDataItem.data);
   const originalSignature = interactionDataItem.signature;
   const originalAddress = await determineOwner(interactionDataItem, arweave);
   const testnetVersion = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.WARP_TESTNET)?.value || null;
-  const inputTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.INPUT)?.value || '';
   const internalWrites: string[] = [];
   interactionDataItem.tags
     .filter((t) => t.name == SmartWeaveTags.INTERACT_WRITE)
     .forEach((t) => internalWrites.push(t.value));
+
+  const interactionTags = interactionDataItem.tags;
+  let input: string;
+
+  const inputFromTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.INPUT);
+  if (inputFromTag) {
+    input = inputFromTag.value;
+  } else {
+    const inputFromData = JSON.parse(data).input;
+    if (inputFromData) {
+      input = JSON.stringify(inputFromData);
+    } else {
+      throw new Error('No input specified.');
+    }
+  }
 
   const tags = [
     { name: 'Sequencer', value: 'RedStone' },
@@ -122,7 +143,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
   const interaction = createInteraction(
     interactionDataItem,
     originalAddress,
-    interactionDataItem.tags,
+    interactionTags,
     acquireMutexResult.blockHeight,
     acquireMutexResult.blockHash,
     acquireMutexResult.blockTimestamp,
@@ -133,10 +154,11 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     acquireMutexResult.lastSortKey
   );
 
-  const parsedInput = JSON.parse(inputTag);
-  const functionName = parseFunctionName(inputTag, sLogger);
+  const parsedInput = safeParse(input, sLogger);
+  const functionName = parseFunctionName(input, sLogger);
   let evolve: string | null;
   evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
+  const manifest = safeParse(data, sLogger).manifest || null;
 
   sLogger.debug('Initial benchmark', initialBenchmark.elapsed());
   sLogger.debug('inserting into tables');
@@ -162,7 +184,8 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
                            testnet,
                            last_sort_key,
                            owner,
-                           sync_timestamp)
+                           sync_timestamp,
+                           manifest)
         VALUES (
             :interaction_id,
             :interaction,
@@ -181,7 +204,8 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
             :testnet,
             :prev_sort_key,
             :owner,
-            :sync_timestamp)
+            :sync_timestamp,
+            :manifest)
             RETURNING id)
         INSERT
         INTO bundle_items (interaction_id, state, transaction, tags, data_item)
@@ -195,7 +219,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
       block_id: acquireMutexResult.blockHash,
       contract_id: contractTag,
       function: functionName,
-      input: inputTag,
+      input: input,
       confirmation_status: 'confirmed',
       confirming_peer: BUNDLR_NODE1_URL,
       source: 'redstone-sequencer',
@@ -210,6 +234,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
       tags: JSON.stringify(tags),
       sync_timestamp: millis,
       data_item: interactionDataItem.getRaw(),
+      manifest: manifest,
     }
   );
 
