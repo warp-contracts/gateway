@@ -120,12 +120,9 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 }
 
 export function addInputToInteractionTags(interactionTags: { name: string; value: string }[], input: string) {
-  interactionTags.splice(
-    interactionTags.findIndex((i: { name: string; value: string }) => i.name == SmartWeaveTags.INPUT),
-    1
-  );
-
-  interactionTags.push({ name: SmartWeaveTags.INPUT, value: input });
+  if (interactionTags.findIndex((i: { name: string; value: string }) => i.name == SmartWeaveTags.INPUT) === -1) {
+    interactionTags.push({ name: SmartWeaveTags.INPUT, value: input });
+  }
 
   return interactionTags;
 }
