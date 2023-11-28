@@ -102,17 +102,24 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   const interactionTags = interactionDataItem.tags;
   let input: string;
-
-  const inputFromTag = interactionDataItem.tags.find((t) => t.name == SMART_WEAVE_TAGS.INPUT);
-  if (inputFromTag) {
-    input = inputFromTag.value;
-  } else {
+  const inputFormat = interactionDataItem.tags.find((t) => t.name == WARP_TAGS.INPUT_FORMAT)?.value;
+  if (inputFormat == 'tag') {
+    const inputFromTag = interactionDataItem.tags.find((t) => t.name == SMART_WEAVE_TAGS.INPUT);
+    if (inputFromTag) {
+      input = inputFromTag.value;
+    } else {
+      throw new Error('Input in tag not specified.');
+    }
+  } else if (inputFormat == 'data') {
     const inputFromData = JSON.parse(data).input;
     if (inputFromData) {
       input = JSON.stringify(inputFromData);
+      interactionTags.push({ name: SMART_WEAVE_TAGS.INPUT, value: input });
     } else {
-      throw new Error('No input specified.');
+      throw new Error('Input in data not specified.');
     }
+  } else {
+    throw new Error('Input format not specified.');
   }
 
   const tags = [
@@ -173,7 +180,6 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
                            block_id,
                            contract_id,
                            function,
-                           input,
                            confirmation_status,
                            confirming_peer,
                            source,
@@ -193,7 +199,6 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
             :block_id,
             :contract_id,
             :function,
-            :input,
             :confirmation_status,
             :confirming_peer,
             :source,
@@ -219,7 +224,6 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
       block_id: acquireMutexResult.blockHash,
       contract_id: contractTag,
       function: functionName,
-      input: input,
       confirmation_status: 'confirmed',
       confirming_peer: BUNDLR_NODE1_URL,
       source: 'redstone-sequencer',
