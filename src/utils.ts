@@ -23,14 +23,14 @@ export function isTxIdValid(txId: string): boolean {
 }
 
 export function decodeTags(tags: Tags) {
-  const decodedTags: { name: string; value: string }[] = [];
+  const decodedTags: Tags = [];
   const mappedTags = tags.map((tag: { name: string; value: string }) => {
     return new Tag(tag.name, tag.value);
   });
   mappedTags.forEach((tag: Tag) => {
     let name = tag.get('name', { decode: true, string: true });
     let value = tag.get('value', { decode: true, string: true });
-    decodedTags.push({ name, value });
+    decodedTags.push(new Tag(name, value));
   });
 
   return decodedTags;

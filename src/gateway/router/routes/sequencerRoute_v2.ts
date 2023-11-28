@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { Benchmark, SmartWeaveTags, VrfData, timeout } from 'warp-contracts';
+import { Benchmark, SMART_WEAVE_TAGS, VrfData, WARP_TAGS, timeout } from 'warp-contracts';
 import { isTxIdValid, parseFunctionName, safeParse } from '../../../utils';
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
@@ -65,7 +65,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     ctx.throw(400, 'Interaction data item binary is not valid.');
   }
 
-  const contractTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.CONTRACT_TX_ID)!.value;
+  const contractTag = interactionDataItem.tags.find((t) => t.name == SMART_WEAVE_TAGS.CONTRACT_TX_ID)!.value;
 
   const acquireMutexResult = await pgAdvisoryLocks.acquireSortKeyMutex(contractTag, trx);
   sLogger.debug('Acquire mutex result', acquireMutexResult);
@@ -94,16 +94,16 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
   const data = b64UrlToString(interactionDataItem.data);
   const originalSignature = interactionDataItem.signature;
   const originalAddress = await determineOwner(interactionDataItem, arweave);
-  const testnetVersion = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.WARP_TESTNET)?.value || null;
+  const testnetVersion = interactionDataItem.tags.find((t) => t.name == WARP_TAGS.WARP_TESTNET)?.value || null;
   const internalWrites: string[] = [];
   interactionDataItem.tags
-    .filter((t) => t.name == SmartWeaveTags.INTERACT_WRITE)
+    .filter((t) => t.name == WARP_TAGS.INTERACT_WRITE)
     .forEach((t) => internalWrites.push(t.value));
 
   const interactionTags = interactionDataItem.tags;
   let input: string;
 
-  const inputFromTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.INPUT);
+  const inputFromTag = interactionDataItem.tags.find((t) => t.name == SMART_WEAVE_TAGS.INPUT);
   if (inputFromTag) {
     input = inputFromTag.value;
   } else {
@@ -133,7 +133,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
   }
 
   let vrfData: VrfData | null = null;
-  const requestVrfTag = interactionDataItem.tags.find((t) => t.name == SmartWeaveTags.REQUEST_VRF)?.value || null;
+  const requestVrfTag = interactionDataItem.tags.find((t) => t.name == WARP_TAGS.REQUEST_VRF)?.value || null;
   if (requestVrfTag) {
     const vrfGen = generateVrfTags(sortKey, vrf, arweave);
     tags.push(...vrfGen.vrfTags);

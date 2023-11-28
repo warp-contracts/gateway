@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { SmartWeaveTags } from 'warp-contracts';
+import { SMART_WEAVE_TAGS } from 'warp-contracts';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
@@ -120,8 +120,8 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 }
 
 export function addInputToInteractionTags(interactionTags: { name: string; value: string }[], input: string) {
-  if (interactionTags.findIndex((i: { name: string; value: string }) => i.name == SmartWeaveTags.INPUT) === -1) {
-    interactionTags.push({ name: SmartWeaveTags.INPUT, value: input });
+  if (interactionTags.findIndex((i: { name: string; value: string }) => i.name == SMART_WEAVE_TAGS.INPUT) === -1) {
+    interactionTags.push({ name: SMART_WEAVE_TAGS.INPUT, value: input });
   }
 
   return interactionTags;

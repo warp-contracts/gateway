@@ -1,14 +1,14 @@
 import Router, { RouterContext } from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
-import { GQLTagInterface, SmartWeaveTags } from 'warp-contracts';
+import { GQLTagInterface, SMART_WEAVE_TAGS, WARP_TAGS } from 'warp-contracts';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { uploadToBundlr } from '../sequencerRoute';
 import { publishContract, sendNotification } from '../../../publisher';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
-import {GatewayError} from "../../../errorHandlerMiddleware";
-import { evalType } from "../../../../utils";
+import { GatewayError } from '../../../errorHandlerMiddleware';
+import { evalType } from '../../../../utils';
 
 /*
 - warp-wrapped - contract or source is wrapped in another transaction - it is posted by Warp Gateway to the Bundlr network and sent 
@@ -63,8 +63,8 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
 
       srcTxOwner = srcTagsData.originalAddress;
       srcTestnet = srcTagsData.testnet;
-      srcContentType = tagValue(SmartWeaveTags.CONTENT_TYPE, srcTagsData.tags);
-      srcWasmLang = tagValue(SmartWeaveTags.WASM_LANG, srcTagsData.tags);
+      srcContentType = tagValue(SMART_WEAVE_TAGS.CONTENT_TYPE, srcTagsData.tags);
+      srcWasmLang = tagValue(WARP_TAGS.WASM_LANG, srcTagsData.tags);
       if (srcContentType == 'application/javascript') {
         src = Arweave.utils.bufferToString(srcTx.data);
       } else {
@@ -78,7 +78,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
         bundled_tx_id: bundlerSrcTxId,
       });
     } else {
-      srcTxId = tagValue(SmartWeaveTags.CONTRACT_SRC_TX_ID, contractTags);
+      srcTxId = tagValue(SMART_WEAVE_TAGS.CONTRACT_SRC_TX_ID, contractTags);
       if (!srcTxId) {
         throw new Error('SrcTxId not defined');
       }
@@ -96,7 +96,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       bundled_tx_id: bundlerContractTx.id,
     });
 
-    let initStateRaw = tagValue(SmartWeaveTags.INIT_STATE, contractTags);
+    let initStateRaw = tagValue(WARP_TAGS.INIT_STATE, contractTags);
     if (!initStateRaw) {
       initStateRaw = Arweave.utils.bufferToString(contractTx.data);
     }
@@ -118,7 +118,7 @@ export async function deployContractRoute(ctx: Router.RouterContext) {
       pst_name: type == 'pst' ? initState?.name : null,
       block_height: blockHeight,
       block_timestamp: blockTimestamp,
-      content_type: tagValue(SmartWeaveTags.CONTENT_TYPE, contractTags),
+      content_type: tagValue(SMART_WEAVE_TAGS.CONTENT_TYPE, contractTags),
       contract_tx: { tags: contractTx.toJSON().tags },
       bundler_contract_tx_id: bundlerContractTx.id,
       bundler_contract_node: BUNDLR_NODE1_URL,
