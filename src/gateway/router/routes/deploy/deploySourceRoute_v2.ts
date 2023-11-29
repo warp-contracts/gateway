@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import Arweave from 'arweave';
-import { SmartWeaveTags } from 'warp-contracts';
+import { SMART_WEAVE_TAGS, WARP_TAGS } from 'warp-contracts';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { WarpDeployment } from './deployContractRoute';
 import rawBody from 'raw-body';
@@ -36,7 +36,7 @@ export async function deploySourceRoute_v2(ctx: Router.RouterContext) {
 
     srcTestnet = getTestnetTag(dataItem.tags);
     srcContentType = dataItem.tags.find((t) => t.name == 'Content-Type')!.value;
-    srcWasmLang = dataItem.tags.find((t) => t.name == SmartWeaveTags.WASM_LANG)?.value;
+    srcWasmLang = dataItem.tags.find((t) => t.name == WARP_TAGS.WASM_LANG)?.value;
     if (srcContentType == 'application/javascript') {
       src = Arweave.utils.bufferToString(dataItem.rawData);
     } else {

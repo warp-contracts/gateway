@@ -49,7 +49,7 @@ export interface ContractInsert {
   block_timestamp: number;
   content_type: string | undefined;
   contract_tx: {
-    tags: Tags;
+    tags: { name: string; value: string }[];
   };
   bundler_contract_tx_id: string;
   bundler_contract_node: string;

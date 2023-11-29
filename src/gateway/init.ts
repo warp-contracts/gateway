@@ -3,7 +3,14 @@ import { hideBin } from 'yargs/helpers';
 import Koa from 'koa';
 import Application from 'koa';
 import bodyParser from 'koa-bodyparser';
-import { ArweaveWrapper, LexicographicalInteractionsSorter, LoggerFactory, WarpLogger } from 'warp-contracts';
+import {
+  ArweaveWrapper,
+  LexicographicalInteractionsSorter,
+  LoggerFactory,
+  WarpFactory,
+  WarpLogger,
+  defaultCacheOptions,
+} from 'warp-contracts';
 import Arweave from 'arweave';
 import gatewayRouter from './router/gatewayRouter';
 import * as fs from 'fs';
@@ -84,6 +91,18 @@ export interface GatewayContext {
   const logger = LoggerFactory.INST.create('gateway');
   const sLogger = LoggerFactory.INST.create('sequencer');
   const accessLogger = LoggerFactory.INST.create('access');
+  const warp = WarpFactory.forMainnet();
+  const warpGqlGoldsky = WarpFactory.forMainnet(
+    defaultCacheOptions,
+    false,
+    Arweave.init({
+      host: 'arweave-search.goldsky.com',
+      port: 443,
+      protocol: 'https',
+      timeout: 20000,
+      logging: false,
+    })
+  );
 
   const env = process.env.ENV as string;
   if (!env) {
@@ -138,16 +157,8 @@ export interface GatewayContext {
   app.context.arweave = arweave;
   app.context.bundlr = bundlr;
   app.context.jwk = jwk;
-  app.context.arweaveWrapper = new ArweaveWrapper(arweave);
-  app.context.arweaveWrapperGqlGoldsky = new ArweaveWrapper(
-    Arweave.init({
-      host: 'arweave-search.goldsky.com',
-      port: 443,
-      protocol: 'https',
-      timeout: 20000,
-      logging: false,
-    })
-  );
+  app.context.arweaveWrapper = new ArweaveWrapper(warp);
+  app.context.arweaveWrapperGqlGoldsky = new ArweaveWrapper(warpGqlGoldsky);
   app.context.sorter = new LexicographicalInteractionsSorter(arweave);
   app.context.pgAdvisoryLocks = new PgAdvisoryLocks();
   app.context.appSync = appSync;
