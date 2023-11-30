@@ -29,6 +29,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
       }
 
       const newNetworkInfo = await arweaveWrapper.info();
+      logger.debug("New network info", newNetworkInfo);
       if (currentArweaveBlock === null) {
         logger.debug("Current arweave block null, inserting");
         const additionalData = await prepareCacheData(arweave, newNetworkInfo);
