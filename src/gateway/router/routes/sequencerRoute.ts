@@ -11,14 +11,13 @@ import {
   WARP_TAGS,
   WarpLogger,
 } from 'warp-contracts';
-import Bundlr from '@bundlr-network/client';
 import { isTxIdValid, parseFunctionName } from '../../../utils';
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { VRF } from '../../init';
 import { DataItem, serializeTags } from 'arbundles';
-
+import Irys from "@irys/sdk";
 const { Evaluate } = require('@idena/vrf-js');
 
 export type VrfData = {
@@ -388,7 +387,7 @@ async function prepareTags(logger: any, transaction: Transaction, originalOwner:
 
 export async function uploadToBundlr(
   transaction: Transaction,
-  bundlr: Bundlr,
+  bundlr: Irys,
   tags: GQLTagInterface[],
   logger: WarpLogger
 ) {
@@ -396,7 +395,7 @@ export async function uploadToBundlr(
 
   const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
   await bTx.sign();
-  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx, { getReceiptSignature: true });
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx);
 
   logger.debug('Uploading to bundlr', {
     elapsed: uploadBenchmark.elapsed(),

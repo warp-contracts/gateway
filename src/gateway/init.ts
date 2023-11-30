@@ -15,7 +15,6 @@ import Arweave from 'arweave';
 import gatewayRouter from './router/gatewayRouter';
 import * as fs from 'fs';
 import welcomeRouter from './router/welcomeRouter';
-import Bundlr from '@bundlr-network/client';
 import { initBundlr } from '../bundlr/connect';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { runNetworkInfoCacheTask } from './tasks/networkInfoCache';
@@ -27,7 +26,7 @@ import { EvmSignatureVerificationServerPlugin } from 'warp-signature/server';
 import { DatabaseSource } from '../db/databaseSource';
 import { accessLogMiddleware } from './accessLogMiddleware';
 import { errorHandlerMiddleware } from './errorHandlerMiddleware';
-
+import Irys from "@irys/sdk";
 const argv = yargs(hideBin(process.argv)).parseSync();
 const envPath = argv.env_path || '.secrets/prod.env';
 const replica = (argv.replica as boolean) || false;
@@ -47,7 +46,7 @@ export interface GatewayContext {
   sLogger: WarpLogger;
   accessLogger: WarpLogger;
   arweave: Arweave;
-  bundlr: Bundlr;
+  bundlr: Irys;
   jwk: JWKInterface;
   arweaveWrapper: ArweaveWrapper;
   arweaveWrapperGqlGoldsky: ArweaveWrapper;

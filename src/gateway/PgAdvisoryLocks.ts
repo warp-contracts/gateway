@@ -54,6 +54,7 @@ export class PgAdvisoryLocks {
 
   private async tryLock(lockId: number[], trx: Knex.Transaction): Promise<boolean> {
     const benchmark = Benchmark.measure();
+    await trx.raw(`SET LOCAL lock_timeout = '5s';`);
     const result = await trx.raw(
       `SELECT pg_try_advisory_xact_lock(?, ?);`, [lockId[0], lockId[1]]
     );
