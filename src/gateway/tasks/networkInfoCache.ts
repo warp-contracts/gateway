@@ -6,6 +6,7 @@ import { Knex } from "knex";
 import Arweave from "arweave";
 import { DatabaseSource } from "../../db/databaseSource";
 import { sleep } from "../../utils";
+import { WarpLogger } from "warp-contracts";
 
 export type NetworkCacheType = {
   cachedNetworkInfo: NetworkInfoInterface;
@@ -108,9 +109,13 @@ export async function getCachedNetworkData(dbSource: DatabaseSource): Promise<Ne
   return result.rows[0].additional_data;
 }
 
-async function prepareCacheData(arweave: Arweave, newNetworkInfo: NetworkInfoInterface): Promise<NetworkCacheType> {
+async function prepareCacheData(arweave: Arweave, newNetworkInfo: NetworkInfoInterface, logger: WarpLogger): Promise<NetworkCacheType> {
   const cachedNetworkInfo = newNetworkInfo;
+
+
+  logger.debug("Before blocks.get", cachedNetworkInfo.current);
   const cachedBlockInfo = await arweave.blocks.get(cachedNetworkInfo.current as string);
+  logger.debug("after blocks.get", cachedBlockInfo);
 
   (cachedBlockInfo as any).poa = {};
   (cachedBlockInfo as any).txs = [];
