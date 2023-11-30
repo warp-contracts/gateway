@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { Benchmark, SMART_WEAVE_TAGS, Tags, VrfData, WARP_TAGS, timeout } from 'warp-contracts';
+import { Benchmark, SMART_WEAVE_TAGS, VrfData, WARP_TAGS, timeout } from 'warp-contracts';
 import { isTxIdValid, parseFunctionName, safeParse } from '../../../utils';
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
@@ -101,18 +101,25 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     .forEach((t) => internalWrites.push(t.value));
 
   const interactionTags = interactionDataItem.tags;
-  let input: string | null;
+  let input: string;
   const inputFormat = interactionDataItem.tags.find((t) => t.name == WARP_TAGS.INPUT_FORMAT)?.value;
   if (inputFormat == 'tag') {
-    input = getInputFromTag(interactionDataItem.tags);
+    const inputFromTag = interactionDataItem.tags.find((t) => t.name == SMART_WEAVE_TAGS.INPUT);
+    if (inputFromTag) {
+      input = inputFromTag.value;
+    } else {
+      throw new Error('Input in tag not specified.');
+    }
   } else if (inputFormat == 'data') {
-    input = getInputFromData(data, interactionTags);
+    const inputFromData = JSON.parse(data).input;
+    if (inputFromData) {
+      input = JSON.stringify(inputFromData);
+      interactionTags.push({ name: SMART_WEAVE_TAGS.INPUT, value: input });
+    } else {
+      throw new Error('Input in data not specified.');
+    }
   } else {
-    input = getInputFromTag(interactionDataItem.tags) || getInputFromData(data, interactionTags);
-  }
-
-  if (!input) {
-    throw new Error(`Input not specifided`);
+    throw new Error('Input format not specified.');
   }
 
   const tags = [
@@ -244,19 +251,4 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     prevSortKey: acquireMutexResult.lastSortKey,
     internalWrites,
   };
-}
-
-function getInputFromTag(tags: { name: string; value: string }[]) {
-  const inputFromTag = tags.find((t) => t.name == SMART_WEAVE_TAGS.INPUT);
-  return inputFromTag ? inputFromTag.value : null;
-}
-
-function getInputFromData(data: string, interactionTags: { name: string; value: string }[]) {
-  const inputFromData = JSON.parse(data).input;
-  if (inputFromData) {
-    interactionTags.push({ name: SMART_WEAVE_TAGS.INPUT, value: JSON.stringify(inputFromData) });
-    return JSON.stringify(inputFromData);
-  } else {
-    return null;
-  }
 }
