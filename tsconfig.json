@@ -2,6 +2,9 @@
   "compilerOptions": {
     "strict": true,
     "outDir": "dist",
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
