@@ -2,17 +2,9 @@ import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
-import {
-  arrayToHex,
-  Benchmark,
-  GQLTagInterface,
-  SMART_WEAVE_TAGS,
-  timeout,
-  WARP_TAGS,
-  WarpLogger,
-} from 'warp-contracts';
+import { arrayToHex, Benchmark, GQLTagInterface, SmartWeaveTags, timeout, WarpLogger } from 'warp-contracts';
 import Bundlr from '@bundlr-network/client';
-import { isTxIdValid, parseFunctionName } from '../../../utils';
+import { isTxIdValid, parseFunctionName } from "../../../utils";
 import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
@@ -33,8 +25,8 @@ export type SequencerResult = {
   prevSortKey: string | null;
   id: string;
   internalWrites: string[];
-  timestamp: number;
-};
+  timestamp: number
+}
 
 export async function sequencerRoute(ctx: Router.RouterContext) {
   const { dbSource } = ctx;
@@ -239,7 +231,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
     sortKey,
     timestamp: millis,
     prevSortKey: acquireMutexResult.lastSortKey,
-    internalWrites,
+    internalWrites
   };
 }
 
@@ -343,16 +335,16 @@ async function prepareTags(logger: any, transaction: Transaction, originalOwner:
   for (const tag of transaction.tags) {
     const key = tag.get('name', { decode: true, string: true });
     const value = tag.get('value', { decode: true, string: true });
-    if (key == SMART_WEAVE_TAGS.CONTRACT_TX_ID) {
+    if (key == SmartWeaveTags.CONTRACT_TX_ID) {
       contractTag = value;
     }
-    if (key == SMART_WEAVE_TAGS.INPUT) {
+    if (key == SmartWeaveTags.INPUT) {
       inputTag = value;
     }
-    if (key == WARP_TAGS.INTERACT_WRITE) {
+    if (key == SmartWeaveTags.INTERACT_WRITE) {
       internalWrites.push(value);
     }
-    if (key == WARP_TAGS.REQUEST_VRF) {
+    if (key == SmartWeaveTags.REQUEST_VRF) {
       requestVrfTag = value;
     }
     if (key == 'Signature-Type' && value == 'ethereum') {

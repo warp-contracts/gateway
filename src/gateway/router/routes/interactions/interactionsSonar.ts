@@ -1,5 +1,6 @@
 import Router from '@koa/router';
 import { Benchmark } from 'warp-contracts';
+import { addInputToInteractionTags } from './interactionsSortKeyRoute_v2';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
@@ -32,6 +33,7 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
 
   const query = `
       SELECT interaction,
+             input,
              confirmation_status,
              sort_key,
              confirming_peer,
@@ -86,12 +88,13 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
     }),
 
     interactions: result?.rows?.map((r: any) => {
+      const interactionTagsWithInput = addInputToInteractionTags(r.interaction.tags, r.input);
       return {
         status: r.confirmation_status,
         confirming_peers: r.confirming_peer,
         confirmations: r.confirmations,
         interaction: {
-          ...r.interaction,
+          ...{ ...r.interaction, tags: interactionTagsWithInput },
           bundlerTxId: r.bundler_tx_id,
           sortKey: r.sort_key,
         },

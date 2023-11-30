@@ -1,12 +1,12 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
-import { SMART_WEAVE_TAGS, WARP_TAGS } from 'warp-contracts';
+import { SmartWeaveTags } from 'warp-contracts';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { uploadToBundlr } from '../sequencerRoute';
 import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
 import { ContractSourceInsert } from '../../../../db/insertInterfaces';
-import { GatewayError } from '../../../errorHandlerMiddleware';
+import {GatewayError} from "../../../errorHandlerMiddleware";
 
 export async function deploySourceRoute(ctx: Router.RouterContext) {
   const { logger, arweave, bundlr, dbSource } = ctx;
@@ -25,8 +25,8 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
 
     srcTxOwner = srcTagsData.originalAddress;
     srcTestnet = srcTagsData.testnet;
-    srcContentType = tagValue(SMART_WEAVE_TAGS.CONTENT_TYPE, srcTagsData.tags);
-    srcWasmLang = tagValue(WARP_TAGS.WASM_LANG, srcTagsData.tags);
+    srcContentType = tagValue(SmartWeaveTags.CONTENT_TYPE, srcTagsData.tags);
+    srcWasmLang = tagValue(SmartWeaveTags.WASM_LANG, srcTagsData.tags);
     if (srcContentType == 'application/javascript') {
       src = Arweave.utils.bufferToString(srcTx.data);
     } else {

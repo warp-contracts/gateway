@@ -59,7 +59,7 @@ async function getContractData(
   logger: WarpLogger,
   id: string,
   bundlrId: string,
-  tags: Tags,
+  tags: { name: string; value: string }[],
   arweaveWrapper: ArweaveWrapper,
   deploymentType: string,
   bundlrContractNode: string
