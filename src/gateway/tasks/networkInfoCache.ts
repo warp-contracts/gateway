@@ -56,6 +56,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
         }
 
         const additionalData = await prepareCacheData(arweave, newNetworkInfo);
+        logger.debug("additional data", additionalData);
         await trx.raw(`
             UPDATE sync_state
             SET finished_block_height=:block_height,
@@ -67,6 +68,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
           block_hash: newNetworkInfo.current,
           additional_data: additionalData
         });
+        logger.debug("After update.");
       }
       // hold lock for a while, so that other process that are trying to check the height
       // at about the same time - will get blocked
