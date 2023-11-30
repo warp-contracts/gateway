@@ -33,7 +33,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
       logger.debug("New network info", newNetworkInfo);
       if (currentArweaveBlock === null) {
         logger.debug("Current arweave block null, inserting");
-        const additionalData = await prepareCacheData(arweave, newNetworkInfo);
+        const additionalData = await prepareCacheData(arweave, newNetworkInfo, logger);
         await trx.raw(`
             INSERT INTO sync_state(name, finished_block_height, finished_block_hash, additional_data)
             VALUES ('Arweave',
