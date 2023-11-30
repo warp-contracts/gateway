@@ -101,7 +101,7 @@ export interface GatewayContext {
       protocol: 'https',
       timeout: 20000,
       logging: false,
-    })
+    }) as any
   );
 
   const env = process.env.ENV as string;
@@ -159,7 +159,7 @@ export interface GatewayContext {
   app.context.jwk = jwk;
   app.context.arweaveWrapper = new ArweaveWrapper(warp);
   app.context.arweaveWrapperGqlGoldsky = new ArweaveWrapper(warpGqlGoldsky);
-  app.context.sorter = new LexicographicalInteractionsSorter(arweave);
+  app.context.sorter = new LexicographicalInteractionsSorter(arweave as any);
   app.context.pgAdvisoryLocks = new PgAdvisoryLocks();
   app.context.appSync = appSync;
   app.context.signatureVerification = new EvmSignatureVerificationServerPlugin();
