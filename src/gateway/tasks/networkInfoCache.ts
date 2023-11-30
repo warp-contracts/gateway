@@ -56,7 +56,7 @@ export async function runNetworkInfoCacheTask(context: GatewayContext) {
           return;
         }
 
-        const additionalData = await prepareCacheData(arweave, newNetworkInfo);
+        const additionalData = await prepareCacheData(arweave, newNetworkInfo, logger);
         logger.debug("additional data", additionalData);
         await trx.raw(`
             UPDATE sync_state
