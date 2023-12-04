@@ -1,12 +1,11 @@
 import Router from '@koa/router';
-import {Benchmark} from 'warp-contracts';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
-  const {dbSource, logger} = ctx;
+  const { dbSource, logger } = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk} = ctx.query;
+  const { contractId, confirmationStatus, page, limit, from, to, totalCount, source, fromSdk } = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -17,7 +16,7 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const parsedConfirmationStatus = confirmationStatus
     ? confirmationStatus == 'not_corrupted'
-      ? undefined// ['confirmed', 'not_processed']
+      ? undefined // ['confirmed', 'not_processed']
       : [confirmationStatus]
     : undefined;
 
@@ -47,10 +46,10 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
       FROM interactions
       WHERE (contract_id = ?
           OR interact_write @> ARRAY [?]) ${
-              parsedConfirmationStatus
-                      ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
-                      : ''
-      } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
+            parsedConfirmationStatus
+              ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
+              : ''
+          } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
       ORDER BY sort_key ${isFromSdk ? 'ASC' : 'DESC'}
       LIMIT ? OFFSET ?;
   `;
@@ -73,24 +72,22 @@ export async function interactionsSortKeyRoute_v2(ctx: Router.RouterContext) {
 
   const total = result?.rows?.length > 0 ? parseInt(result?.rows[0].total) : 0;
 
-  const benchmark = Benchmark.measure();
-
   const mappedInteractions = isFromSdk
     ? result?.rows?.map((r: any) => ({
-      ...r.interaction,
-      sortKey: r.sort_key,
-      confirmationStatus: r.confirmation_status,
-    }))
-    : result?.rows?.map((r: any) => ({
-      status: r.confirmation_status,
-      confirming_peers: r.confirming_peer,
-      confirmations: r.confirmations,
-      interaction: {
         ...r.interaction,
-        bundlerTxId: r.bundler_tx_id,
         sortKey: r.sort_key,
-      },
-    }));
+        confirmationStatus: r.confirmation_status,
+      }))
+    : result?.rows?.map((r: any) => ({
+        status: r.confirmation_status,
+        confirming_peers: r.confirming_peer,
+        confirmations: r.confirmations,
+        interaction: {
+          ...r.interaction,
+          bundlerTxId: r.bundler_tx_id,
+          sortKey: r.sort_key,
+        },
+      }));
 
   ctx.body = {
     paging: {

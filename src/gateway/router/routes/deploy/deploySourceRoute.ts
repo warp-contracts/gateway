@@ -1,12 +1,12 @@
 import Router from '@koa/router';
 import Transaction from 'arweave/node/lib/transaction';
 import Arweave from 'arweave';
-import { Benchmark, GQLTagInterface, SmartWeaveTags, WarpLogger } from 'warp-contracts';
+import { Benchmark, GQLTagInterface, SMART_WEAVE_TAGS, WARP_TAGS, WarpLogger } from "warp-contracts";
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { prepareTags, tagValue, verifyEvmSignature, WarpDeployment } from './deployContractRoute';
 import { ContractSourceInsert } from '../../../../db/insertInterfaces';
-import {GatewayError} from "../../../errorHandlerMiddleware";
-import Bundlr from '@bundlr-network/client';
+import { GatewayError } from '../../../errorHandlerMiddleware';
+import Irys from "@irys/sdk";
 
 export async function deploySourceRoute(ctx: Router.RouterContext) {
   const { logger, arweave, bundlr, dbSource } = ctx;
@@ -25,8 +25,8 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
 
     srcTxOwner = srcTagsData.originalAddress;
     srcTestnet = srcTagsData.testnet;
-    srcContentType = tagValue(SmartWeaveTags.CONTENT_TYPE, srcTagsData.tags);
-    srcWasmLang = tagValue(SmartWeaveTags.WASM_LANG, srcTagsData.tags);
+    srcContentType = tagValue(SMART_WEAVE_TAGS.CONTENT_TYPE, srcTagsData.tags);
+    srcWasmLang = tagValue(WARP_TAGS.WASM_LANG, srcTagsData.tags);
     if (srcContentType == 'application/javascript') {
       src = Arweave.utils.bufferToString(srcTx.data);
     } else {
@@ -73,7 +73,7 @@ export async function deploySourceRoute(ctx: Router.RouterContext) {
 
 export async function uploadToBundlr(
   transaction: Transaction,
-  bundlr: Bundlr,
+  bundlr: Irys,
   tags: GQLTagInterface[],
   logger: WarpLogger
 ) {

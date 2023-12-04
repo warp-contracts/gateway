@@ -1,12 +1,12 @@
 import Router from '@koa/router';
-import {Benchmark} from 'warp-contracts';
+import { Benchmark } from 'warp-contracts';
 
 const MAX_INTERACTIONS_PER_PAGE = 5000;
 
 export async function interactionsSonar(ctx: Router.RouterContext) {
-  const {dbSource, logger} = ctx;
+  const { dbSource, logger } = ctx;
 
-  const {contractId, confirmationStatus, page, limit, from, to, source} = ctx.query;
+  const { contractId, confirmationStatus, page, limit, from, to, source } = ctx.query;
 
   const parsedPage = page ? parseInt(page as string) : 1;
 
@@ -40,9 +40,9 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
       FROM interactions
       WHERE (contract_id = ? OR interact_write @> ARRAY [?])
           ${
-                  parsedConfirmationStatus
-                          ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
-                          : ''
+            parsedConfirmationStatus
+              ? ` AND confirmation_status IN (${parsedConfirmationStatus.map((status) => `'${status}'`).join(', ')})`
+              : ''
           } ${from ? ' AND sort_key > ?' : ''} ${to ? ' AND sort_key <= ?' : ''} ${source ? `AND source = ?` : ''}
       ORDER BY sort_key DESC ${parsedPage ? ' LIMIT ? OFFSET ?' : ''};
   `;
@@ -85,18 +85,19 @@ export async function interactionsSonar(ctx: Router.RouterContext) {
       },
     }),
 
-    interactions: result?.rows?.map((r: any) => ({
-      status: r.confirmation_status,
-      confirming_peers: r.confirming_peer,
-      confirmations: r.confirmations,
-      interaction: {
-        ...r.interaction,
-        bundlerTxId: r.bundler_tx_id,
-        sortKey: r.sort_key,
-      },
-    })),
+    interactions: result?.rows?.map((r: any) => {
+      return {
+        status: r.confirmation_status,
+        confirming_peers: r.confirming_peer,
+        confirmations: r.confirmations,
+        interaction: {
+          ...r.interaction,
+          bundlerTxId: r.bundler_tx_id,
+          sortKey: r.sort_key,
+        },
+      };
+    }),
   };
 
   logger.info('Mapping interactions: ', benchmark.elapsed());
- 
 }

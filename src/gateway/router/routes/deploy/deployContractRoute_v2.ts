@@ -1,7 +1,7 @@
 import Router from '@koa/router';
 import { BUNDLR_NODE1_URL } from '../../../../constants';
 import { Bundle, DataItem } from 'arbundles';
-import { SmartWeaveTags } from 'warp-contracts';
+import { SMART_WEAVE_TAGS, Tags, WARP_TAGS } from 'warp-contracts';
 import { getCachedNetworkData } from '../../../tasks/networkInfoCache';
 import { publishContract, sendNotification } from '../../../publisher';
 import { evalManifest, WarpDeployment } from './deployContractRoute';
@@ -11,7 +11,7 @@ import { utils } from 'ethers';
 import { longTo32ByteArray } from 'arbundles';
 import { ContractInsert, ContractSourceInsert } from '../../../../db/insertInterfaces';
 import { GatewayError } from '../../../errorHandlerMiddleware';
-import { evalType } from "../../../../utils";
+import { evalType } from '../../../../utils';
 
 export async function deployContractRoute_v2(ctx: Router.RouterContext) {
   const { logger, arweave, dbSource } = ctx;
@@ -52,7 +52,7 @@ export async function deployContractRoute_v2(ctx: Router.RouterContext) {
       srcOwner = await determineOwner(srcDataItem, arweave);
       srcTestnet = getTestnetTag(srcDataItem.tags);
       srcContentType = srcDataItem.tags.find((t) => t.name == 'Content-Type')!.value;
-      srcWasmLang = srcDataItem.tags.find((t) => t.name == SmartWeaveTags.WASM_LANG)?.value;
+      srcWasmLang = srcDataItem.tags.find((t) => t.name == WARP_TAGS.WASM_LANG)?.value;
       if (srcContentType == 'application/javascript') {
         src = Arweave.utils.bufferToString(srcDataItem.rawData);
       } else {
@@ -163,9 +163,9 @@ export async function verifyDeployTags(dataItem: DataItem, opts?: { contract: bo
   const tags = dataItem.tags;
 
   const deployTags = [
-    { name: SmartWeaveTags.APP_NAME, value: opts?.contract ? 'SmartWeaveContract' : 'SmartWeaveContractSource' },
-    { name: SmartWeaveTags.APP_VERSION, value: '0.3.0' },
-    { name: SmartWeaveTags.SDK, value: 'Warp' },
+    { name: SMART_WEAVE_TAGS.APP_NAME, value: opts?.contract ? 'SmartWeaveContract' : 'SmartWeaveContractSource' },
+    { name: SMART_WEAVE_TAGS.APP_VERSION, value: '0.3.0' },
+    { name: SMART_WEAVE_TAGS.SDK, value: 'Warp' },
   ];
 
   const contractNameTags = ['Contract-Src', 'Nonce'];

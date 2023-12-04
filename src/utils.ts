@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { Tag } from 'arweave/node/lib/transaction';
-import { Tags, WarpLogger } from "warp-contracts";
+import { Tags, WarpLogger } from 'warp-contracts';
 import Arweave from 'arweave';
 
 export function sleep(ms: number): Promise<void> {
@@ -23,14 +23,14 @@ export function isTxIdValid(txId: string): boolean {
 }
 
 export function decodeTags(tags: Tags) {
-  const decodedTags: { name: string; value: string }[] = [];
+  const decodedTags: Tags = [];
   const mappedTags = tags.map((tag: { name: string; value: string }) => {
     return new Tag(tag.name, tag.value);
   });
   mappedTags.forEach((tag: Tag) => {
     let name = tag.get('name', { decode: true, string: true });
     let value = tag.get('value', { decode: true, string: true });
-    decodedTags.push({ name, value });
+    decodedTags.push(new Tag(name, value));
   });
 
   return decodedTags;
@@ -64,5 +64,16 @@ export function parseFunctionName(input: string, logger: WarpLogger) {
       input: input,
     });
     return '[Error during parsing function name]';
+  }
+}
+
+export function safeParse(jsonString: string, logger: WarpLogger) {
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    logger.error('Could not parse JSON string', {
+      jsonString,
+    });
+    return null;
   }
 }
