@@ -81,7 +81,7 @@ export async function uploadToBundlr(
 
   const bTx = bundlr.createTransaction(JSON.stringify(transaction), { tags });
   await bTx.sign();
-  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx, { getReceiptSignature: true });
+  const bundlrResponse = await bundlr.uploader.uploadTransaction(bTx);
 
   logger.debug('Uploading to bundlr', {
     elapsed: uploadBenchmark.elapsed(),

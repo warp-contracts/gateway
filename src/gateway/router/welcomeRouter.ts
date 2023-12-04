@@ -1,5 +1,6 @@
 import Router from '@koa/router';
-import { MAX_INTERACTION_DATA_ITEM_SIZE_BYTES } from './routes/sequencerRoute_v2';
+
+const MAX_INTERACTION_DATA_ITEM_SIZE_BYTES = 20000;
 
 const welcomeRouter = new Router();
 
