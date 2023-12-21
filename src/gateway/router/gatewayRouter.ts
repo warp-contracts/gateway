@@ -18,6 +18,7 @@ import { contractDataRoute } from './routes/contracts/contractDataRoute';
 import { nftsOwnedByAddressRoute } from './routes/nftsOwnedByAddressRoute';
 import { txsPerDayRoute } from './routes/stats/txsPerDayRoute';
 import { interactionsSortKeyRoute_v2 } from './routes/interactions/interactionsSortKeyRoute_v2';
+import { interactionsSortKeyRoute_v3 } from './routes/interactions/interactionsSortKeyRoute_v3';
 import { contractSourceRoute } from './routes/contracts/contractSourceRoute';
 import { contractsBySourceRoute } from './routes/contracts/contractsBySourceRoute';
 import { creatorRoute } from './routes/creatorRoute';
@@ -49,6 +50,7 @@ const gatewayRouter = (replica: boolean): Router => {
   router.get('/interactions-sonar', interactionsSonar);
   router.get('/interactions-sort-key', interactionsSortKeyRoute);
   router.get('/v2/interactions-sort-key', interactionsSortKeyRoute_v2);
+  router.get('/v3/interactions-sort-key', interactionsSortKeyRoute_v3);
   router.get('/interactions-stream', interactionsStreamRoute);
   router.get('/interactions/:id', interactionRoute);
   router.get('/stats', totalTxsRoute);
