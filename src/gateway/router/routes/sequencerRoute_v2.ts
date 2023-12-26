@@ -5,7 +5,7 @@ import { BUNDLR_NODE1_URL } from '../../../constants';
 import { Knex } from 'knex';
 import { GatewayError } from '../../errorHandlerMiddleware';
 import { DataItem } from 'arbundles';
-import { createInteraction, generateVrfTags, SequencerResult } from './sequencerRoute';
+import { checkBlacklistedFunction, createInteraction, generateVrfTags, SequencerResult } from "./sequencerRoute";
 import { createSortKey } from './sequencerRoute';
 import { tagsExceedLimit } from 'warp-arbundles';
 import rawBody from 'raw-body';
@@ -156,6 +156,8 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   const parsedInput = safeParse(input, sLogger);
   const functionName = parseFunctionName(input, sLogger);
+  checkBlacklistedFunction(functionName, contractTag);
+  
   let evolve: string | null;
   evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
   const manifest = safeParse(data, sLogger)?.manifest || null;

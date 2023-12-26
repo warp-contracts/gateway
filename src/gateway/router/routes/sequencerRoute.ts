@@ -148,6 +148,9 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
 
   const parsedInput = JSON.parse(inputTag);
   const functionName = parseFunctionName(inputTag, sLogger);
+
+  checkBlacklistedFunction(functionName, contractTag);
+
   let evolve: string | null;
   evolve = functionName == 'evolve' && parsedInput.value && isTxIdValid(parsedInput.value) ? parsedInput.value : null;
 
@@ -429,4 +432,15 @@ export async function createSortKey(
   const blockHeightString = `${blockHeight}`.padStart(12, '0');
 
   return `${blockHeightString},${mills},${hashed}`;
+}
+
+export function checkBlacklistedFunction(functionName: string, contractTxId: string) {
+  const blacklistedFunctions: string[] = [
+    "getAddress", "getCounter", "balance", "getBoost", "getRoulettePick", "getRouletteSwitch", "getRanking"
+  ];
+
+  if (contractTxId === 'p5OI99-BaY4QbZts266T7EDwofZqs-wVuYJmMCS0SUU'
+   && blacklistedFunctions.includes(functionName?.trim())) {
+    throw new Error("\"View\" function blacklisted");
+  }
 }
