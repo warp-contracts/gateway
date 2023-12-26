@@ -149,6 +149,7 @@ async function doGenerateSequence(ctx: Router.RouterContext, trx: Knex.Transacti
   const parsedInput = JSON.parse(inputTag);
   const functionName = parseFunctionName(inputTag, sLogger);
 
+  checkWhitelistedWallet(originalAddress, contractTag);
   checkBlacklistedFunction(functionName, contractTag);
 
   let evolve: string | null;
@@ -434,6 +435,13 @@ export async function createSortKey(
   return `${blockHeightString},${mills},${hashed}`;
 }
 
+export function checkWhitelistedWallet(walletAddr: string, contractTxId: string) {
+  if (contractTxId === 'p5OI99-BaY4QbZts266T7EDwofZqs-wVuYJmMCS0SUU'
+  && walletAddr !== 'jnioZFibZSCcV8o-HkBXYPYEYNib4tqfexP0kCBXX_M') {
+    throw new Error(`Wallet blacklisted: ${walletAddr}`);
+  }
+}
+
 export function checkBlacklistedFunction(functionName: string, contractTxId: string) {
   const blacklistedFunctions: string[] = [
     "getAddress", "getCounter", "balance", "getBoost", "getRoulettePick", "getRouletteSwitch", "getRanking"
@@ -441,6 +449,6 @@ export function checkBlacklistedFunction(functionName: string, contractTxId: str
 
   if (contractTxId === 'p5OI99-BaY4QbZts266T7EDwofZqs-wVuYJmMCS0SUU'
    && blacklistedFunctions.includes(functionName?.trim())) {
-    throw new Error("\"View\" function blacklisted");
+    throw new Error(`"View" function blacklisted: ${functionName}`);
   }
 }
