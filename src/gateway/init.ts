@@ -53,6 +53,7 @@ export interface GatewayContext {
   vrf: VRF;
   sorter: LexicographicalInteractionsSorter;
   publisher: Redis;
+  publisher_v2: Redis;
   pgAdvisoryLocks: PgAdvisoryLocks;
   env: EnvType;
   appSync?: string;
@@ -212,6 +213,35 @@ export interface GatewayContext {
           status: publisher.status,
         });
         app.context.publisher = publisher;
+      }
+
+      // temporary..
+      const connectionOptions2 = readGwPubSubConfig('gw-pubsub_2.json');
+      if (connectionOptions2) {
+        console.log({
+          ...connectionOptions2,
+          tls: {
+            ca: [process.env.GW_TLS_CA_CERT],
+            checkServerIdentity: () => {
+              return null;
+            },
+          },
+        });
+        const publisher2 = new Redis({
+          ...connectionOptions2,
+          tls: {
+            ca: [process.env.GW_TLS_CA_CERT],
+            checkServerIdentity: () => {
+              return null;
+            },
+          },
+        });
+        await publisher2.connect();
+        logger.info(`Publisher 2 status`, {
+          host: connectionOptions2.host,
+          status: publisher2.status,
+        });
+        app.context.publisher_v2 = publisher2;
       }
     }
     await runNetworkInfoCacheTask(app.context);
